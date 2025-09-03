@@ -7,9 +7,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Configuración de servicios para la inyección de dependencias.
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"))
+);
 
-builder.Services.AddIdentity<User, Role>()
+builder
+    .Services.AddIdentity<User, Role>()
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
