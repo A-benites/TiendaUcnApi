@@ -414,6 +414,9 @@ namespace TiendaUcnApi.src.Infrastructure.Data.Migrations
                     b.Property<int>("Gender")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsSeed")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasMaxLength(50)

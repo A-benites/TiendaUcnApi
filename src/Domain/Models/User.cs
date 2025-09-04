@@ -72,4 +72,9 @@ public class User : IdentityUser<int>
     /// Fecha de la última actualización del perfil del usuario.
     /// </summary>
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Indica si el usuario fue creado por el seeder para diferenciarlo de usuarios reales.
+    /// </summary>
+    public bool IsSeed { get; set; } = false;
 }

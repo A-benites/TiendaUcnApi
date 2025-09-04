@@ -11,8 +11,8 @@ using TiendaUcnApi.src.Infrastructure.Data;
 namespace TiendaUcnApi.src.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250903190607_InitialMigrate")]
-    partial class InitialMigrate
+    [Migration("20250904010428_InitialMIgrate")]
+    partial class InitialMIgrate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -415,6 +415,9 @@ namespace TiendaUcnApi.src.Infrastructure.Data.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Gender")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsSeed")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("LastName")

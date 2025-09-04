@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using TiendaUcnApi.src.Domain.Models;
+using TiendaUcnApi.src.Domain.Models; // Asegúrate que este namespace sea el correcto
 using TiendaUcnApi.src.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -40,5 +40,26 @@ app.UseAuthorization();
 
 // Mapea los endpoints a los métodos de acción de los controladores.
 app.MapControllers();
+
+// Aplica migraciones y puebla la base de datos al iniciar.
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<AppDbContext>();
+        var userManager = services.GetRequiredService<UserManager<User>>();
+        var roleManager = services.GetRequiredService<RoleManager<Role>>();
+
+        // Llama al método del seeder.
+        await DataSeeder.SeedAsync(context, userManager, roleManager);
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Ocurrió un error durante el poblado de la base de datos.");
+    }
+}
+
 
 app.Run();
