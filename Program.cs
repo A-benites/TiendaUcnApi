@@ -1,41 +1,64 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using TiendaUcnApi.src.Domain.Models;
+using TiendaUcnApi.src.Infrastructure.Data;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+// Configuración de servicios para la inyección de dependencias.
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"))
+);
+
+builder
+    .Services.AddIdentity<User, Role>()
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddDefaultTokenProviders();
+
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Configuración del pipeline de peticiones HTTP. El orden es importante.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    // Habilita el middleware para generar la especificación de OpenAPI y la UI de Swagger.
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
+// Redirige las peticiones HTTP a HTTPS.
 app.UseHttpsRedirection();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+// Habilita la autenticación.
+app.UseAuthentication();
 
-app.MapGet("/weatherforecast", () =>
+// Habilita la autorización. Debe declararse después de UseAuthentication.
+app.UseAuthorization();
+
+// Mapea los endpoints a los métodos de acción de los controladores.
+app.MapControllers();
+
+// Aplica migraciones y puebla la base de datos al iniciar.
+using (var scope = app.Services.CreateScope())
 {
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<AppDbContext>();
+        var userManager = services.GetRequiredService<UserManager<User>>();
+        var roleManager = services.GetRequiredService<RoleManager<Role>>();
+
+        // Llama al método del seeder.
+        await DataSeeder.SeedAsync(context, userManager, roleManager);
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Ocurrió un error durante el poblado de la base de datos.");
+    }
+}
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
