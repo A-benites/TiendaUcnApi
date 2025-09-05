@@ -12,8 +12,8 @@
 
 #Sqlite database files
 *.db
-app.db-shm
-app.db-wal
+*.db-shm
+*.db-wal
 
 appsettings.json
 
