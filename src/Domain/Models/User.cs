@@ -18,7 +18,8 @@ public class User : IdentityUser<int>
     // La columna en la base de datos no puede ser nula.
     [Required]
     // Define el largo máximo de la columna en la base de datos.
-    [StringLength(12)]
+    // Esta expresión valida XX.XXX.XXX-X o X.XXX.XXX-X
+    [RegularExpression(@"^(\d{1,2}\.\d{3}\.\d{3}-[\dkK])$", ErrorMessage = "El formato del RUT no es válido.")]
     public string Rut { get; set; }
 
     /// <summary>

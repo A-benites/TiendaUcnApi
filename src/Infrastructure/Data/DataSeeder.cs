@@ -2,9 +2,8 @@ using Bogus;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TiendaUcnApi.src.Domain.Models;
-using TiendaUcnApi.src.Infrastructure.Data;
 
-namespace TiendaUcnApi.src.Infrastructure.Data; // CAMBIO: Namespace ajustado
+namespace TiendaUcnApi.src.Infrastructure.Data;
 
 public class DataSeeder
 {

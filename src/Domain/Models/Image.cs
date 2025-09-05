@@ -16,6 +16,8 @@ public class Image
     /// </summary>
     // La columna en la base de datos no puede ser nula.
     [Required]
+    // Añade esta data annotation a ImageUrl
+    [Url(ErrorMessage = "El formato de la URL de la imagen no es válido.")]
     public string ImageUrl { get; set; }
 
     /// <summary>

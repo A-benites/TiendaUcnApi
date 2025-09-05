@@ -15,6 +15,8 @@ public class OrderItem
     /// Cantidad del artículo en el pedido.
     /// </summary>
     [Required]
+    // Añade esta data annotation a Quantity
+    [Range(1, int.MaxValue, ErrorMessage = "La cantidad del producto debe ser al menos 1.")]
     public int Quantity { get; set; }
 
     /// <summary>

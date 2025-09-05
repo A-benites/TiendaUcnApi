@@ -23,15 +23,14 @@ public class Order
     /// </summary>
     // La columna en la base de datos no puede ser nula.
     [Required]
-    // Define el tipo de dato en la BD para mayor precisión con valores monetarios.
-    [Column(TypeName = "decimal(18,2)")]
+    [Range(0.01, (double)decimal.MaxValue, ErrorMessage = "El total debe ser un valor positivo.")]
     public decimal Total { get; set; }
 
     /// <summary>
     /// Subtotal del pedido sin descuentos (suma de precios originales).
     /// </summary>
     [Required]
-    [Column(TypeName = "decimal(18,2)")]
+    [Range(0.01, (double)decimal.MaxValue, ErrorMessage = "El subtotal debe ser un valor positivo.")]
     public decimal SubTotal { get; set; }
 
     /// <summary>

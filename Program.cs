@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using TiendaUcnApi.src.Domain.Models; // Asegúrate que este namespace sea el correcto
+using TiendaUcnApi.src.Domain.Models;
 using TiendaUcnApi.src.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -60,6 +60,5 @@ using (var scope = app.Services.CreateScope())
         logger.LogError(ex, "Ocurrió un error durante el poblado de la base de datos.");
     }
 }
-
 
 app.Run();

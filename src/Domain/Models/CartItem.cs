@@ -15,6 +15,7 @@ public class CartItem
     /// Cantidad del producto en el carrito de compras.
     /// </summary>
     [Required]
+    [Range(1, int.MaxValue, ErrorMessage = "La cantidad del producto debe ser al menos 1.")]
     public int Quantity { get; set; }
 
     // --- Relación con Product ---

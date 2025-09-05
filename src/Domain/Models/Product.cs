@@ -31,6 +31,8 @@ public class Product
     /// </summary>
     // La columna no puede ser nula.
     [Required]
+    // Añade esta data annotation a Description
+    [MinLength(20, ErrorMessage = "La descripción debe tener al menos 20 caracteres.")]
     public string Description { get; set; }
 
     /// <summary>
@@ -39,14 +41,14 @@ public class Product
     // La columna no puede ser nula.
     [Required]
     // Define el tipo de dato en la BD para mayor precisión con valores monetarios.
-    [Column(TypeName = "decimal(18,2)")]
+    [Range(0.01, (double)decimal.MaxValue, ErrorMessage = "El precio debe ser un valor positivo.")]
     public decimal Price { get; set; }
 
     /// <summary>
     /// Descuento del producto.
     /// </summary>
-    // Define el tipo de dato en la BD para mayor precisión.
-    [Column(TypeName = "decimal(18,2)")]
+    // Añade esta data annotation a Discount para evitar valores negativos
+    [Range(0, (double)decimal.MaxValue, ErrorMessage = "El descuento no puede ser negativo.")]
     public decimal Discount { get; set; }
 
     /// <summary>
@@ -54,6 +56,7 @@ public class Product
     /// </summary>
     // La columna no puede ser nula.
     [Required]
+    [Range(0, int.MaxValue)]
     public int Stock { get; set; }
 
     /// <summary>
