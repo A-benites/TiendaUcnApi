@@ -6,43 +6,39 @@ namespace TiendaUcnApi.src.Domain.Models;
 public class Image
 {
     /// <summary>
-    /// Identificador único de la imagen.
+    /// Unique identifier for the image.
     /// </summary>
     [Key]
     public int Id { get; set; }
 
     /// <summary>
-    /// URL pública de la imagen alojada en el servicio externo (ej. Cloudinary).
+    /// Public URL of the image hosted on an external service (e.g., Cloudinary).
     /// </summary>
-    // La columna en la base de datos no puede ser nula.
     [Required]
-    // Añade esta data annotation a ImageUrl
-    [Url(ErrorMessage = "El formato de la URL de la imagen no es válido.")]
+    [Url(ErrorMessage = "The image URL format is not valid.")]
     public string ImageUrl { get; set; }
 
     /// <summary>
-    /// Identificador público usado por el servicio externo para gestionar la imagen.
+    /// Public identifier used by the external service to manage the image.
     /// </summary>
-    // La columna en la base de datos no puede ser nula.
     [Required]
     public string PublicId { get; set; }
 
     /// <summary>
-    /// Fecha de creación del registro de la imagen.
+    /// Image record creation date.
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    // --- Relación con Product ---
+    // --- Relationship with Product ---
 
     /// <summary>
-    /// Identificador del producto al que pertenece esta imagen.
+    /// Identifier of the product to which this image belongs.
     /// </summary>
     public int ProductId { get; set; }
 
     /// <summary>
-    /// Producto asociado a la imagen (propiedad de navegación).
+    /// Product associated with the image (navigation property).
     /// </summary>
-    // Define la clave foránea para la relación con la tabla Product.
     [ForeignKey("ProductId")]
     public Product Product { get; set; } = null!;
 }

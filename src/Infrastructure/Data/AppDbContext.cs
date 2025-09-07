@@ -5,15 +5,15 @@ using TiendaUcnApi.src.Domain.Models;
 namespace TiendaUcnApi.src.Infrastructure.Data
 {
     /// <summary>
-    /// Contexto de la base de datos de la aplicación que integra ASP.NET Core Identity.
+    /// Application database context integrating ASP.NET Core Identity.
     /// </summary>
     public class AppDbContext : IdentityDbContext<User, Role, int>
     {
         public AppDbContext(DbContextOptions<AppDbContext> options)
             : base(options) { }
 
-        // DbSet para cada entidad que será una tabla en la base de datos.
-        // El "= null!;" suprime una advertencia de nulabilidad del compilador. EF Core se encarga de inicializarlos.
+        // DbSet for each entity that will be a table in the database.
+        // "= null!;" suppresses a compiler nullability warning. EF Core will initialize them.
         public DbSet<Product> Products { get; set; } = null!;
         public DbSet<Image> Images { get; set; } = null!;
         public DbSet<Category> Categories { get; set; } = null!;
@@ -25,17 +25,17 @@ namespace TiendaUcnApi.src.Infrastructure.Data
         public DbSet<VerificationCode> VerificationCodes { get; set; } = null!;
 
         /// <summary>
-        /// Configura el modelo de la base de datos usando Fluent API para definir restricciones avanzadas.
+        /// Configures the database model using Fluent API for advanced constraints.
         /// </summary>
         protected override void OnModelCreating(ModelBuilder builder)
         {
-            // Es indispensable llamar a la implementación base para que Identity configure su propio esquema.
+            // It is essential to call the base implementation so Identity configures its own schema.
             base.OnModelCreating(builder);
 
-            // Configuraciones para la entidad 'User'
+            // Configurations for the 'User' entity
             builder.Entity<User>(entity =>
             {
-                // Define índices únicos para garantizar que no haya emails o RUTs duplicados a nivel de base de datos.
+                // Define unique indexes to ensure no duplicate emails or RUTs at the database level.
                 entity.HasIndex(u => u.Email).IsUnique();
                 entity.HasIndex(u => u.Rut).IsUnique();
             });

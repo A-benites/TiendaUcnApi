@@ -6,57 +6,55 @@ namespace TiendaUcnApi.src.Domain.Models;
 public class Order
 {
     /// <summary>
-    /// Identificador único del pedido.
+    /// Unique identifier for the order.
     /// </summary>
     [Key]
     public int Id { get; set; }
 
     /// <summary>
-    /// Código único del pedido.
+    /// Unique order code.
     /// </summary>
-    // La columna en la base de datos no puede ser nula.
     [Required]
     public string Code { get; set; }
 
     /// <summary>
-    /// Total del pedido con descuentos.
+    /// Order total with discounts.
     /// </summary>
-    // La columna en la base de datos no puede ser nula.
     [Required]
-    [Range(0.01, (double)decimal.MaxValue, ErrorMessage = "El total debe ser un valor positivo.")]
+    [Range(0.01, (double)decimal.MaxValue, ErrorMessage = "Total must be a positive value.")]
     public decimal Total { get; set; }
 
     /// <summary>
-    /// Subtotal del pedido sin descuentos (suma de precios originales).
+    /// Order subtotal without discounts (sum of original prices).
     /// </summary>
     [Required]
-    [Range(0.01, (double)decimal.MaxValue, ErrorMessage = "El subtotal debe ser un valor positivo.")]
+    [Range(0.01, (double)decimal.MaxValue, ErrorMessage = "Subtotal must be a positive value.")]
     public decimal SubTotal { get; set; }
 
     /// <summary>
-    /// Fecha de creación del pedido.
+    /// Order creation date.
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     /// <summary>
-    /// Fecha de actualización del pedido.
+    /// Order update date.
     /// </summary>
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-    // --- Relación con User ---
+    // --- Relationship with User ---
     /// <summary>
-    /// Identificador del usuario que realizó el pedido.
+    /// Identifier of the user who placed the order.
     /// </summary>
     public int UserId { get; set; }
 
     /// <summary>
-    /// Usuario que realizó el pedido (propiedad de navegación).
+    /// User who placed the order (navigation property).
     /// </summary>
     [ForeignKey("UserId")]
     public User User { get; set; } = null!;
 
     /// <summary>
-    /// Lista de artículos del pedido.
+    /// List of items in the order.
     /// </summary>
     public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 }
