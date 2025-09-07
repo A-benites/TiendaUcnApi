@@ -1,95 +1,128 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
+using TiendaUcnApi.src.API.Extensions; // Using for the new seeding extension method
+using TiendaUcnApi.src.API.Middlewares.ErrorHandlingMiddleware;
 using TiendaUcnApi.src.Domain.Models;
 using TiendaUcnApi.src.Infrastructure.Data;
-using TiendaUcnApi.src.API.Middlewares.ErrorHandlingMiddleware;
-using Microsoft.AspNetCore.Mvc;
-var builder = WebApplication.CreateBuilder(args);
 
-// Service configuration for dependency injection.
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"))
-);
+// Configure a bootstrap logger to capture errors during application startup.
+Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateBootstrapLogger();
 
-builder
-    .Services.AddIdentity<User, Role>()
-    .AddEntityFrameworkStores<AppDbContext>()
-    .AddDefaultTokenProviders();
+Log.Information("Starting up the application");
 
-builder.Services.AddControllers()
-    .ConfigureApiBehaviorOptions(options =>
-    {
-        options.InvalidModelStateResponseFactory = context =>
+try
+{
+    var builder = WebApplication.CreateBuilder(args);
+
+    // Replace the default .NET logger with Serilog and read configuration from appsettings.json.
+    builder.Host.UseSerilog(
+        (context, services, configuration) =>
+            configuration
+                .ReadFrom.Configuration(context.Configuration)
+                .ReadFrom.Services(services)
+                .Enrich.FromLogContext()
+    );
+
+    // --- Service configuration for dependency injection (DI Container). ---
+
+    // Registers the database context with the DI container.
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"))
+    );
+
+    // Registers IHttpContextAccessor to allow access to the current HttpContext from services.
+    builder.Services.AddHttpContextAccessor();
+
+    // Configures ASP.NET Core Identity for user and role management.
+    builder
+        .Services.AddIdentity<User, Role>()
+        .AddEntityFrameworkStores<AppDbContext>()
+        .AddDefaultTokenProviders();
+
+    // Configures controller services and customizes the automatic 400 response for validation errors.
+    builder
+        .Services.AddControllers()
+        .ConfigureApiBehaviorOptions(options =>
         {
-            var errors = context.ModelState
-                .Where(e => e.Value.Errors.Count > 0)
-                .Select(e => new
-                {
-                    Field = e.Key,
-                    Errors = e.Value.Errors.Select(err => err.ErrorMessage)
-                });
-
-            return new BadRequestObjectResult(new
+            options.InvalidModelStateResponseFactory = context =>
             {
-                status = 400,
-                message = "Validation errors",
-                errors,
-                timestamp = DateTime.UtcNow
-            });
-        };
-    });
+                var errors = context
+                    .ModelState.Where(e => e.Value.Errors.Count > 0)
+                    .Select(e => new
+                    {
+                        Field = e.Key,
+                        Errors = e.Value.Errors.Select(err => err.ErrorMessage),
+                    });
 
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+                return new BadRequestObjectResult(
+                    new
+                    {
+                        status = 400,
+                        message = "Validation errors",
+                        errors,
+                        timestamp = DateTime.UtcNow,
+                    }
+                );
+            };
+        });
 
-var app = builder.Build();
+    // Adds services for API endpoint discovery and Swagger/OpenAPI documentation.
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen();
 
-// HTTP request pipeline configuration. Order is important.
-if (app.Environment.IsDevelopment())
-{
-    // Enables middleware to generate OpenAPI specification and Swagger UI.
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    var app = builder.Build();
 
-app.UseMiddleware<ErrorHandlingMiddleware>();
+    // --- HTTP request pipeline configuration. Order is important. ---
 
-// Redirects HTTP requests to HTTPS.
-app.UseHttpsRedirection();
+    // Middleware to log all incoming HTTP requests automatically.
+    app.UseSerilogRequestLogging();
 
-// Enables authentication.
-app.UseAuthentication();
-
-// Enables authorization. Must be declared after UseAuthentication.
-app.UseAuthorization();
-
-// Maps endpoints to controller action methods.
-app.MapControllers();
-
-// Applies migrations and seeds the database on startup.
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    try
+    // Enables Swagger UI only in the development environment.
+    if (app.Environment.IsDevelopment())
     {
-        var context = services.GetRequiredService<AppDbContext>();
-        var userManager = services.GetRequiredService<UserManager<User>>();
-        var roleManager = services.GetRequiredService<RoleManager<Role>>();
+        app.UseSwagger();
+        app.UseSwaggerUI();
+    }
 
-        // Calls the seeder method.
-        await DataSeeder.SeedAsync(context, userManager, roleManager);
-    }
-    catch (Exception ex)
-    {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred during database seeding.");
-    }
+    // Custom middleware for global exception handling.
+    app.UseMiddleware<ErrorHandlingMiddleware>();
+
+    // Redirects HTTP requests to HTTPS.
+    app.UseHttpsRedirection();
+
+    // Enables authentication middleware.
+    app.UseAuthentication();
+
+    // Enables authorization middleware.
+    app.UseAuthorization();
+
+    // Maps controller action methods to endpoints.
+    app.MapControllers();
+
+    // Applies migrations and seeds the database on application startup.
+    await app.SeedDatabaseAsync();
+
+    // A test endpoint to verify the error handling middleware is working.
+    app.MapGet(
+        "/test",
+        () =>
+        {
+            throw new Exception("Test exception for the middleware.");
+        }
+    );
+
+    app.Run();
 }
-
-app.MapGet("/test", () =>
+catch (Exception ex)
 {
-    // Aquí puedes lanzar un error a propósito
-    throw new Exception("Error de prueba del middleware");
-});
-
-app.Run();
+    // Logs fatal exceptions that prevent the application from starting.
+    Log.Fatal(ex, "Application failed to start");
+}
+finally
+{
+    // Ensures all log events are written to the sinks before the application shuts down.
+    Log.Information("Shutting down");
+    Log.CloseAndFlush();
+}
