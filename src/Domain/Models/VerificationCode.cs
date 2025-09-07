@@ -13,52 +13,50 @@ public enum CodeType
 public class VerificationCode
 {
     /// <summary>
-    /// Identificador único del código de verificación.
+    /// Unique identifier for the verification code.
     /// </summary>
     [Key]
     public int Id { get; set; }
 
     /// <summary>
-    /// Tipo de código de verificación.
+    /// Type of verification code.
     /// </summary>
-    // La columna en la base de datos no puede ser nula.
     [Required]
     public CodeType CodeType { get; set; }
 
     /// <summary>
-    /// Código de verificación de 6 dígitos.
+    /// 6-digit verification code.
     /// </summary>
     [Required]
     [StringLength(6)]
     public string Code { get; set; }
 
     /// <summary>
-    /// Cantidad de intentos fallidos realizados para usar el código.
+    /// Number of failed attempts to use the code.
     /// </summary>
     public int AttemptCount { get; set; } = 0;
 
     /// <summary>
-    /// Fecha y hora de expiración del código de verificación.
+    /// Expiry date and time of the verification code.
     /// </summary>
     [Required]
     public DateTime ExpiryDate { get; set; }
 
     /// <summary>
-    /// Fecha y hora en que se creó el código de verificación.
+    /// Creation date and time of the verification code.
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    // --- Relación con User ---
+    // --- Relationship with User ---
 
     /// <summary>
-    /// Identificador único del usuario asociado al código de verificación.
+    /// Unique identifier of the user associated with the verification code.
     /// </summary>
     public int UserId { get; set; }
 
     /// <summary>
-    /// Usuario asociado al código (propiedad de navegación).
+    /// User associated with the code (navigation property).
     /// </summary>
-    // Define la clave foránea para la relación con la tabla User.
     [ForeignKey("UserId")]
     public User User { get; set; } = null!;
 }

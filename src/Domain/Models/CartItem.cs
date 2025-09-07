@@ -6,36 +6,36 @@ namespace TiendaUcnApi.src.Domain.Models;
 public class CartItem
 {
     /// <summary>
-    /// Identificador único del artículo en el carrito de compras.
+    /// Unique identifier for the cart item.
     /// </summary>
     [Key]
     public int Id { get; set; }
 
     /// <summary>
-    /// Cantidad del producto en el carrito de compras.
+    /// Quantity of the product in the cart.
     /// </summary>
     [Required]
-    [Range(1, int.MaxValue, ErrorMessage = "La cantidad del producto debe ser al menos 1.")]
+    [Range(1, int.MaxValue, ErrorMessage = "Product quantity must be at least 1.")]
     public int Quantity { get; set; }
 
-    // --- Relación con Product ---
+    // --- Relationship with Product ---
     /// <summary>
-    /// Id del producto asociado al artículo del carrito.
+    /// Id of the product associated with the cart item.
     /// </summary>
     public int ProductId { get; set; }
     /// <summary>
-    /// Producto asociado al artículo (propiedad de navegación).
+    /// Product associated with the item (navigation property).
     /// </summary>
     [ForeignKey("ProductId")]
     public Product Product { get; set; } = null!;
 
-    // --- Relación con Cart ---
+    // --- Relationship with Cart ---
     /// <summary>
-    /// Id del carrito de compras al que pertenece el artículo.
+    /// Id of the cart to which the item belongs.
     /// </summary>
     public int CartId { get; set; }
     /// <summary>
-    /// Carrito de compras al que pertenece el artículo (propiedad de navegación).
+    /// Cart to which the item belongs (navigation property).
     /// </summary>
     [ForeignKey("CartId")]
     public Cart Cart { get; set; } = null!;

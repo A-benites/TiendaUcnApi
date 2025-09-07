@@ -2,10 +2,11 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TiendaUcnApi.src.Domain.Models;
 using TiendaUcnApi.src.Infrastructure.Data;
-
+using TiendaUcnApi.src.API.Middlewares.ErrorHandlingMiddleware;
+using Microsoft.AspNetCore.Mvc;
 var builder = WebApplication.CreateBuilder(args);
 
-// Configuración de servicios para la inyección de dependencias.
+// Service configuration for dependency injection.
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
@@ -15,33 +16,57 @@ builder
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            var errors = context.ModelState
+                .Where(e => e.Value.Errors.Count > 0)
+                .Select(e => new
+                {
+                    Field = e.Key,
+                    Errors = e.Value.Errors.Select(err => err.ErrorMessage)
+                });
+
+            return new BadRequestObjectResult(new
+            {
+                status = 400,
+                message = "Validation errors",
+                errors,
+                timestamp = DateTime.UtcNow
+            });
+        };
+    });
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configuración del pipeline de peticiones HTTP. El orden es importante.
+// HTTP request pipeline configuration. Order is important.
 if (app.Environment.IsDevelopment())
 {
-    // Habilita el middleware para generar la especificación de OpenAPI y la UI de Swagger.
+    // Enables middleware to generate OpenAPI specification and Swagger UI.
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// Redirige las peticiones HTTP a HTTPS.
+app.UseMiddleware<ErrorHandlingMiddleware>();
+
+// Redirects HTTP requests to HTTPS.
 app.UseHttpsRedirection();
 
-// Habilita la autenticación.
+// Enables authentication.
 app.UseAuthentication();
 
-// Habilita la autorización. Debe declararse después de UseAuthentication.
+// Enables authorization. Must be declared after UseAuthentication.
 app.UseAuthorization();
 
-// Mapea los endpoints a los métodos de acción de los controladores.
+// Maps endpoints to controller action methods.
 app.MapControllers();
 
-// Aplica migraciones y puebla la base de datos al iniciar.
+// Applies migrations and seeds the database on startup.
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -51,14 +76,20 @@ using (var scope = app.Services.CreateScope())
         var userManager = services.GetRequiredService<UserManager<User>>();
         var roleManager = services.GetRequiredService<RoleManager<Role>>();
 
-        // Llama al método del seeder.
+        // Calls the seeder method.
         await DataSeeder.SeedAsync(context, userManager, roleManager);
     }
     catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Ocurrió un error durante el poblado de la base de datos.");
+        logger.LogError(ex, "An error occurred during database seeding.");
     }
 }
+
+app.MapGet("/test", () =>
+{
+    // Aquí puedes lanzar un error a propósito
+    throw new Exception("Error de prueba del middleware");
+});
 
 app.Run();

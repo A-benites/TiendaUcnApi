@@ -12,101 +12,92 @@ public enum Status
 public class Product
 {
     /// <summary>
-    /// Identificador único del producto.
+    /// Unique identifier for the product.
     /// </summary>
     [Key]
     public int Id { get; set; }
 
     /// <summary>
-    /// Título del producto.
+    /// Product title.
     /// </summary>
-    // La columna no puede ser nula.
     [Required]
-    // Define el largo máximo de 50 y mínimo de 3 caracteres.
     [StringLength(50, MinimumLength = 3)]
     public string Title { get; set; }
 
     /// <summary>
-    /// Descripción del producto.
+    /// Product description.
     /// </summary>
-    // La columna no puede ser nula.
     [Required]
-    // Añade esta data annotation a Description
-    [MinLength(20, ErrorMessage = "La descripción debe tener al menos 20 caracteres.")]
+    [MinLength(20, ErrorMessage = "Description must be at least 20 characters.")]
     public string Description { get; set; }
 
     /// <summary>
-    /// Precio del producto.
+    /// Product price.
     /// </summary>
-    // La columna no puede ser nula.
     [Required]
-    // Define el tipo de dato en la BD para mayor precisión con valores monetarios.
-    [Range(0.01, (double)decimal.MaxValue, ErrorMessage = "El precio debe ser un valor positivo.")]
+    [Range(0.01, (double)decimal.MaxValue, ErrorMessage = "Price must be a positive value.")]
     public decimal Price { get; set; }
 
     /// <summary>
-    /// Descuento del producto.
+    /// Product discount.
     /// </summary>
-    // Añade esta data annotation a Discount para evitar valores negativos
-    [Range(0, (double)decimal.MaxValue, ErrorMessage = "El descuento no puede ser negativo.")]
+    [Range(0, (double)decimal.MaxValue, ErrorMessage = "Discount cannot be negative.")]
     public decimal Discount { get; set; }
 
     /// <summary>
-    /// Stock del producto.
+    /// Product stock.
     /// </summary>
-    // La columna no puede ser nula.
     [Required]
     [Range(0, int.MaxValue)]
     public int Stock { get; set; }
 
     /// <summary>
-    /// Estado del producto (Nuevo o usado).
+    /// Product status (New or Used).
     /// </summary>
-    // La columna no puede ser nula.
     [Required]
     public Status Status { get; set; }
 
     /// <summary>
-    /// Indica si el producto está lógicamente eliminado (no se muestra al cliente).
+    /// Indicates if the product is logically deleted (not shown to the customer).
     /// </summary>
     public bool IsAvailable { get; set; } = true;
 
     /// <summary>
-    /// Fecha de creación del producto.
+    /// Product creation date.
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     /// <summary>
-    /// Fecha de actualización del producto.
+    /// Product update date.
     /// </summary>
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-    // --- Relaciones con otras tablas ---
+    // --- Relationships with other tables ---
 
     /// <summary>
-    /// Identificador de la categoría del producto.
+    /// Category identifier for the product.
     /// </summary>
     public int CategoryId { get; set; }
 
     /// <summary>
-    /// Categoría del producto (propiedad de navegación).
+    /// Product category (navigation property).
     /// </summary>
     [ForeignKey("CategoryId")]
     public Category Category { get; set; } = null!;
 
     /// <summary>
-    /// Identificador de la marca del producto.
+    /// Brand identifier for the product.
     /// </summary>
     public int BrandId { get; set; }
 
     /// <summary>
-    /// Marca del producto (propiedad de navegación).
+    /// Product brand (navigation property).
     /// </summary>
     [ForeignKey("BrandId")]
     public Brand Brand { get; set; } = null!;
 
     /// <summary>
-    /// Lista de imágenes asociadas al producto.
+    /// List of images associated with the product.
     /// </summary>
     public ICollection<Image> Images { get; set; } = new List<Image>();
 }
