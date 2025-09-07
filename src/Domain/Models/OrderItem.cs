@@ -6,58 +6,57 @@ namespace TiendaUcnApi.src.Domain.Models;
 public class OrderItem
 {
     /// <summary>
-    /// Identificador único del artículo del pedido.
+    /// Unique identifier for the order item.
     /// </summary>
     [Key]
     public int Id { get; set; }
 
     /// <summary>
-    /// Cantidad del artículo en el pedido.
+    /// Quantity of the item in the order.
     /// </summary>
     [Required]
-    // Añade esta data annotation a Quantity
-    [Range(1, int.MaxValue, ErrorMessage = "La cantidad del producto debe ser al menos 1.")]
+    [Range(1, int.MaxValue, ErrorMessage = "Product quantity must be at least 1.")]
     public int Quantity { get; set; }
 
     /// <summary>
-    /// Precio del artículo en el momento del pedido.
+    /// Price of the item at the time of the order.
     /// </summary>
     [Required]
     [Column(TypeName = "decimal(18,2)")]
     public decimal PriceAtMoment { get; set; }
 
     /// <summary>
-    /// Título del artículo en el momento del pedido.
+    /// Title of the item at the time of the order.
     /// </summary>
     [Required]
     public string TitleAtMoment { get; set; }
 
     /// <summary>
-    /// Descripción del artículo en el momento del pedido.
+    /// Description of the item at the time of the order.
     /// </summary>
     [Required]
     public string DescriptionAtMoment { get; set; }
 
     /// <summary>
-    /// Imagen del artículo en el momento del pedido (URL).
+    /// Image of the item at the time of the order (URL).
     /// </summary>
     [Required]
     public string ImageAtMoment { get; set; }
 
     /// <summary>
-    /// Descuento aplicado al artículo al momento del pedido.
+    /// Discount applied to the item at the time of the order.
     /// </summary>
     [Column(TypeName = "decimal(18,2)")]
     public decimal DiscountAtMoment { get; set; }
 
-    // --- Relación con Order ---
+    // --- Relationship with Order ---
     /// <summary>
-    /// Identificador del pedido al que pertenece el artículo.
+    /// Identifier of the order to which the item belongs.
     /// </summary>
     public int OrderId { get; set; }
 
     /// <summary>
-    /// Pedido al que pertenece el artículo (propiedad de navegación).
+    /// Order to which the item belongs (navigation property).
     /// </summary>
     [ForeignKey("OrderId")]
     public Order Order { get; set; } = null!;

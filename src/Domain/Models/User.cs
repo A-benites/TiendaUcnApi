@@ -13,69 +13,60 @@ public enum Gender
 public class User : IdentityUser<int>
 {
     /// <summary>
-    /// Identificador único del usuario chileno.
+    /// Unique Chilean user identifier (RUT).
     /// </summary>
-    // La columna en la base de datos no puede ser nula.
     [Required]
-    // Define el largo máximo de la columna en la base de datos.
-    // Esta expresión valida XX.XXX.XXX-X o X.XXX.XXX-X
-    [RegularExpression(@"^(\d{1,2}\.\d{3}\.\d{3}-[\dkK])$", ErrorMessage = "El formato del RUT no es válido.")]
+    [RegularExpression(@"^(\d{1,2}\.\d{3}\.\d{3}-[\dkK])$", ErrorMessage = "RUT format is not valid.")]
     public string Rut { get; set; }
 
     /// <summary>
-    /// Nombre del usuario.
+    /// User's first name.
     /// </summary>
-    // La columna en la base de datos no puede ser nula.
     [Required]
-    // Define el largo máximo y mínimo de la columna.
     [StringLength(50, MinimumLength = 2)]
     public string FirstName { get; set; }
 
     /// <summary>
-    /// Apellido del usuario.
+    /// User's last name.
     /// </summary>
-    // La columna en la base de datos no puede ser nula.
     [Required]
-    // Define el largo máximo y mínimo de la columna.
     [StringLength(50, MinimumLength = 2)]
     public string LastName { get; set; }
 
     /// <summary>
-    /// Género del usuario.
+    /// User's gender.
     /// </summary>
-    // La columna en la base de datos no puede ser nula.
     [Required]
     public Gender Gender { get; set; }
 
     /// <summary>
-    /// Fecha de nacimiento del usuario.
+    /// User's birth date.
     /// </summary>
-    // La columna en la base de datos no puede ser nula.
     [Required]
     public DateTime BirthDate { get; set; }
 
     /// <summary>
-    /// Códigos de verificación asociados al usuario.
+    /// Verification codes associated with the user.
     /// </summary>
     public ICollection<VerificationCode> VerificationCodes { get; set; } = new List<VerificationCode>();
 
     /// <summary>
-    /// Órdenes realizadas por el usuario.
+    /// Orders placed by the user.
     /// </summary>
     public ICollection<Order> Orders { get; set; } = new List<Order>();
 
     /// <summary>
-    /// Fecha de registro del usuario.
+    /// User registration date.
     /// </summary>
     public DateTime RegisteredAt { get; set; } = DateTime.UtcNow;
 
     /// <summary>
-    /// Fecha de la última actualización del perfil del usuario.
+    /// Last profile update date.
     /// </summary>
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     /// <summary>
-    /// Indica si el usuario fue creado por el seeder para diferenciarlo de usuarios reales.
+    /// Indicates if the user was created by the seeder to differentiate from real users.
     /// </summary>
     public bool IsSeed { get; set; } = false;
 }
