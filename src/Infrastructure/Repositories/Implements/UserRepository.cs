@@ -1,41 +1,81 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 using TiendaUcnApi.src.Domain.Models;
 using TiendaUcnApi.src.Infrastructure.Data;
 using TiendaUcnApi.src.Infrastructure.Repositories.Interfaces;
 
 namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements;
 
-// Implementación concreta del repositorio de usuarios.
-// Utiliza Entity Framework Core para interactuar con la base de datos.
 public class UserRepository : IUserRepository
 {
     private readonly AppDbContext _context;
+    private readonly UserManager<User> _userManager;
 
-    // El DataContext es inyectado por el contenedor de dependencias de ASP.NET Core.
-    public UserRepository(AppDbContext context)
+    // Inyectamos UserManager, que ahora está disponible gracias a la configuración
+    // que hicimos en Program.cs.
+    public UserRepository(AppDbContext context, UserManager<User> userManager)
     {
         _context = context;
+        _userManager = userManager;
     }
 
-    public async Task AddAsync(User user)
+    // Usamos UserManager para crear el usuario. Se encarga del hasheo y de guardar.
+    public async Task<bool> CreateAsync(User user, string password)
     {
-        await _context.Users.AddAsync(user);
-        // NOTA: El Guardado de cambios (SaveChanges) se manejará en una capa superior
-        // o en una unidad de trabajo para agrupar operaciones.
+        var userResult = await _userManager.CreateAsync(user, password);
+        if (userResult.Succeeded)
+        {
+            // Asegúrate que el nombre del rol coincida con el que definiste en tu seeder/configuración.
+            // El taller lo llama "Cliente".
+            var roleResult = await _userManager.AddToRoleAsync(user, "Cliente");
+
+            if (!roleResult.Succeeded)
+            {
+                // Si falla la asignación de rol, es bueno loguearlo y quizás eliminar al usuario.
+                Log.Error(
+                    $"Usuario {user.Email} creado, pero falló la asignación del rol 'Cliente'."
+                );
+                await _userManager.DeleteAsync(user); // Revertir creación
+                return false;
+            }
+            return true;
+        }
+        else
+        {
+            // Loguear los errores específicos de Identity es muy útil para depurar.
+            foreach (var error in userResult.Errors)
+            {
+                Log.Warning($"Error al crear usuario {user.Email}: {error.Description}");
+            }
+        }
+        return false;
     }
 
+    // UserManager tiene un método optimizado para buscar por email.
     public async Task<User?> GetByEmailAsync(string email)
     {
-        // MEJORA: Usar String.Equals con OrdinalIgnoreCase es más eficiente
-        // para comparaciones de texto sin distinción de mayúsculas y minúsculas
-        // porque puede aprovechar mejor los índices de la base de datos.
-        return await _context.Users.FirstOrDefaultAsync(u =>
-            string.Equals(u.Email, email, StringComparison.OrdinalIgnoreCase));
+        // Este método ya maneja la comparación sin distinguir mayúsculas/minúsculas.
+        return await _userManager.FindByEmailAsync(email);
     }
 
+    // UserManager no tiene un método directo para buscar por RUT,
+    // así que mantenemos nuestra implementación con el DbContext.
     public async Task<User?> GetByRutAsync(string rut)
     {
-        // Busca el primer usuario que coincida con el RUT.
-        return await _context.Users.FirstOrDefaultAsync(u => u.Rut == rut);
+        return await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Rut == rut);
+    }
+
+    // Podemos usar el mismo método de UserManager para verificar si existe.
+    public async Task<bool> ExistsByEmailAsync(string email)
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+        return user != null;
+    }
+
+    // Para el RUT, usamos el DbContext.
+    public async Task<bool> ExistsByRutAsync(string rut)
+    {
+        return await _context.Users.AnyAsync(u => u.Rut == rut);
     }
 }
