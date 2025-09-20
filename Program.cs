@@ -72,6 +72,16 @@ try
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
 
+    // --- Inyección de Dependencias para Servicios y Repositorios ---
+    builder.Services.AddScoped<TiendaUcnApi.src.Application.Services.Interfaces.IUserService, TiendaUcnApi.src.Application.Services.Implements.UserService>();
+    builder.Services.AddScoped<TiendaUcnApi.src.Application.Services.Interfaces.IEmailService, TiendaUcnApi.src.Application.Services.Implements.EmailService>();
+    builder.Services.AddScoped<TiendaUcnApi.src.Infrastructure.Repositories.Interfaces.IUserRepository, TiendaUcnApi.src.Infrastructure.Repositories.Implements.UserRepository>();
+    builder.Services.AddScoped<TiendaUcnApi.src.Infrastructure.Repositories.Interfaces.IVerificationCodeRepository, TiendaUcnApi.src.Infrastructure.Repositories.Implements.VerificationCodeRepository>();
+
+    // Configura los mapeos de Mapster para toda la aplicación.
+    var mapper = new TiendaUcnApi.src.Application.Mappers.UserMapper();
+    mapper.ConfigureAllMappings();
+
     var app = builder.Build();
 
     // --- HTTP request pipeline configuration. Order is important. ---
