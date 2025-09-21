@@ -26,7 +26,7 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Register([FromBody] RegisterDTO registerDto)
     {
-        await _userService.RegisterAsync(registerDto);
-        return Ok(new { Message = "Registro exitoso. Por favor, revisa tu correo para verificar tu cuenta." });
+        var message = await _userService.RegisterAsync(registerDto, HttpContext);
+        return Ok(new { Message = message });
     }
 }

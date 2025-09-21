@@ -1,21 +1,96 @@
+using Resend;
 using TiendaUcnApi.src.Application.Services.Interfaces;
 using TiendaUcnApi.src.Domain.Models;
 
 namespace TiendaUcnApi.src.Application.Services.Implements;
 
-// Implementación simulada del servicio de correos.
-// En una aplicación real, aquí iría la lógica para conectarse a un proveedor como Resend.
+/// <summary>
+/// Servicio para enviar correos electrónicos de verificación.
+/// </summary>
 public class EmailService : IEmailService
 {
-    public Task SendVerificationCodeAsync(User user, string code)
-    {
-        // Por ahora, solo escribimos en la consola para simular el envío.
-        Console.WriteLine("----- SIMULACIÓN DE ENVÍO DE CORREO -----");
-        Console.WriteLine($"Para: {user.Email}");
-        Console.WriteLine($"Asunto: ¡Bienvenido a Tienda UCN! Confirma tu cuenta.");
-        Console.WriteLine($"Hola {user.FirstName}, tu código de verificación es: {code}");
-        Console.WriteLine("-----------------------------------------");
+    private readonly IResend _resend;
+    private readonly IConfiguration _configuration;
+    private readonly IWebHostEnvironment _webHostEnvironment;
 
-        return Task.CompletedTask;
+    public EmailService(
+        IResend resend,
+        IConfiguration configuration,
+        IWebHostEnvironment webHostEnvironment
+    )
+    {
+        _resend = resend;
+        _configuration = configuration;
+        _webHostEnvironment = webHostEnvironment;
+    }
+
+    /// <summary>
+    /// Envía un código de verificación al correo electrónico del usuario.
+    /// </summary>
+    /// <param name="email">El correo electrónico del usuario.</param>
+    /// <param name="code">El código de verificación a enviar.</param>
+    public async Task SendVerificationCodeEmailAsync(string email, string code)
+    {
+        var htmlBody = await LoadTemplate("VerificationCode", code);
+
+        var message = new EmailMessage
+        {
+            To = email,
+            Subject =
+                _configuration["EmailConfiguration:VerificationSubject"]
+                ?? throw new ArgumentNullException(
+                    "El asunto del correo de verificación no puede ser nulo."
+                ),
+            From =
+                _configuration["EmailConfiguration:From"]
+                ?? throw new ArgumentNullException("La configuración de 'From' no puede ser nula."),
+            HtmlBody = htmlBody,
+        };
+        await _resend.EmailSendAsync(message);
+    }
+
+    /// <summary>
+    /// Envía un correo electrónico de bienvenida al usuario.
+    /// </summary>
+    /// <param name="email">El correo electrónico del usuario.</param>
+    public async Task SendWelcomeEmailAsync(string email)
+    {
+        var htmlBody = await LoadTemplate("Welcome", null);
+
+        var message = new EmailMessage
+        {
+            To = email,
+            Subject =
+                _configuration["EmailConfiguration:WelcomeSubject"]
+                ?? throw new ArgumentNullException(
+                    "El asunto del correo de bienvenida no puede ser nulo."
+                ),
+            From =
+                _configuration["EmailConfiguration:From"]
+                ?? throw new ArgumentNullException("La configuración de 'From' no puede ser nula."),
+            HtmlBody = htmlBody,
+        };
+
+        await _resend.EmailSendAsync(message);
+    }
+
+    /// <summary>
+    /// Carga una plantilla de correo electrónico desde el sistema de archivos y reemplaza el marcador de código.
+    /// </summary>
+    /// <param name="templateName">El nombre de la plantilla sin extensión.</param>
+    /// <param name="code">El código a insertar en la plantilla.</param>
+    /// <returns>El contenido HTML de la plantilla con el código reemplazado.</returns
+    private async Task<string> LoadTemplate(string templateName, string? code)
+    {
+        var templatePath = Path.Combine(
+            _webHostEnvironment.ContentRootPath,
+            "Src",
+            "Application",
+            "Templates",
+            "Email",
+            $"{templateName}.html"
+        );
+        var html = await File.ReadAllTextAsync(templatePath);
+        return html.Replace("{{CODE}}", code);
     }
 }

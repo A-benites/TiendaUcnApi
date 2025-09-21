@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Resend;
 using Serilog;
 using TiendaUcnApi.src.API.Extensions; // Using for the new seeding extension method
 using TiendaUcnApi.src.API.Middlewares.ErrorHandlingMiddleware;
@@ -72,11 +73,34 @@ try
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
 
+    #region Email Service Configuration
+    Log.Information("Configurando servicio de Email");
+    builder.Services.AddOptions();
+    builder.Services.AddHttpClient<ResendClient>();
+    builder.Services.Configure<ResendClientOptions>(o =>
+    {
+        o.ApiToken = builder.Configuration["ResendAPIKey"] ?? throw new InvalidOperationException("El token de API de Resend no está configurado.");
+    });
+    builder.Services.AddTransient<IResend, ResendClient>();
+    #endregion
+
     // --- Inyección de Dependencias para Servicios y Repositorios ---
-    builder.Services.AddScoped<TiendaUcnApi.src.Application.Services.Interfaces.IUserService, TiendaUcnApi.src.Application.Services.Implements.UserService>();
-    builder.Services.AddScoped<TiendaUcnApi.src.Application.Services.Interfaces.IEmailService, TiendaUcnApi.src.Application.Services.Implements.EmailService>();
-    builder.Services.AddScoped<TiendaUcnApi.src.Infrastructure.Repositories.Interfaces.IUserRepository, TiendaUcnApi.src.Infrastructure.Repositories.Implements.UserRepository>();
-    builder.Services.AddScoped<TiendaUcnApi.src.Infrastructure.Repositories.Interfaces.IVerificationCodeRepository, TiendaUcnApi.src.Infrastructure.Repositories.Implements.VerificationCodeRepository>();
+    builder.Services.AddScoped<
+        TiendaUcnApi.src.Application.Services.Interfaces.IUserService,
+        TiendaUcnApi.src.Application.Services.Implements.UserService
+    >();
+    builder.Services.AddScoped<
+        TiendaUcnApi.src.Application.Services.Interfaces.IEmailService,
+        TiendaUcnApi.src.Application.Services.Implements.EmailService
+    >();
+    builder.Services.AddScoped<
+        TiendaUcnApi.src.Infrastructure.Repositories.Interfaces.IUserRepository,
+        TiendaUcnApi.src.Infrastructure.Repositories.Implements.UserRepository
+    >();
+    builder.Services.AddScoped<
+        TiendaUcnApi.src.Infrastructure.Repositories.Interfaces.IVerificationCodeRepository,
+        TiendaUcnApi.src.Infrastructure.Repositories.Implements.VerificationCodeRepository
+    >();
 
     // Configura los mapeos de Mapster para toda la aplicación.
     var mapper = new TiendaUcnApi.src.Application.Mappers.UserMapper();

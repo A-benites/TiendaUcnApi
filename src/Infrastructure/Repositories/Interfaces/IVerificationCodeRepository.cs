@@ -2,19 +2,53 @@ using TiendaUcnApi.src.Domain.Models;
 
 namespace TiendaUcnApi.src.Infrastructure.Repositories.Interfaces;
 
-// Interfaz simplificada para la rama de registro.
+/// <summary>
+/// Interfaz para el repositorio de códigos de verificación.
+/// </summary>
 public interface IVerificationCodeRepository
 {
     /// <summary>
-    /// Prepara un nuevo código de verificación para ser agregado a la base de datos.
+    /// Crea un nuevo código de verificación.
     /// </summary>
-    /// <param name="verificationCode">La entidad del código a agregar.</param>
-    Task AddAsync(VerificationCode verificationCode);
+    /// <param name="verificationCode">El código de verificación a crear.</param>
+    /// <returns>El código de verificación creado.</returns>
+    Task<VerificationCode> CreateAsync(VerificationCode verificationCode);
 
     /// <summary>
-    /// Guarda todos los cambios pendientes en la base de datos.
-    /// Implementa el patrón Unit of Work.
+    /// Obtiene el último código de verificación por ID de usuario y tipo de código.
     /// </summary>
-    /// <returns>True si los cambios se guardaron, de lo contrario false.</returns>
-    Task<bool> SaveChangesAsync();
+    /// <param name="userId">El ID del usuario.</param>
+    /// <param name="codeType">El tipo de código de verificación.</param>
+    /// <returns>El último código de verificación encontrado, o null si no existe.</returns>
+    Task<VerificationCode?> GetLatestByUserIdAsync(int userId, CodeType codeType);
+
+    /// <summary>
+    /// Aumenta el contador de intentos de un código de verificación.
+    /// </summary>
+    /// <param name="userId">El ID del usuario.</param>
+    /// <param name="codeType">El tipo de código de verificación.</param>
+    /// <returns>El número de intentos incrementados.</returns>
+    Task<int> IncreaseAttemptsAsync(int userId, CodeType codeType);
+
+    /// <summary>
+    /// Elimina un código de verificación por ID de usuario y tipo de código.
+    /// </summary>
+    /// <param name="id">El ID del usuario.</param>
+    /// <param name="codeType">El tipo de código de verificación.</param>
+    /// <returns>True si se eliminó correctamente, false si no existía.</returns
+    Task<bool> DeleteByUserIdAsync(int id, CodeType codeType);
+
+    /// <summary>
+    /// Actualiza un código de verificación existente.
+    /// </summary>
+    /// <param name="verificationCode">El código de verificación a actualizar.</param>
+    /// <returns>El código de verificación actualizado o null.</returns>
+    Task<VerificationCode?> UpdateAsync(VerificationCode verificationCode);
+
+    /// <summary>
+    /// Elimina todos los códigos de verificación asociados a un usuario.
+    /// </summary>
+    /// <param name="userId">El ID del usuario.</param>
+    /// <returns>El número de códigos de verificación eliminados.</returns>
+    Task<int> DeleteByUserIdAsync(int userId);
 }

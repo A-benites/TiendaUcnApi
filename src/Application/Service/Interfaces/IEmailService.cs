@@ -2,13 +2,21 @@ using TiendaUcnApi.src.Domain.Models;
 
 namespace TiendaUcnApi.src.Application.Services.Interfaces;
 
-// Define el contrato para cualquier servicio de envío de correos.
+/// <summary>
+/// Interfaz para el servicio de envío de correos electrónicos.
+/// </summary>
 public interface IEmailService
 {
     /// <summary>
-    /// Envía un correo electrónico con el código de verificación al usuario.
+    /// Envía un código de verificación al correo electrónico del usuario.
     /// </summary>
-    /// <param name="user">El usuario destinatario.</param>
+    /// <param name="email">El correo electrónico del usuario.</param>
     /// <param name="code">El código de verificación a enviar.</param>
-    Task SendVerificationCodeAsync(User user, string code);
+    Task SendVerificationCodeEmailAsync(string email, string code);
+
+    /// <summary>
+    /// Envía un correo electrónico de bienvenida al usuario.
+    /// </summary>
+    /// <param name="email">El correo electrónico del usuario.</param>
+    Task SendWelcomeEmailAsync(string email);
 }
