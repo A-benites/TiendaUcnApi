@@ -1,3 +1,4 @@
+using TiendaUcnApi.src.Application.DTO;
 using TiendaUcnApi.src.Domain.Models;
 
 namespace TiendaUcnApi.src.Infrastructure.Repositories.Interfaces;

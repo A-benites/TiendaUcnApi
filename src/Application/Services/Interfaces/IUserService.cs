@@ -1,3 +1,4 @@
+using TiendaUcnApi.src.Application.DTO;
 using TiendaUcnApi.src.Application.DTO.AuthDTO;
 
 namespace TiendaUcnApi.src.Application.Services.Interfaces;
@@ -13,7 +14,7 @@ public interface IUserService
     /// <param name="loginDTO">DTO que contiene las credenciales del usuario.</param>
     /// <param name="httpContext">El contexto HTTP actual.</param>
     /// <returns>Un string que representa el token JWT generadon y la id del usuario.</returns>
-    //Task<(string token, int userId)> LoginAsync(LoginDTO loginDTO, HttpContext httpContext);
+    Task<(string token, int userId)> LoginAsync(LoginDTO loginDTO, HttpContext httpContext);
 
     /// <summary>
     /// Registra un nuevo usuario.
@@ -43,5 +44,5 @@ public interface IUserService
     /// Elimina usuarios no confirmados.
     /// </summary>
     /// <returns>Número de usuarios eliminados</returns>
-    //Task<int> DeleteUnconfirmedAsync();
+    Task<int> DeleteUnconfirmedAsync();
 }

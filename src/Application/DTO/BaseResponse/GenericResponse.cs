@@ -1,4 +1,4 @@
-namespace Tienda_UCN_api.src.Application.DTO;
+namespace TiendaUcnApi.src.Application.DTO;
 
 /// <summary>
 /// Clase que representa una respuesta genérica de la aplicación.
