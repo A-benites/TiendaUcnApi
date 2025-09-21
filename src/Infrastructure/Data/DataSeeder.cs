@@ -13,7 +13,11 @@ public class DataSeeder
     /// <param name="context">The application database context.</param>
     /// <param name="userManager">The user manager for creating users.</param>
     /// <param name="roleManager">The role manager for creating roles.</param>
-    public static async Task SeedAsync(AppDbContext context, UserManager<User> userManager, RoleManager<Role> roleManager)
+    public static async Task SeedAsync(
+        AppDbContext context,
+        UserManager<User> userManager,
+        RoleManager<Role> roleManager
+    )
     {
         // Apply any pending migrations before seeding.
         await context.Database.MigrateAsync();
@@ -38,7 +42,7 @@ public class DataSeeder
                 Gender = Gender.Otro,
                 BirthDate = new DateTime(1990, 1, 1),
                 EmailConfirmed = true,
-                IsSeed = true // Mark as seed user
+                IsSeed = true, // Mark as seed user
             };
 
             await userManager.CreateAsync(adminUser, "Admin123!");
@@ -49,14 +53,15 @@ public class DataSeeder
         if (!await context.Products.AnyAsync())
         {
             // Generate 10 categories using Bogus
-            var categoryFaker = new Faker<Category>()
-                .RuleFor(c => c.Name, f => f.Commerce.Department());
+            var categoryFaker = new Faker<Category>().RuleFor(
+                c => c.Name,
+                f => f.Commerce.Department()
+            );
             var categories = categoryFaker.Generate(10);
             await context.Categories.AddRangeAsync(categories);
 
             // Generate 20 brands using Bogus
-            var brandFaker = new Faker<Brand>()
-                .RuleFor(b => b.Name, f => f.Company.CompanyName());
+            var brandFaker = new Faker<Brand>().RuleFor(b => b.Name, f => f.Company.CompanyName());
             var brands = brandFaker.Generate(20);
             await context.Brands.AddRangeAsync(brands);
 

@@ -42,10 +42,10 @@ public class UserService : IUserService
     /// Elimina usuarios no confirmados.
     /// </summary>
     /// <returns>Número de usuarios eliminados</returns>
-/*     public async Task<int> DeleteUnconfirmedAsync()
-    {
-        return await _userRepository.DeleteUnconfirmedAsync();
-    } */
+    /*     public async Task<int> DeleteUnconfirmedAsync()
+        {
+            return await _userRepository.DeleteUnconfirmedAsync();
+        } */
 
     /// <summary>
     /// Inicia sesión con el usuario proporcionado.
@@ -224,7 +224,7 @@ public class UserService : IUserService
     /// </summary>
     /// <param name="verifyEmailDTO">DTO que contiene el correo electrónico y el código de verificación.</param>
     /// <returns>Un string que representa el mensaje de éxito de la verificación.</returns>
-    /* public async Task<string> VerifyEmailAsync(VerifyEmailDTO verifyEmailDTO)
+    public async Task<string> VerifyEmailAsync(VerifyEmailDTO verifyEmailDTO)
     {
         User? user = await _userRepository.GetByEmailAsync(verifyEmailDTO.Email);
         if (user == null)
@@ -324,5 +324,5 @@ public class UserService : IUserService
             throw new Exception("Error al confirmar el correo electrónico.");
         }
         throw new Exception("Error al verificar el correo electrónico.");
-    } */
+    }
 }

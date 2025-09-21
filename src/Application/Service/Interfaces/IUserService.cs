@@ -28,7 +28,7 @@ public interface IUserService
     /// </summary>
     /// <param name="verifyEmailDTO">DTO que contiene el correo electrónico y el código de verificación.</param>
     /// <returns>Un string que representa el mensaje de éxito de la verificación.</returns>
-    //Task<string> VerifyEmailAsync(VerifyEmailDTO verifyEmailDTO);
+    Task<string> VerifyEmailAsync(VerifyEmailDTO verifyEmailDTO);
 
     /// <summary>
     /// Reenvía el código de verificación al correo electrónico del usuario.
