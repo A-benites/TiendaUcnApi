@@ -1,9 +1,9 @@
 using Mapster;
 using Serilog;
+using TiendaUcnApi.src.Application.DTO; // Añadido para LoginDTO
 using TiendaUcnApi.src.Application.DTO.AuthDTO;
 using TiendaUcnApi.src.Application.Services.Interfaces;
 using TiendaUcnApi.src.Domain.Models;
-using TiendaUcnApi.src.Infrastructure.Data;
 using TiendaUcnApi.src.Infrastructure.Repositories.Interfaces;
 
 namespace TiendaUcnApi.src.Application.Services.Implements;
@@ -13,22 +13,23 @@ namespace TiendaUcnApi.src.Application.Services.Implements;
 /// </summary>
 public class UserService : IUserService
 {
-    //private readonly ITokenService _tokenService;
+    private readonly ITokenService _tokenService;
     private readonly IUserRepository _userRepository;
     private readonly IEmailService _emailService;
     private readonly IConfiguration _configuration;
     private readonly IVerificationCodeRepository _verificationCodeRepository;
     private readonly int _verificationCodeExpirationTimeInMinutes;
 
+    // Constructor unificado con todas las dependencias necesarias
     public UserService(
-        //ITokenService tokenService,
+        ITokenService tokenService,
         IUserRepository userRepository,
         IEmailService emailService,
         IVerificationCodeRepository verificationCodeRepository,
         IConfiguration configuration
     )
     {
-        //_tokenService = tokenService;
+        _tokenService = tokenService;
         _userRepository = userRepository;
         _emailService = emailService;
         _verificationCodeRepository = verificationCodeRepository;
@@ -39,21 +40,9 @@ public class UserService : IUserService
     }
 
     /// <summary>
-    /// Elimina usuarios no confirmados.
-    /// </summary>
-    /// <returns>Número de usuarios eliminados</returns>
-    /*     public async Task<int> DeleteUnconfirmedAsync()
-        {
-            return await _userRepository.DeleteUnconfirmedAsync();
-        } */
-
-    /// <summary>
     /// Inicia sesión con el usuario proporcionado.
     /// </summary>
-    /// <param name="loginDTO">DTO que contiene las credenciales del usuario.</param>
-    /// <param name="httpContext">El contexto HTTP actual.</param>
-    /// <returns>Un string que representa el token JWT generado y la id del usuario.</returns>
-    /* public async Task<(string token, int userId)> LoginAsync(
+    public async Task<(string token, int userId)> LoginAsync(
         LoginDTO loginDTO,
         HttpContext httpContext
     )
@@ -92,20 +81,16 @@ public class UserService : IUserService
             await _userRepository.GetUserRoleAsync(user)
             ?? throw new InvalidOperationException("El usuario no tiene un rol asignado.");
 
-        // Generamos el token
         Log.Information(
             $"Inicio de sesión exitoso para el usuario: {loginDTO.Email} desde la IP: {ipAddress}"
         );
         var token = _tokenService.GenerateToken(user, roleName, loginDTO.RememberMe);
         return (token, user.Id);
-    } */
+    }
 
     /// <summary>
     /// Registra un nuevo usuario.
     /// </summary>
-    /// <param name="registerDTO">DTO que contiene la información del nuevo usuario.</param>
-    /// <param name="httpContext">El contexto HTTP actual.</param>
-    /// <returns>Un string que representa el mensaje de éxito del registro.</returns>
     public async Task<string> RegisterAsync(RegisterDTO registerDTO, HttpContext httpContext)
     {
         var ipAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? "IP desconocida";
@@ -113,18 +98,17 @@ public class UserService : IUserService
             $"Intento de registro de nuevo usuario: {registerDTO.Email} desde la IP: {ipAddress}"
         );
 
-        bool isRegistered = await _userRepository.ExistsByEmailAsync(registerDTO.Email);
-        if (isRegistered)
+        if (await _userRepository.ExistsByEmailAsync(registerDTO.Email))
         {
             Log.Warning($"El usuario con el correo {registerDTO.Email} ya está registrado.");
             throw new InvalidOperationException("El usuario ya está registrado.");
         }
-        isRegistered = await _userRepository.ExistsByRutAsync(registerDTO.Rut);
-        if (isRegistered)
+        if (await _userRepository.ExistsByRutAsync(registerDTO.Rut))
         {
             Log.Warning($"El usuario con el RUT {registerDTO.Rut} ya está registrado.");
             throw new InvalidOperationException("El RUT ya está registrado.");
         }
+
         var user = registerDTO.Adapt<User>();
         var result = await _userRepository.CreateAsync(user, registerDTO.Password);
         if (!result)
@@ -132,6 +116,7 @@ public class UserService : IUserService
             Log.Warning($"Error al registrar el usuario: {registerDTO.Email}");
             throw new Exception("Error al registrar el usuario.");
         }
+
         Log.Information(
             $"Registro exitoso para el usuario: {registerDTO.Email} desde la IP: {ipAddress}"
         );
@@ -143,6 +128,7 @@ public class UserService : IUserService
             CodeType = CodeType.EmailVerification,
             ExpiryDate = DateTime.UtcNow.AddMinutes(_verificationCodeExpirationTimeInMinutes),
         };
+
         var createdVerificationCode = await _verificationCodeRepository.CreateAsync(
             verificationCode
         );
@@ -163,8 +149,6 @@ public class UserService : IUserService
     /// <summary>
     /// Reenvía el código de verificación al correo electrónico del usuario.
     /// </summary>
-    /// <param name="resendEmailVerificationCodeDTO">DTO que contiene el correo electrónico del usuario.</param>
-    /// <returns>Un string que representa el mensaje de éxito del reenvío.</returns>
     public async Task<string> ResendEmailVerificationCodeAsync(
         ResendEmailVerificationCodeDTO resendEmailVerificationCodeDTO
     )
@@ -185,6 +169,7 @@ public class UserService : IUserService
             );
             throw new InvalidOperationException("El correo electrónico ya ha sido verificado.");
         }
+
         VerificationCode? verificationCode =
             await _verificationCodeRepository.GetLatestByUserIdAsync(
                 user.Id,
@@ -203,12 +188,14 @@ public class UserService : IUserService
                 $"Debe esperar {remainingSeconds} segundos para solicitar un nuevo código de verificación."
             );
         }
+
         string newCode = new Random().Next(100000, 999999).ToString();
         verificationCode.Code = newCode;
         verificationCode.ExpiryDate = DateTime.UtcNow.AddMinutes(
             _verificationCodeExpirationTimeInMinutes
         );
         await _verificationCodeRepository.UpdateAsync(verificationCode);
+
         Log.Information(
             $"Nuevo código de verificación generado para el usuario: {resendEmailVerificationCodeDTO.Email} - Código: {newCode}"
         );
@@ -222,8 +209,6 @@ public class UserService : IUserService
     /// <summary>
     /// Verifica el correo electrónico del usuario.
     /// </summary>
-    /// <param name="verifyEmailDTO">DTO que contiene el correo electrónico y el código de verificación.</param>
-    /// <returns>Un string que representa el mensaje de éxito de la verificación.</returns>
     public async Task<string> VerifyEmailAsync(VerifyEmailDTO verifyEmailDTO)
     {
         User? user = await _userRepository.GetByEmailAsync(verifyEmailDTO.Email);
@@ -239,8 +224,8 @@ public class UserService : IUserService
             );
             throw new InvalidOperationException("El correo electrónico ya ha sido verificado.");
         }
-        CodeType codeType = CodeType.EmailVerification;
 
+        CodeType codeType = CodeType.EmailVerification;
         VerificationCode? verificationCode =
             await _verificationCodeRepository.GetLatestByUserIdAsync(user.Id, codeType);
         if (verificationCode == null)
@@ -250,6 +235,7 @@ public class UserService : IUserService
             );
             throw new KeyNotFoundException("El código de verificación no existe.");
         }
+
         if (
             verificationCode.Code != verifyEmailDTO.VerificationCode
             || DateTime.UtcNow >= verificationCode.ExpiryDate
@@ -262,22 +248,18 @@ public class UserService : IUserService
             Log.Warning(
                 $"Código de verificación incorrecto o expirado para el usuario: {verifyEmailDTO.Email}. Intentos actuales: {attempsCountUpdated}"
             );
+
             if (attempsCountUpdated >= 5)
             {
                 Log.Warning(
                     $"Se ha alcanzado el límite de intentos para el usuario: {verifyEmailDTO.Email}"
                 );
-                bool codeDeleteResult = await _verificationCodeRepository.DeleteByUserIdAsync(
-                    user.Id,
-                    codeType
-                );
-                if (codeDeleteResult)
+                if (await _verificationCodeRepository.DeleteByUserIdAsync(user.Id, codeType))
                 {
                     Log.Warning(
                         $"Se ha eliminado el código de verificación para el usuario: {verifyEmailDTO.Email}"
                     );
-                    bool userDeleteResult = await _userRepository.DeleteAsync(user.Id);
-                    if (userDeleteResult)
+                    if (await _userRepository.DeleteAsync(user.Id))
                     {
                         Log.Warning($"Se ha eliminado el usuario: {verifyEmailDTO.Email}");
                         throw new ArgumentException(
@@ -286,6 +268,7 @@ public class UserService : IUserService
                     }
                 }
             }
+
             if (DateTime.UtcNow >= verificationCode.ExpiryDate)
             {
                 Log.Warning(
@@ -303,14 +286,10 @@ public class UserService : IUserService
                 );
             }
         }
-        bool emailConfirmed = await _userRepository.ConfirmEmailAsync(user.Email!);
-        if (emailConfirmed)
+
+        if (await _userRepository.ConfirmEmailAsync(user.Email!))
         {
-            bool codeDeleteResult = await _verificationCodeRepository.DeleteByUserIdAsync(
-                user.Id,
-                codeType
-            );
-            if (codeDeleteResult)
+            if (await _verificationCodeRepository.DeleteByUserIdAsync(user.Id, codeType))
             {
                 Log.Warning(
                     $"Se ha eliminado el código de verificación para el usuario: {verifyEmailDTO.Email}"
@@ -324,5 +303,13 @@ public class UserService : IUserService
             throw new Exception("Error al confirmar el correo electrónico.");
         }
         throw new Exception("Error al verificar el correo electrónico.");
+    }
+
+    /// <summary>
+    /// Elimina usuarios no confirmados.
+    /// </summary>
+    public async Task<int> DeleteUnconfirmedAsync()
+    {
+        return await _userRepository.DeleteUnconfirmedAsync();
     }
 }

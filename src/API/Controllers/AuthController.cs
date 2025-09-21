@@ -1,20 +1,35 @@
 using Microsoft.AspNetCore.Mvc;
-using Tienda_UCN_api.src.Application.DTO; // Asegúrate que el namespace sea el correcto
-using TiendaUcnApi.src.Application.DTO.AuthDTO; // Asegúrate que el namespace sea el correcto
+using Serilog;
+using TiendaUcnApi.src.Application.DTO;
+using TiendaUcnApi.src.Application.DTO.AuthDTO;
 using TiendaUcnApi.src.Application.Services.Interfaces;
 
 namespace TiendaUcnApi.src.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController : ControllerBase // <- SOLUCIÓN 1: Heredar de ControllerBase
+// Se unificó para heredar de BaseController y usar el constructor primario
+public class AuthController(IUserService userService) : ControllerBase
 {
-    private readonly IUserService _userService;
+    private readonly IUserService _userService = userService;
 
-    // El constructor ahora es más simple
-    public AuthController(IUserService userService)
+    /// <summary>
+    /// Inicia sesión con el usuario proporcionado.
+    /// </summary>
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] LoginDTO loginDTO)
     {
-        _userService = userService;
+        var (token, userId) = await _userService.LoginAsync(loginDTO, HttpContext);
+        var buyerId = HttpContext.Items["BuyerId"]?.ToString();
+        if (!string.IsNullOrEmpty(buyerId))
+        {
+            Log.Information(
+                "Carrito asociado al usuario. BuyerId: {BuyerId}, UserId: {UserId}",
+                buyerId,
+                userId
+            );
+        }
+        return Ok(new GenericResponse<string>("Inicio de sesión exitoso", token));
     }
 
     /// <summary>
@@ -23,7 +38,6 @@ public class AuthController : ControllerBase // <- SOLUCIÓN 1: Heredar de Contr
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterDTO registerDTO)
     {
-        // SOLUCIÓN 2: Usar la variable de instancia _userService y la propiedad HttpContext
         var message = await _userService.RegisterAsync(registerDTO, HttpContext);
         return Ok(new GenericResponse<string>("Registro exitoso", message));
     }
@@ -39,8 +53,6 @@ public class AuthController : ControllerBase // <- SOLUCIÓN 1: Heredar de Contr
             new GenericResponse<string>("Verificación de correo electrónico exitosa", message)
         );
     }
-
-    // Puedes descomentar este método cuando lo necesites
 
     /// <summary>
     /// Reenvía el código de verificación al correo electrónico del usuario.

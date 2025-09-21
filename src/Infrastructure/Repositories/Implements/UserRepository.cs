@@ -17,6 +17,7 @@ public class UserRepository : IUserRepository
     private readonly int _daysOfDeleteUnconfirmedUsers;
     private readonly IVerificationCodeRepository _verificationCodeRepository;
 
+    // Se mantiene el constructor que inyecta todas las dependencias necesarias.
     public UserRepository(
         AppDbContext context,
         UserManager<User> userManager,
@@ -37,9 +38,6 @@ public class UserRepository : IUserRepository
     /// <summary>
     /// Verifica si la contraseña proporcionada es correcta para el usuario.
     /// </summary>
-    /// <param name="user">Usuario al que se le verificará la contraseña</param>
-    /// <param name="password">Contraseña a verificar</param>
-    /// <returns>True si la contraseña es correcta, false en caso contrario</returns>
     public async Task<bool> CheckPasswordAsync(User user, string password)
     {
         return await _userManager.CheckPasswordAsync(user, password);
@@ -48,8 +46,6 @@ public class UserRepository : IUserRepository
     /// <summary>
     /// Confirma el correo electrónico del usuario.
     /// </summary>
-    /// <param name="email">Correo electrónico del usuario</param>
-    /// <returns>True si la confirmación fue exitosa, false en caso contrario</returns>
     public async Task<bool> ConfirmEmailAsync(string email)
     {
         var result = await _context
@@ -59,14 +55,11 @@ public class UserRepository : IUserRepository
     }
 
     /// <summary>
-    /// Crea un nuevo usuario en la base de datos.
+    /// Crea un nuevo usuario en la base de datos de forma transaccional.
     /// </summary>
-    /// <param name="user">Usuario a crear</param>
-    /// <param name="password">Contraseña del usuario</param>
-    /// <returns>True si es exitoso, false en caso contrario</returns>
     public async Task<bool> CreateAsync(User user, string password)
     {
-        // Inicia una transacción para garantizar la atomicidad
+        // Se mantiene la versión con transacciones para asegurar la integridad de los datos.
         await using var transaction = await _context.Database.BeginTransactionAsync();
         try
         {
@@ -74,8 +67,7 @@ public class UserRepository : IUserRepository
             var userResult = await _userManager.CreateAsync(user, password);
             if (!userResult.Succeeded)
             {
-                await transaction.RollbackAsync(); // Revierte la transacción si la creación falla
-                // Puedes registrar los errores específicos aquí si lo deseas: Log.Error(...)
+                await transaction.RollbackAsync();
                 return false;
             }
 
@@ -83,18 +75,16 @@ public class UserRepository : IUserRepository
             var roleResult = await _userManager.AddToRoleAsync(user, "Cliente");
             if (!roleResult.Succeeded)
             {
-                await transaction.RollbackAsync(); // Revierte la transacción si la asignación de rol falla
-                // Puedes registrar los errores aquí también
+                await transaction.RollbackAsync();
                 return false;
             }
 
-            // 3. Si ambas operaciones son exitosas, confirma la transacción
+            // 3. Si todo es exitoso, confirma la transacción
             await transaction.CommitAsync();
             return true;
         }
         catch (Exception ex)
         {
-            // En caso de una excepción inesperada, revierte la transacción
             await transaction.RollbackAsync();
             Log.Error(ex, "Ocurrió una excepción durante la transacción de creación de usuario.");
             return false;
@@ -104,8 +94,6 @@ public class UserRepository : IUserRepository
     /// <summary>
     /// Elimina un usuario por su ID.
     /// </summary>
-    /// <param name="userId">ID del usuario a eliminar</param>
-    /// <returns>True si la eliminación fue exitosa, false en caso contrario</returns>
     public async Task<bool> DeleteAsync(int userId)
     {
         var user = await _userManager.FindByIdAsync(userId.ToString());
@@ -114,9 +102,8 @@ public class UserRepository : IUserRepository
     }
 
     /// <summary>
-    /// Elimina usuarios no confirmados.
+    /// Elimina usuarios no confirmados y sus códigos de verificación asociados.
     /// </summary>
-    /// <returns>Número de usuarios eliminados</returns>
     public async Task<int> DeleteUnconfirmedAsync()
     {
         Log.Information("Iniciando eliminación de usuarios no confirmados");
@@ -133,7 +120,8 @@ public class UserRepository : IUserRepository
             Log.Information("No se encontraron usuarios no confirmados para eliminar");
             return 0;
         }
-
+        
+        // Se mantiene la lógica que elimina los códigos de verificación antes de borrar al usuario.
         foreach (var user in unconfirmedUsers)
         {
             if (user.VerificationCodes.Any())
@@ -152,8 +140,6 @@ public class UserRepository : IUserRepository
     /// <summary>
     /// Verifica si un usuario existe por su correo electrónico.
     /// </summary>
-    /// <param name="email">Correo electrónico del usuario</param>
-    /// <returns>True si el usuario existe, false en caso contrario</returns>
     public async Task<bool> ExistsByEmailAsync(string email)
     {
         return await _context.Users.AnyAsync(u => u.Email == email);
@@ -162,8 +148,6 @@ public class UserRepository : IUserRepository
     /// <summary>
     /// Verifica si un usuario existe por su RUT.
     /// </summary>
-    /// <param name="rut">RUT del usuario</param>
-    /// <returns>True si el usuario existe, false en caso contrario</returns>
     public async Task<bool> ExistsByRutAsync(string rut)
     {
         return await _context.Users.AnyAsync(u => u.Rut == rut);
@@ -172,8 +156,6 @@ public class UserRepository : IUserRepository
     /// <summary>
     /// Obtiene un usuario por su correo electrónico.
     /// </summary>
-    /// <param name="email">Correo electrónico del usuario</param>
-    /// <returns>Usuario encontrado o nulo</returns>
     public async Task<User?> GetByEmailAsync(string email)
     {
         return await _userManager.FindByEmailAsync(email);
@@ -182,8 +164,6 @@ public class UserRepository : IUserRepository
     /// <summary>
     /// Obtiene un usuario por su ID.
     /// </summary>
-    /// <param name="id">Id del usuario</param>
-    /// <returns>Usuario encontrado o nulo</returns>
     public async Task<User?> GetByIdAsync(int id)
     {
         return await _userManager.FindByIdAsync(id.ToString());
@@ -192,9 +172,6 @@ public class UserRepository : IUserRepository
     /// <summary>
     /// Obtiene un usuario por su RUT.
     /// </summary>
-    /// <param name="rut">RUT del usuario</param>
-    /// <param name="trackChanges">Indica si se debe rastrear los cambios en la entidad</param>
-    /// <returns>Usuario encontrado o nulo</returns>
     public async Task<User?> GetByRutAsync(string rut, bool trackChanges = false)
     {
         if (trackChanges)
@@ -208,8 +185,6 @@ public class UserRepository : IUserRepository
     /// <summary>
     /// Obtiene el rol del usuario.
     /// </summary>
-    /// <param name="user">Usuario del cual se desea obtener el rol</param>
-    /// <returns>Nombre del rol del usuario</returns>
     public async Task<string> GetUserRoleAsync(User user)
     {
         var roles = await _userManager.GetRolesAsync(user);

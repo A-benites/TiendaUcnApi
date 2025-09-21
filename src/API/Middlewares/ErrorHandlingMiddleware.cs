@@ -1,54 +1,77 @@
 using System.Security;
 using System.Text.Json;
 using Serilog;
+using TiendaUcnApi.src.Application.DTO.BaseResponse;
 
 namespace TiendaUcnApi.src.API.Middlewares.ErrorHandlingMiddleware;
-public class ErrorHandlingMiddleware
+
+/// <summary>
+/// Middleware para el manejo de excepciones en la aplicación.
+/// </summary>
+public class ErrorHandlingMiddleware(RequestDelegate next)
 {
-    private readonly RequestDelegate _next;
-    private readonly ILogger<ErrorHandlingMiddleware> _logger;
+    private readonly RequestDelegate _next = next;
 
-    public ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandlingMiddleware> logger)
-    {
-        _next = next;
-        _logger = logger;
-    }
-
+    /// <summary>
+    /// Método que se invoca en cada solicitud HTTP.
+    /// </summary>
     public async Task InvokeAsync(HttpContext context)
     {
         try
         {
+            // Pasamos al siguiente middleware en la cadena si no hay excepciones
             await _next(context);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception");
+            //Capturamos excepciones no controladas y generación de un ID de seguimiento único
+            var traceId = Guid.NewGuid().ToString();
+            context.Response.Headers["trace-id"] = traceId;
 
+            var (statusCode, title) = MapExceptionToStatus(ex);
+
+            // Creamos un objeto ProblemDetails para la respuesta
+            ErrorDetail error = new ErrorDetail(title, ex.Message);
+
+            Log.Error(ex, "Excepción no controlada. Trace ID: {TraceId}", traceId);
+
+            // Configuramos la respuesta HTTP como JSON
             context.Response.ContentType = "application/json";
-            context.Response.StatusCode = GetStatusCode(ex);
+            // Establecemos el código de estado HTTP adecuado
+            context.Response.StatusCode = statusCode;
 
-            var errorResponse = new
-            {
-                status = context.Response.StatusCode,
-                message = ex.Message,
-                errorId = Guid.NewGuid().ToString(),
-                timestamp = DateTime.UtcNow
-            };
+            // Serializamos el objeto ProblemDetails a JSON y lo escribimos en la respuesta
+            var json = JsonSerializer.Serialize(
+                error,
+                new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }
+            );
 
-            await context.Response.WriteAsJsonAsync(errorResponse);
+            // Acá se escribe la respuesta al cliente
+            await context.Response.WriteAsync(json);
         }
     }
 
-    private int GetStatusCode(Exception ex)
+    private static (int, string) MapExceptionToStatus(Exception ex)
     {
         return ex switch
         {
-            ArgumentException => StatusCodes.Status400BadRequest,
-            UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
-            SecurityException _ => StatusCodes.Status403Forbidden,
-            KeyNotFoundException => StatusCodes.Status404NotFound,
-            InvalidOperationException => StatusCodes.Status409Conflict,
-            _ => StatusCodes.Status500InternalServerError
+            UnauthorizedAccessException _ => (StatusCodes.Status401Unauthorized, "No autorizado"),
+            ArgumentNullException _ => (StatusCodes.Status400BadRequest, "Solicitud inválida"),
+            KeyNotFoundException _ => (StatusCodes.Status404NotFound, "Recurso no encontrado"),
+            InvalidOperationException _ => (
+                StatusCodes.Status409Conflict,
+                "Conflicto de operación"
+            ),
+            FormatException _ => (StatusCodes.Status400BadRequest, "Formato inválido"),
+            SecurityException _ => (StatusCodes.Status403Forbidden, "Acceso prohibido"),
+            ArgumentOutOfRangeException _ => (
+                StatusCodes.Status400BadRequest,
+                "Argumento fuera de rango"
+            ),
+            ArgumentException _ => (StatusCodes.Status400BadRequest, "Argumento inválido"),
+            TimeoutException _ => (StatusCodes.Status429TooManyRequests, "Demasiadas solicitudes"),
+            JsonException _ => (StatusCodes.Status400BadRequest, "JSON inválido"),
+            _ => (StatusCodes.Status500InternalServerError, "Error interno del servidor"),
         };
     }
 }
