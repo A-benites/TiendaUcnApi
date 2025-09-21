@@ -165,7 +165,7 @@ public class UserService : IUserService
     /// </summary>
     /// <param name="resendEmailVerificationCodeDTO">DTO que contiene el correo electrónico del usuario.</param>
     /// <returns>Un string que representa el mensaje de éxito del reenvío.</returns>
-    /* public async Task<string> ResendEmailVerificationCodeAsync(
+    public async Task<string> ResendEmailVerificationCodeAsync(
         ResendEmailVerificationCodeDTO resendEmailVerificationCodeDTO
     )
     {
@@ -217,7 +217,7 @@ public class UserService : IUserService
             $"Se ha reenviado un nuevo código de verificación al correo electrónico: {resendEmailVerificationCodeDTO.Email}"
         );
         return "Se ha reenviado un nuevo código de verificación a su correo electrónico.";
-    } */
+    }
 
     /// <summary>
     /// Verifica el correo electrónico del usuario.

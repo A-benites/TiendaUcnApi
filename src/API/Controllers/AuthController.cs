@@ -41,17 +41,20 @@ public class AuthController : ControllerBase // <- SOLUCIÓN 1: Heredar de Contr
     }
 
     // Puedes descomentar este método cuando lo necesites
-    /*
+
     /// <summary>
     /// Reenvía el código de verificación al correo electrónico del usuario.
     /// </summary>
     [HttpPost("resend-email-verification-code")]
-    public async Task<IActionResult> ResendEmailVerificationCode([FromBody] ResendEmailVerificationCodeDTO resendEmailVerificationCodeDTO)
+    public async Task<IActionResult> ResendEmailVerificationCode(
+        [FromBody] ResendEmailVerificationCodeDTO resendEmailVerificationCodeDTO
+    )
     {
-        var message = await _userService.ResendEmailVerificationCodeAsync(resendEmailVerificationCodeDTO);
+        var message = await _userService.ResendEmailVerificationCodeAsync(
+            resendEmailVerificationCodeDTO
+        );
         return Ok(
             new GenericResponse<string>("Código de verificación reenviado exitosamente", message)
         );
     }
-    */
 }
