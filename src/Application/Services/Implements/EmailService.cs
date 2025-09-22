@@ -5,7 +5,7 @@ using TiendaUcnApi.src.Domain.Models;
 namespace TiendaUcnApi.src.Application.Services.Implements;
 
 /// <summary>
-/// Servicio para enviar correos electrónicos de verificación.
+/// Servicio para enviar correos electrónicos.
 /// </summary>
 public class EmailService : IEmailService
 {
@@ -27,23 +27,22 @@ public class EmailService : IEmailService
     /// <summary>
     /// Envía un código de verificación al correo electrónico del usuario.
     /// </summary>
-    /// <param name="email">El correo electrónico del usuario.</param>
-    /// <param name="code">El código de verificación a enviar.</param>
     public async Task SendVerificationCodeEmailAsync(string email, string code)
     {
-        var htmlBody = await LoadTemplate("VerificationCode", code);
+        var replacements = new Dictionary<string, string> { { "{{CODE}}", code } };
+        var htmlBody = await LoadTemplate("VerificationCode", replacements);
 
         var message = new EmailMessage
         {
             To = email,
             Subject =
                 _configuration["EmailConfiguration:VerificationSubject"]
-                ?? throw new ArgumentNullException(
-                    "El asunto del correo de verificación no puede ser nulo."
-                ),
+                ?? "Código de Verificación",
             From =
                 _configuration["EmailConfiguration:From"]
-                ?? throw new ArgumentNullException("La configuración de 'From' no puede ser nula."),
+                ?? throw new InvalidOperationException(
+                    "La configuración de 'From' no puede ser nula."
+                ),
             HtmlBody = htmlBody,
         };
         await _resend.EmailSendAsync(message);
@@ -52,7 +51,6 @@ public class EmailService : IEmailService
     /// <summary>
     /// Envía un correo electrónico de bienvenida al usuario.
     /// </summary>
-    /// <param name="email">El correo electrónico del usuario.</param>
     public async Task SendWelcomeEmailAsync(string email)
     {
         var htmlBody = await LoadTemplate("Welcome", null);
@@ -60,14 +58,12 @@ public class EmailService : IEmailService
         var message = new EmailMessage
         {
             To = email,
-            Subject =
-                _configuration["EmailConfiguration:WelcomeSubject"]
-                ?? throw new ArgumentNullException(
-                    "El asunto del correo de bienvenida no puede ser nulo."
-                ),
+            Subject = _configuration["EmailConfiguration:WelcomeSubject"] ?? "¡Bienvenido/a!",
             From =
                 _configuration["EmailConfiguration:From"]
-                ?? throw new ArgumentNullException("La configuración de 'From' no puede ser nula."),
+                ?? throw new InvalidOperationException(
+                    "La configuración de 'From' no puede ser nula."
+                ),
             HtmlBody = htmlBody,
         };
 
@@ -75,22 +71,62 @@ public class EmailService : IEmailService
     }
 
     /// <summary>
-    /// Carga una plantilla de correo electrónico desde el sistema de archivos y reemplaza el marcador de código.
+    /// Envía un correo para restablecer la contraseña.
+    /// </summary>
+    public async Task SendPasswordResetEmailAsync(string to, string userName, string resetLink)
+    {
+        var replacements = new Dictionary<string, string>
+        {
+            { "{{UserName}}", userName },
+            { "{{ResetLink}}", resetLink },
+        };
+        var htmlBody = await LoadTemplate("PasswordReset", replacements);
+
+        var message = new EmailMessage
+        {
+            To = to,
+            Subject =
+                _configuration["EmailConfiguration:PasswordResetSubject"]
+                ?? "Restablecimiento de Contraseña",
+            From =
+                _configuration["EmailConfiguration:From"]
+                ?? throw new InvalidOperationException(
+                    "La configuración de 'From' no puede ser nula."
+                ),
+            HtmlBody = htmlBody,
+        };
+        await _resend.EmailSendAsync(message);
+    }
+
+    /// <summary>
+    /// Carga una plantilla de correo electrónico y reemplaza los marcadores de posición.
     /// </summary>
     /// <param name="templateName">El nombre de la plantilla sin extensión.</param>
-    /// <param name="code">El código a insertar en la plantilla.</param>
-    /// <returns>El contenido HTML de la plantilla con el código reemplazado.</returns
-    private async Task<string> LoadTemplate(string templateName, string? code)
+    /// <param name="replacements">Un diccionario con los marcadores de posición y sus valores.</param>
+    /// <returns>El contenido HTML de la plantilla con los valores reemplazados.</returns>
+    private async Task<string> LoadTemplate(
+        string templateName,
+        Dictionary<string, string>? replacements
+    )
     {
         var templatePath = Path.Combine(
             _webHostEnvironment.ContentRootPath,
-            "Src",
+            "src",
             "Application",
             "Templates",
             "Email",
             $"{templateName}.html"
         );
         var html = await File.ReadAllTextAsync(templatePath);
-        return html.Replace("{{CODE}}", code);
+
+        if (replacements != null)
+        {
+            foreach (var replacement in replacements)
+            {
+                html = html.Replace(replacement.Key, replacement.Value);
+            }
+        }
+
+        return html;
     }
 }

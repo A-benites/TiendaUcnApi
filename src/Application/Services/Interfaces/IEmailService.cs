@@ -19,4 +19,6 @@ public interface IEmailService
     /// </summary>
     /// <param name="email">El correo electrónico del usuario.</param>
     Task SendWelcomeEmailAsync(string email);
+
+    Task SendPasswordResetEmailAsync(string to, string userName, string resetLink);
 }

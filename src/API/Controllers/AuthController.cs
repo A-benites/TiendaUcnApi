@@ -69,4 +69,24 @@ public class AuthController(IUserService userService) : ControllerBase
             new GenericResponse<string>("Código de verificación reenviado exitosamente", message)
         );
     }
+
+    /// <summary>
+    /// Envía un correo para restablecer la contraseña.
+    /// </summary>
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDTO forgotPasswordDTO)
+    {
+        var message = await _userService.ForgotPasswordAsync(forgotPasswordDTO);
+        return Ok(new GenericResponse<string>("Solicitud de restablecimiento enviada", message));
+    }
+
+    /// <summary>
+    /// Restablece la contraseña del usuario.
+    /// </summary>
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDTO resetPasswordDTO)
+    {
+        var message = await _userService.ResetPasswordAsync(resetPasswordDTO);
+        return Ok(new GenericResponse<string>("Contraseña restablecida", message));
+    }
 }
