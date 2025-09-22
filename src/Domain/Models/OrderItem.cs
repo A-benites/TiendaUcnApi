@@ -29,19 +29,19 @@ public class OrderItem
     /// Title of the item at the time of the order.
     /// </summary>
     [Required]
-    public string TitleAtMoment { get; set; }
+    public required string TitleAtMoment { get; set; }
 
     /// <summary>
     /// Description of the item at the time of the order.
     /// </summary>
     [Required]
-    public string DescriptionAtMoment { get; set; }
+    public required string DescriptionAtMoment { get; set; }
 
     /// <summary>
     /// Image of the item at the time of the order (URL).
     /// </summary>
     [Required]
-    public string ImageAtMoment { get; set; }
+    public required string ImageAtMoment { get; set; }
 
     /// <summary>
     /// Discount applied to the item at the time of the order.

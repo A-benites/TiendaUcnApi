@@ -15,7 +15,7 @@ public class Category
     /// </summary>
     [Required]
     [StringLength(50)]
-    public string Name { get; set; }
+    public required string Name { get; set; }
 
     /// <summary>
     /// Category creation date.

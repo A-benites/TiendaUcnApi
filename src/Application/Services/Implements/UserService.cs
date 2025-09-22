@@ -1,6 +1,7 @@
 using Mapster;
+using Microsoft.AspNetCore.Identity;
 using Serilog;
-using TiendaUcnApi.src.Application.DTO; // Añadido para LoginDTO
+using TiendaUcnApi.src.Application.DTO;
 using TiendaUcnApi.src.Application.DTO.AuthDTO;
 using TiendaUcnApi.src.Application.Services.Interfaces;
 using TiendaUcnApi.src.Domain.Models;
@@ -18,6 +19,7 @@ public class UserService : IUserService
     private readonly IEmailService _emailService;
     private readonly IConfiguration _configuration;
     private readonly IVerificationCodeRepository _verificationCodeRepository;
+    private readonly UserManager<User> _userManager;
     private readonly int _verificationCodeExpirationTimeInMinutes;
 
     // Constructor unificado con todas las dependencias necesarias
@@ -26,7 +28,8 @@ public class UserService : IUserService
         IUserRepository userRepository,
         IEmailService emailService,
         IVerificationCodeRepository verificationCodeRepository,
-        IConfiguration configuration
+        IConfiguration configuration,
+        UserManager<User> userManager
     )
     {
         _tokenService = tokenService;
@@ -34,6 +37,7 @@ public class UserService : IUserService
         _emailService = emailService;
         _verificationCodeRepository = verificationCodeRepository;
         _configuration = configuration;
+        _userManager = userManager;
         _verificationCodeExpirationTimeInMinutes = _configuration.GetValue<int>(
             "VerificationCode:ExpirationTimeInMinutes"
         );
@@ -311,5 +315,61 @@ public class UserService : IUserService
     public async Task<int> DeleteUnconfirmedAsync()
     {
         return await _userRepository.DeleteUnconfirmedAsync();
+    }
+
+    public async Task<string> ForgotPasswordAsync(ForgotPasswordDTO forgotPasswordDTO)
+    {
+        var user = await _userManager.FindByEmailAsync(forgotPasswordDTO.Email);
+        if (user == null || !user.EmailConfirmed)
+        {
+            // No reveles que el usuario no existe o no está confirmado
+            return "Si existe una cuenta con este correo, se ha enviado un enlace para restablecer la contraseña.";
+        }
+
+        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        // Aquí deberías codificar el token para que sea seguro en una URL
+        var encodedToken = System.Web.HttpUtility.UrlEncode(token);
+
+        if (string.IsNullOrEmpty(user.Email) || string.IsNullOrEmpty(user.FirstName))
+        {
+            Log.Warning($"Intento de restablecer contraseña para usuario con datos incompletos: ID {user.Id}");
+            return "Si existe una cuenta con este correo, se ha enviado un enlace para restablecer la contraseña.";
+        }
+
+        // todo: Construye la URL de reseteo. Esto debería apuntar a tu frontend.
+        var resetLink =
+            $"https://tu-frontend.com/reset-password?token={encodedToken}&email={user.Email}";
+
+        await _emailService.SendPasswordResetEmailAsync(user.Email, user.FirstName, resetLink);
+
+        return "Si existe una cuenta con este correo, se ha enviado un enlace para restablecer la contraseña.";
+    }
+
+    public async Task<string> ResetPasswordAsync(ResetPasswordDTO resetPasswordDTO)
+    {
+        var user = await _userManager.FindByEmailAsync(resetPasswordDTO.Email);
+        if (user == null)
+        {
+            // Por seguridad, no reveles que el usuario no existe. Simula una respuesta exitosa.
+            return "Si existe una cuenta con este correo, la contraseña ha sido restablecida exitosamente.";
+        }
+
+        var decodedToken = System.Web.HttpUtility.UrlDecode(resetPasswordDTO.Token);
+
+        var result = await _userManager.ResetPasswordAsync(
+            user,
+            decodedToken,
+            resetPasswordDTO.NewPassword
+        );
+
+        if (result.Succeeded)
+        {
+            return "La contraseña ha sido restablecida exitosamente.";
+        }
+
+        // Si falla, loggea los errores y lánzalos para que el middleware los maneje.
+        var errorMessages = string.Join(" ", result.Errors.Select(e => e.Description));
+        Log.Warning($"Falló el restablecimiento de contraseña para {resetPasswordDTO.Email}: {errorMessages}");
+        throw new ArgumentException(errorMessages);
     }
 }

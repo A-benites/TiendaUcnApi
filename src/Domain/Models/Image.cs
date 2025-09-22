@@ -16,13 +16,13 @@ public class Image
     /// </summary>
     [Required]
     [Url(ErrorMessage = "The image URL format is not valid.")]
-    public string ImageUrl { get; set; }
+    public required string ImageUrl { get; set; }
 
     /// <summary>
     /// Public identifier used by the external service to manage the image.
     /// </summary>
     [Required]
-    public string PublicId { get; set; }
+    public required string PublicId { get; set; }
 
     /// <summary>
     /// Image record creation date.

@@ -15,7 +15,7 @@ public class RegisterDTO
         @"^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s\-]+$",
         ErrorMessage = "El nombre solo puede contener letras, espacios y guiones."
     )]
-    public required string Name { get; set; } // AJUSTE: Renombrado de FirstName a Name
+    public required string Name { get; set; }
 
     [Required(ErrorMessage = "El apellido es obligatorio.")]
     [StringLength(

@@ -116,11 +116,11 @@ try
         {
             options.InvalidModelStateResponseFactory = context =>
             {
-                var errors = context
-                    .ModelState.Where(e => e.Value.Errors.Any())
+                var errors = context.ModelState
+                    .Where(kvp => kvp.Value != null && kvp.Value.Errors.Any())
                     .ToDictionary(
                         kvp => kvp.Key,
-                        kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                        kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage ?? string.Empty).ToArray()
                     );
 
                 return new BadRequestObjectResult(
