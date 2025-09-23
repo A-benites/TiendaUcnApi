@@ -15,7 +15,7 @@ public class RegisterDTO
         @"^[a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s\-]+$",
         ErrorMessage = "El nombre solo puede contener letras, espacios y guiones."
     )]
-    public required string Name { get; set; } // AJUSTE: Renombrado de FirstName a Name
+    public required string FirstName { get; set; }
 
     [Required(ErrorMessage = "El apellido es obligatorio.")]
     [StringLength(
@@ -38,7 +38,7 @@ public class RegisterDTO
 
     [Required(ErrorMessage = "La fecha de nacimiento es obligatoria.")]
     [BirthDateValidation]
-    public required DateTime BirthDate { get; set; }
+    public required DateOnly BirthDate { get; set; }
 
     [Required(ErrorMessage = "El RUT es obligatorio.")]
     [RutValidation(ErrorMessage = "El RUT no es válido.")]

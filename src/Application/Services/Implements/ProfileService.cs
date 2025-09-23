@@ -16,30 +16,55 @@ public class ProfileService : IProfileService
         _passwordHasher = passwordHasher;
     }
 
-    public async Task<ProfileDTO> GetProfileAsync(Guid userId)
+    public async Task<ProfileDTO> GetProfileAsync(int userId)
     {
         var user = await _context.Users.FindAsync(userId);
         if (user == null) throw new Exception("User not found");
 
         return new ProfileDTO
         {
-            Email = user.Email,
-            FirstName = user.FirstName
+            Email = user.Email!,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Rut = user.Rut,
+            Gender = user.Gender,
+            BirthDate = user.BirthDate
         };
     }
 
-    public async Task<bool> UpdateProfileAsync(Guid userId, UpdateProfileDTO dto)
+    public async Task<bool> UpdateProfileAsync(int userId, UpdateProfileDTO dto)
     {
         var user = await _context.Users.FindAsync(userId);
         if (user == null) return false;
 
-        user.FirstName = dto.FirstName;
+        if (!string.IsNullOrWhiteSpace(dto.FirstName))
+        {
+            user.FirstName = dto.FirstName;
+        }
+
+        if (!string.IsNullOrWhiteSpace(dto.LastName))
+        {
+            user.LastName = dto.LastName;
+        }
+
+        if (dto.Gender.HasValue)
+        {
+            user.Gender = dto.Gender.Value;
+        }
+
+        if (dto.BirthDate.HasValue)
+        {
+            user.BirthDate = dto.BirthDate.Value;
+        }
+
+        user.UpdatedAt = DateTime.UtcNow;
+
         _context.Users.Update(user);
         await _context.SaveChangesAsync();
         return true;
     }
 
-    public async Task<bool> ChangePasswordAsync(Guid userId, ChangePasswordDTO dto)
+    public async Task<bool> ChangePasswordAsync(int userId, ChangePasswordDTO dto)
     {
         var user = await _context.Users.FindAsync(userId);
         if (user == null) return false;
