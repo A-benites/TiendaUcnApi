@@ -1,6 +1,7 @@
 using Bogus;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using TiendaUcnApi.src.Domain.Models;
 
 namespace TiendaUcnApi.src.Infrastructure.Data;
@@ -13,10 +14,12 @@ public class DataSeeder
     /// <param name="context">The application database context.</param>
     /// <param name="userManager">The user manager for creating users.</param>
     /// <param name="roleManager">The role manager for creating roles.</param>
+    /// <param name="configuration">The application configuration.</param>
     public static async Task SeedAsync(
         AppDbContext context,
         UserManager<User> userManager,
-        RoleManager<Role> roleManager
+        RoleManager<Role> roleManager,
+        IConfiguration configuration
     )
     {
         // Apply any pending migrations before seeding.
@@ -34,18 +37,18 @@ public class DataSeeder
         {
             var adminUser = new User
             {
-                UserName = "admin@tiendaucn.cl",
-                Email = "admin@tiendaucn.cl",
-                FirstName = "Admin",
-                LastName = "Sistema",
-                Rut = "1-9",
-                Gender = Gender.Otro,
-                BirthDate = new DateOnly(1990, 1, 1),
+                UserName = configuration["User:AdminUser:Email"],
+                Email = configuration["User:AdminUser:Email"],
+                FirstName = configuration["User:AdminUser:FirstName"],
+                LastName = configuration["User:AdminUser:LastName"],
+                Rut = configuration["User:AdminUser:Rut"],
+                Gender = Enum.Parse<Gender>(configuration["User:AdminUser:Gender"]),
+                BirthDate = DateOnly.Parse(configuration["User:AdminUser:BirthDate"]),
                 EmailConfirmed = true,
                 IsSeed = true, // Mark as seed user
             };
 
-            await userManager.CreateAsync(adminUser, "Admin123!");
+            await userManager.CreateAsync(adminUser, configuration["User:AdminUser:Password"]);
             await userManager.AddToRoleAsync(adminUser, "Administrador");
         }
 
