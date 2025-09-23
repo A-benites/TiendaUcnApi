@@ -1,22 +1,32 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Resend;
 using Serilog;
-using TiendaUcnApi.src.API.Extensions; // Using for the new seeding extension method
+using System.Security.Claims;
+using System.Text;
+using TiendaUcnApi.src.API.Extensions;
 using TiendaUcnApi.src.API.Middlewares.ErrorHandlingMiddleware;
+using TiendaUcnApi.src.Application.Services.Implements;
+using TiendaUcnApi.src.Application.Services.Interfaces;
 using TiendaUcnApi.src.Domain.Models;
 using TiendaUcnApi.src.Infrastructure.Data;
+using TiendaUcnApi.src.Infrastructure.Repositories.Implements;
+using TiendaUcnApi.src.Infrastructure.Repositories.Interfaces;
 
-// Configure a bootstrap logger to capture errors during application startup.
+// Configura un logger de arranque para capturar errores durante el inicio.
 Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateBootstrapLogger();
 
-Log.Information("Starting up the application");
+Log.Information("Iniciando la aplicación");
 
 try
 {
     var builder = WebApplication.CreateBuilder(args);
 
-    // Replace the default .NET logger with Serilog and read configuration from appsettings.json.
+    #region Logging Configuration
+    // Reemplaza el logger por defecto de .NET con Serilog.
     builder.Host.UseSerilog(
         (context, services, configuration) =>
             configuration
@@ -24,43 +34,103 @@ try
                 .ReadFrom.Services(services)
                 .Enrich.FromLogContext()
     );
+    #endregion
 
-    // --- Service configuration for dependency injection (DI Container). ---
-
-    // Registers the database context with the DI container.
+    #region Database Configuration
+    Log.Information("Configurando base de datos SQLite");
     builder.Services.AddDbContext<AppDbContext>(options =>
         options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"))
     );
+    #endregion
 
-    // Registers IHttpContextAccessor to allow access to the current HttpContext from services.
-    builder.Services.AddHttpContextAccessor();
-
-    // Configures ASP.NET Core Identity for user and role management.
+    #region Identity Configuration
+    Log.Information("Configurando Identity");
+    // Se usa AddIdentityCore para un control más fino.
     builder
-        .Services.AddIdentity<User, Role>()
+        .Services.AddIdentityCore<User>(options =>
+        {
+            options.Password.RequireDigit = true;
+            options.Password.RequiredLength = 8;
+            options.Password.RequireNonAlphanumeric = false;
+            options.Password.RequireUppercase = false;
+            options.Password.RequireLowercase = false;
+            options.User.RequireUniqueEmail = true;
+        })
+        .AddRoles<Role>() // Asegúrate de tener un modelo Role
         .AddEntityFrameworkStores<AppDbContext>()
         .AddDefaultTokenProviders();
+    #endregion
 
-    // Configures controller services and customizes the automatic 400 response for validation errors.
+    #region Authentication Configuration
+    Log.Information("Configurando autenticación JWT");
+    builder
+        .Services.AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(options =>
+        {
+            string jwtSecret =
+                builder.Configuration["JWTSecret"]
+                ?? throw new InvalidOperationException("La clave secreta JWT no está configurada.");
+            options.MapInboundClaims = false;
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+                ValidateIssuer = false,
+                ValidateAudience = false,
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero, // No hay tolerancia para tokens expirados
+            };
+        });
+    #endregion
+
+    #region Dependency Injection
+    Log.Information("Configurando inyección de dependencias");
+    builder.Services.AddScoped<IUserService, UserService>();
+    builder.Services.AddScoped<IEmailService, EmailService>();
+    builder.Services.AddScoped<ITokenService, TokenService>(); // Registro del servicio de token
+    builder.Services.AddScoped<IUserRepository, UserRepository>();
+    builder.Services.AddScoped<IVerificationCodeRepository, VerificationCodeRepository>();
+    builder.Services.AddScoped<IProfileService, ProfileService>();
+    #endregion
+
+    #region Email Service Configuration
+    Log.Information("Configurando servicio de Email");
+    builder.Services.AddOptions();
+    builder.Services.AddHttpClient<ResendClient>();
+    builder.Services.Configure<ResendClientOptions>(o =>
+    {
+        o.ApiToken =
+            builder.Configuration["ResendAPIKey"]
+            ?? throw new InvalidOperationException(
+                "El token de API de Resend no está configurado."
+            );
+    });
+    builder.Services.AddTransient<IResend, ResendClient>();
+    #endregion
+
+    // Configura los controladores y el comportamiento de la API
     builder
         .Services.AddControllers()
         .ConfigureApiBehaviorOptions(options =>
         {
             options.InvalidModelStateResponseFactory = context =>
             {
-                var errors = context
-                    .ModelState.Where(e => e.Value.Errors.Count > 0)
-                    .Select(e => new
-                    {
-                        Field = e.Key,
-                        Errors = e.Value.Errors.Select(err => err.ErrorMessage),
-                    });
+                var errors = context.ModelState
+                    .Where(kvp => kvp.Value != null && kvp.Value.Errors.Any())
+                    .ToDictionary(
+                        kvp => kvp.Key,
+                        kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage ?? string.Empty).ToArray()
+                    );
 
                 return new BadRequestObjectResult(
                     new
                     {
                         status = 400,
-                        message = "Validation errors",
+                        message = "Errores de validación",
                         errors,
                         timestamp = DateTime.UtcNow,
                     }
@@ -68,61 +138,56 @@ try
             };
         });
 
-    // Adds services for API endpoint discovery and Swagger/OpenAPI documentation.
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
+    builder.Services.AddHttpContextAccessor();
+    builder.Services.AddScoped<IProfileService, ProfileService>();
+
+    // Configura los mapeos de Mapster
+    var mapper = new TiendaUcnApi.src.Application.Mappers.UserMapper();
+    mapper.ConfigureAllMappings();
 
     var app = builder.Build();
 
-    // --- HTTP request pipeline configuration. Order is important. ---
+    #region Pipeline Configuration
+    Log.Information("Configurando el pipeline de la aplicación");
 
-    // Middleware to log all incoming HTTP requests automatically.
+    // Middleware para logs de requests
     app.UseSerilogRequestLogging();
 
-    // Enables Swagger UI only in the development environment.
     if (app.Environment.IsDevelopment())
     {
         app.UseSwagger();
-        app.UseSwaggerUI();
+        app.UseSwaggerUI(c =>
+        {
+            c.SwaggerEndpoint("/swagger/v1/swagger.json", "Tienda UCN API V1");
+            c.RoutePrefix = string.Empty; // Swagger en la raíz
+        });
     }
 
-    // Custom middleware for global exception handling.
+    // Middleware personalizado para manejo de excepciones
     app.UseMiddleware<ErrorHandlingMiddleware>();
 
-    // Redirects HTTP requests to HTTPS.
     app.UseHttpsRedirection();
 
-    // Enables authentication middleware.
+    // IMPORTANTE: El orden de UseAuthentication y UseAuthorization es crucial
     app.UseAuthentication();
-
-    // Enables authorization middleware.
     app.UseAuthorization();
 
-    // Maps controller action methods to endpoints.
     app.MapControllers();
 
-    // Applies migrations and seeds the database on application startup.
+    // Aplica migraciones y datos semilla al iniciar
     await app.SeedDatabaseAsync();
-
-    // A test endpoint to verify the error handling middleware is working.
-    app.MapGet(
-        "/test",
-        () =>
-        {
-            throw new Exception("Test exception for the middleware.");
-        }
-    );
+    #endregion
 
     app.Run();
 }
 catch (Exception ex)
 {
-    // Logs fatal exceptions that prevent the application from starting.
-    Log.Fatal(ex, "Application failed to start");
+    Log.Fatal(ex, "La aplicación falló al iniciar");
 }
 finally
 {
-    // Ensures all log events are written to the sinks before the application shuts down.
-    Log.Information("Shutting down");
+    Log.Information("Apagando la aplicación");
     Log.CloseAndFlush();
 }

@@ -15,7 +15,7 @@ public class Brand
     /// </summary>
     [Required]
     [StringLength(50)]
-    public string Name { get; set; }
+    public required string Name { get; set; }
 
     /// <summary>
     /// Brand creation date.

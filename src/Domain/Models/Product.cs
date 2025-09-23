@@ -22,14 +22,14 @@ public class Product
     /// </summary>
     [Required]
     [StringLength(50, MinimumLength = 3)]
-    public string Title { get; set; }
+    public required string Title { get; set; }
 
     /// <summary>
     /// Product description.
     /// </summary>
     [Required]
     [MinLength(20, ErrorMessage = "Description must be at least 20 characters.")]
-    public string Description { get; set; }
+    public required string Description { get; set; }
 
     /// <summary>
     /// Product price.

@@ -17,21 +17,21 @@ public class User : IdentityUser<int>
     /// </summary>
     [Required]
     [RegularExpression(@"^(\d{1,2}\.\d{3}\.\d{3}-[\dkK])$", ErrorMessage = "RUT format is not valid.")]
-    public string Rut { get; set; }
+    public required string Rut { get; set; }
 
     /// <summary>
     /// User's first name.
     /// </summary>
     [Required]
     [StringLength(50, MinimumLength = 2)]
-    public string FirstName { get; set; }
+    public required string FirstName { get; set; }
 
     /// <summary>
     /// User's last name.
     /// </summary>
     [Required]
     [StringLength(50, MinimumLength = 2)]
-    public string LastName { get; set; }
+    public required string LastName { get; set; }
 
     /// <summary>
     /// User's gender.
@@ -43,7 +43,7 @@ public class User : IdentityUser<int>
     /// User's birth date.
     /// </summary>
     [Required]
-    public DateTime BirthDate { get; set; }
+    public DateOnly BirthDate { get; set; }
 
     /// <summary>
     /// Verification codes associated with the user.

@@ -15,7 +15,7 @@ public class Order
     /// Unique order code.
     /// </summary>
     [Required]
-    public string Code { get; set; }
+    public required string Code { get; set; }
 
     /// <summary>
     /// Order total with discounts.
