@@ -43,7 +43,7 @@ public class User : IdentityUser<int>
     /// User's birth date.
     /// </summary>
     [Required]
-    public DateTime BirthDate { get; set; }
+    public DateOnly BirthDate { get; set; }
 
     /// <summary>
     /// Verification codes associated with the user.

@@ -28,7 +28,7 @@ public class UserMapper
             .NewConfig()
             .Map(dest => dest.UserName, src => src.Email)
             .Map(dest => dest.Email, src => src.Email)
-            .Map(dest => dest.FirstName, src => src.Name)
+            .Map(dest => dest.FirstName, src => src.FirstName)
             .Map(dest => dest.LastName, src => src.LastName)
             .Map(dest => dest.Rut, src => src.Rut)
             .Map(dest => dest.BirthDate, src => src.BirthDate)

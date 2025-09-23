@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Resend;
 using Serilog;
+using System.Security.Claims;
 using System.Text;
 using TiendaUcnApi.src.API.Extensions;
 using TiendaUcnApi.src.API.Middlewares.ErrorHandlingMiddleware;
@@ -73,6 +74,7 @@ try
             string jwtSecret =
                 builder.Configuration["JWTSecret"]
                 ?? throw new InvalidOperationException("La clave secreta JWT no está configurada.");
+            options.MapInboundClaims = false;
             options.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuerSigningKey = true,
@@ -92,6 +94,7 @@ try
     builder.Services.AddScoped<ITokenService, TokenService>(); // Registro del servicio de token
     builder.Services.AddScoped<IUserRepository, UserRepository>();
     builder.Services.AddScoped<IVerificationCodeRepository, VerificationCodeRepository>();
+    builder.Services.AddScoped<IProfileService, ProfileService>();
     #endregion
 
     #region Email Service Configuration
@@ -138,6 +141,7 @@ try
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
     builder.Services.AddHttpContextAccessor();
+    builder.Services.AddScoped<IProfileService, ProfileService>();
 
     // Configura los mapeos de Mapster
     var mapper = new TiendaUcnApi.src.Application.Mappers.UserMapper();
