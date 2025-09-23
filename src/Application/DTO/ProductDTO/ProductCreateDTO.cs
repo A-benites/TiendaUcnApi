@@ -16,7 +16,7 @@ public class ProductCreateDTO
     public required string Description { get; set; }
 
     [Required(ErrorMessage = "El precio del producto es obligatorio.")]
-    [Range(1, int.MaxValue, ErrorMessage = "El precio debe ser un valor entero positivo.")]
+    [Range(0, int.MaxValue, ErrorMessage = "El precio debe ser un valor entero positivo.")]
     public required int Price { get; set; }
 
     [Required(ErrorMessage = "El descuento del producto es obligatorio.")]
@@ -28,11 +28,22 @@ public class ProductCreateDTO
     public required int Stock { get; set; }
 
     [Required(ErrorMessage = "El estado del producto es obligatorio.")]
+    [RegularExpression("^(New|Used)$", ErrorMessage = "El estado debe ser 'Nuevo' o 'Usado'.")]
     public required Status Status { get; set; }
 
-    [Required(ErrorMessage = "El ID de la categoría es obligatorio.")]
-    public required int CategoryId { get; set; }
+    [Required(ErrorMessage = "El nombre de la categoría es obligatorio.")]
+    [StringLength(
+        50,
+        ErrorMessage = "El nombre de la categoría no puede exceder los 50 caracteres."
+    )]
+    [MinLength(3, ErrorMessage = "El nombre de la categoría debe tener al menos 3 caracteres.")]
+    public required string CategoryName { get; set; }
 
-    [Required(ErrorMessage = "El ID de la marca es obligatorio.")]
-    public required int BrandId { get; set; }
+    [Required(ErrorMessage = "El nombre de la marca es obligatorio.")]
+    [StringLength(50, ErrorMessage = "El nombre de la marca no puede exceder los 50 caracteres.")]
+    [MinLength(3, ErrorMessage = "El nombre de la marca debe tener al menos 3 caracteres.")]
+    public required string BrandName { get; set; }
+
+    [Required(ErrorMessage = "Las imágenes del producto son obligatorias.")]
+    public required List<IFormFile> Images { get; set; } = new List<IFormFile>();
 }

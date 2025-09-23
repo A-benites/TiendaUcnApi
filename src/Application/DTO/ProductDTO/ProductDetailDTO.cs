@@ -1,4 +1,4 @@
-namespace TiendaUcnApi.Src.Application.DTO.ProductDTO.CustomerDTO;
+namespace TiendaUcnApi.src.Application.DTO.ProductDTO;
 
 public class ProductDetailDTO
 {
