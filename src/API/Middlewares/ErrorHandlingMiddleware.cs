@@ -1,6 +1,6 @@
+using Serilog;
 using System.Security;
 using System.Text.Json;
-using Serilog;
 using TiendaUcnApi.src.Application.DTO.BaseResponse;
 
 namespace TiendaUcnApi.src.API.Middlewares.ErrorHandlingMiddleware;
@@ -19,8 +19,18 @@ public class ErrorHandlingMiddleware(RequestDelegate next)
     {
         try
         {
-            // Pasamos al siguiente middleware en la cadena si no hay excepciones
             await _next(context);
+            if (context.Response.StatusCode == StatusCodes.Status401Unauthorized)
+            {
+                context.Response.ContentType = "application/json";
+                var result = System.Text.Json.JsonSerializer.Serialize(
+                    new
+                    {
+                        message = "No tienes autorización para realizar esta acción. Por favor inicia sesión.",
+                    }
+                );
+                await context.Response.WriteAsync(result);
+            }
         }
         catch (Exception ex)
         {

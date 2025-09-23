@@ -29,7 +29,7 @@ public class VerificationCode
     /// </summary>
     [Required]
     [StringLength(6)]
-    public string Code { get; set; }
+    public required string Code { get; set; }
 
     /// <summary>
     /// Number of failed attempts to use the code.

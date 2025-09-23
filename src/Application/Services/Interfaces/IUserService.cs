@@ -45,4 +45,8 @@ public interface IUserService
     /// </summary>
     /// <returns>Número de usuarios eliminados</returns>
     Task<int> DeleteUnconfirmedAsync();
+
+    Task<string> ForgotPasswordAsync(ForgotPasswordDTO forgotPasswordDTO);
+
+    Task<string> ResetPasswordAsync(ResetPasswordDTO resetPasswordDTO);
 }
