@@ -16,12 +16,12 @@ public class ProfileController : ControllerBase
         _profileService = profileService;
     }
 
-    private Guid GetUserId()
+    private int GetUserId()
     {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst("sub");
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
         if (userIdClaim == null)
             throw new Exception("No se encontró el identificador de usuario en el token.");
-        return Guid.Parse(userIdClaim.Value);
+        return int.Parse(userIdClaim.Value);
 
     }
 
@@ -32,12 +32,12 @@ public class ProfileController : ControllerBase
         return Ok(profile);
     }
 
-    [HttpPut]
+    [HttpPatch("update")]
     public async Task<IActionResult> UpdateProfile(UpdateProfileDTO dto)
     {
         var success = await _profileService.UpdateProfileAsync(GetUserId(), dto);
         if (!success) return NotFound();
-        return NoContent();
+        return Ok(new { message = "Perfil actualizado exitosamente" });
     }
 
     [HttpPut("change-password")]
@@ -45,6 +45,6 @@ public class ProfileController : ControllerBase
     {
         var success = await _profileService.ChangePasswordAsync(GetUserId(), dto);
         if (!success) return BadRequest("Invalid password");
-        return NoContent();
+        return Ok(new { message = "Contraseña cambiada exitosamente" });
     }
 }

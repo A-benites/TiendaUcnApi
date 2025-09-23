@@ -40,7 +40,7 @@ public class DataSeeder
                 LastName = "Sistema",
                 Rut = "1-9",
                 Gender = Gender.Otro,
-                BirthDate = new DateTime(1990, 1, 1),
+                BirthDate = new DateOnly(1990, 1, 1),
                 EmailConfirmed = true,
                 IsSeed = true, // Mark as seed user
             };
