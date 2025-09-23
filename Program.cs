@@ -138,6 +138,7 @@ try
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
     builder.Services.AddHttpContextAccessor();
+    builder.Services.AddScoped<IProfileService, ProfileService>();
 
     // Configura los mapeos de Mapster
     var mapper = new TiendaUcnApi.src.Application.Mappers.UserMapper();
