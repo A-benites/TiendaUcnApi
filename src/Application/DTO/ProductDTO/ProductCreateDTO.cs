@@ -1,0 +1,38 @@
+using System.ComponentModel.DataAnnotations;
+using TiendaUcnApi.src.Domain.Models;
+
+namespace TiendaUcnApi.src.Application.DTO.ProductDTO;
+
+public class ProductCreateDTO
+{
+    [Required(ErrorMessage = "El título del producto es obligatorio.")]
+    [StringLength(50, ErrorMessage = "El título no puede exceder los 50 caracteres.")]
+    [MinLength(3, ErrorMessage = "El título debe tener al menos 3 caracteres.")]
+    public required string Title { get; set; }
+
+    [Required(ErrorMessage = "La descripción del producto es obligatoria.")]
+    [StringLength(100, ErrorMessage = "La descripción no puede exceder los 100 caracteres.")]
+    [MinLength(10, ErrorMessage = "La descripción debe tener al menos 10 caracteres.")]
+    public required string Description { get; set; }
+
+    [Required(ErrorMessage = "El precio del producto es obligatorio.")]
+    [Range(1, int.MaxValue, ErrorMessage = "El precio debe ser un valor entero positivo.")]
+    public required int Price { get; set; }
+
+    [Required(ErrorMessage = "El descuento del producto es obligatorio.")]
+    [Range(0, 100, ErrorMessage = "El descuento debe estar entre 0 y 100.")]
+    public required int Discount { get; set; }
+
+    [Required(ErrorMessage = "El stock del producto es obligatorio.")]
+    [Range(0, int.MaxValue, ErrorMessage = "El stock debe ser un valor positivo.")]
+    public required int Stock { get; set; }
+
+    [Required(ErrorMessage = "El estado del producto es obligatorio.")]
+    public required Status Status { get; set; }
+
+    [Required(ErrorMessage = "El ID de la categoría es obligatorio.")]
+    public required int CategoryId { get; set; }
+
+    [Required(ErrorMessage = "El ID de la marca es obligatorio.")]
+    public required int BrandId { get; set; }
+}
