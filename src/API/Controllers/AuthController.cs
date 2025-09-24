@@ -36,13 +36,16 @@ public class AuthController(IUserService userService) : BaseController
     public async Task<IActionResult> Register([FromBody] RegisterDTO registerDTO)
     {
         var message = await _userService.RegisterAsync(registerDTO, HttpContext);
-        return Ok(new GenericResponse<string>("Registro exitoso", message));
+        return Created(
+            "/api/user/profile",
+            new GenericResponse<string>("Registro exitoso", message)
+        );
     }
 
     /// <summary>
     /// Verifica el correo electrónico del usuario.
     /// </summary>
-    [HttpPost("verify-email")]
+    [HttpPost("verify")]
     public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailDTO verifyEmailDTO)
     {
         var message = await _userService.VerifyEmailAsync(verifyEmailDTO);

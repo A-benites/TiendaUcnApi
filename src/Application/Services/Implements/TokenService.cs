@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using System.IdentityModel.Tokens.Jwt;
@@ -12,50 +13,51 @@ namespace TiendaUcnApi.src.Application.Services.Implements
     /// </summary>
     public class TokenService : ITokenService
     {
-        //Cargamos la configuración desde appsettings.json
         private readonly IConfiguration _configuration;
         private readonly string _jwtSecret;
+        private readonly UserManager<User> _userManager; // Necesitas el UserManager
 
-        public TokenService(IConfiguration configuration)
+        // Modifica el constructor para inyectar UserManager
+        public TokenService(IConfiguration configuration, UserManager<User> userManager)
         {
-            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration), "La configuración no puede ser nula");
-            _jwtSecret = _configuration["JWTSecret"] ?? throw new InvalidOperationException("La clave secreta JWT no está configurada.");
+            _configuration =
+                configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _jwtSecret =
+                _configuration["JWTSecret"]
+                ?? throw new InvalidOperationException("La clave secreta JWT no está configurada.");
+            _userManager = userManager;
         }
 
-        /// <summary>
-        /// Genera un token JWT para el usuario proporcionado.
-        /// </summary>
-        /// <param name="user">El usuario para el cual se generará el token.</param>
-        /// <param name="rememberMe">Indica si se debe recordar al usuario.</param>
-        /// <param name="roleName">El nombre del rol del usuario.</param>
-        /// <returns>Un string que representa el token JWT generado.</returns>
         public string GenerateToken(User user, string roleName, bool rememberMe = false)
         {
             try
             {
-                // Listamos los claims que queremos incluir en el token (solo las necesarias, no todas las propiedades del usuario)
                 var claims = new List<Claim>
                 {
                     new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                     new Claim(ClaimTypes.Email, user.Email!),
-                    new Claim(ClaimTypes.Role, roleName)
+                    new Claim(ClaimTypes.Role, roleName),
+                    // --- LÍNEA CLAVE AÑADIDA ---
+                    // Esta claim es la que buscará tu lógica de validación en Program.cs
+                    new Claim(
+                        new IdentityOptions().ClaimsIdentity.SecurityStampClaimType,
+                        user.SecurityStamp!
+                    ),
                 };
 
-                // Creamos la clave de seguridad
                 var key = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(_jwtSecret));
-
-                // Creamos las credenciales de firma, ojo la clave debe ser lo suficientemente larga y segura (256 bits mínimo para HMACSHA256) que son 32 caracteres
                 var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-                // Creamos el token
                 var token = new JwtSecurityToken(
                     claims: claims,
-                    expires: DateTime.Now.AddHours(rememberMe ? 24 : 1), // Si RememberMe es true, el token expira en 24 horas, sino en 1 hora
+                    expires: DateTime.Now.AddHours(rememberMe ? 24 : 1),
                     signingCredentials: creds
                 );
 
-                // Serializamos el token a string
-                Log.Information("Token JWT generado exitosamente para el usuario {UserId}", user.Id);
+                Log.Information(
+                    "Token JWT generado exitosamente para el usuario {UserId}",
+                    user.Id
+                );
                 return new JwtSecurityTokenHandler().WriteToken(token);
             }
             catch (Exception ex)
@@ -63,7 +65,6 @@ namespace TiendaUcnApi.src.Application.Services.Implements
                 Log.Error(ex, "Error al generar el token JWT para el usuario {UserId}", user.Id);
                 throw new InvalidOperationException("Error al generar el token JWT", ex);
             }
-
         }
     }
 }

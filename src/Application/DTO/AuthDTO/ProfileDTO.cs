@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using TiendaUcnApi.src.Domain.Models;
 
 namespace TiendaUcnApi.src.Application.DTO;
+
 public class ProfileDTO
 {
     [Required(ErrorMessage = "El email es requerido.")]
@@ -22,4 +23,6 @@ public class ProfileDTO
 
     [Required(ErrorMessage = "La fecha de nacimiento es requerida")]
     public DateOnly BirthDate { get; set; }
+
+    public string? PhoneNumber { get; set; }
 }

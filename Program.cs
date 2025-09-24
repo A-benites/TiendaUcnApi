@@ -55,6 +55,9 @@ try
             options.Password.RequireUppercase = false;
             options.Password.RequireLowercase = false;
             options.User.RequireUniqueEmail = true;
+
+            // Habilitar la validación del SecurityStamp
+            // options.SecurityStampValidationInterval = TimeSpan.Zero; // Esta opción no existe en IdentityOptions
         })
         .AddRoles<Role>() // Asegúrate de tener un modelo Role
         .AddEntityFrameworkStores<AppDbContext>()
@@ -83,6 +86,38 @@ try
                 ValidateAudience = false,
                 ValidateLifetime = true,
                 ClockSkew = TimeSpan.Zero, // No hay tolerancia para tokens expirados
+            };
+
+            // --- CÓDIGO AÑADIDO PARA VALIDAR EL SECURITY STAMP (R35) ---
+            options.Events = new JwtBearerEvents
+            {
+                // Este evento se ejecuta después de validar el token, pero antes de que se establezca la identidad del usuario.
+                OnTokenValidated = async context =>
+                {
+                    var userManager = context.HttpContext.RequestServices.GetRequiredService<
+                        UserManager<User>
+                    >();
+                    var claimsPrincipal = context.Principal;
+                    if (claimsPrincipal == null)
+                    {
+                        context.Fail("Token inválido.");
+                        return;
+                    }
+
+                    var userId = claimsPrincipal.FindFirstValue(ClaimTypes.NameIdentifier);
+                    var user = await userManager.FindByIdAsync(userId);
+
+                    // Compara el SecurityStamp del token con el de la base de datos.
+                    // Si no coinciden, significa que la contraseña cambió (u otra acción de seguridad) y el token ya no es válido.
+                    if (
+                        user == null
+                        || user.SecurityStamp
+                            != claimsPrincipal.FindFirstValue("AspNet.Identity.SecurityStamp")
+                    )
+                    {
+                        context.Fail("Token inválido. Sesión expirada por cambio de seguridad.");
+                    }
+                },
             };
         });
     #endregion

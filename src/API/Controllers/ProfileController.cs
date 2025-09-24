@@ -2,12 +2,15 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TiendaUcnApi.src.Application.DTO;
+using TiendaUcnApi.src.Application.DTO.AuthDTO;
 using TiendaUcnApi.src.Application.Services.Interfaces;
 
+namespace TiendaUcnApi.src.API.Controllers;
+
 [ApiController]
-[Route("api/[controller]")]
-[Authorize] // Todos los endpoints requieren JWT
-public class ProfileController : ControllerBase
+[Route("api/user")]
+[Authorize]
+public class ProfileController : BaseController
 {
     private readonly IProfileService _profileService;
 
@@ -19,32 +22,40 @@ public class ProfileController : ControllerBase
     private int GetUserId()
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-        if (userIdClaim == null)
-            throw new Exception("No se encontró el identificador de usuario en el token.");
-        return int.Parse(userIdClaim.Value);
-
+        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+        {
+            throw new UnauthorizedAccessException(
+                "No se pudo obtener el identificador de usuario del token."
+            );
+        }
+        return userId;
     }
 
-    [HttpGet]
+    [HttpGet("profile")]
     public async Task<ActionResult<ProfileDTO>> GetProfile()
     {
         var profile = await _profileService.GetProfileAsync(GetUserId());
-        return Ok(profile);
+        return Ok(new GenericResponse<ProfileDTO>("Perfil obtenido exitosamente", profile));
     }
 
-    [HttpPatch("update")]
-    public async Task<IActionResult> UpdateProfile(UpdateProfileDTO dto)
+    [HttpPut("profile")] // MÉTODO Y RUTA CORREGIDOS
+    public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileDTO dto)
     {
-        var success = await _profileService.UpdateProfileAsync(GetUserId(), dto);
-        if (!success) return NotFound();
-        return Ok(new { message = "Perfil actualizado exitosamente" });
+        var result = await _profileService.UpdateProfileAsync(GetUserId(), dto);
+        return Ok(new GenericResponse<string>(result));
     }
 
-    [HttpPut("change-password")]
-    public async Task<IActionResult> ChangePassword(ChangePasswordDTO dto)
+    [HttpPatch("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDTO dto)
     {
-        var success = await _profileService.ChangePasswordAsync(GetUserId(), dto);
-        if (!success) return BadRequest("Invalid password");
-        return Ok(new { message = "Contraseña cambiada exitosamente" });
+        await _profileService.ChangePasswordAsync(GetUserId(), dto);
+        return Ok(new GenericResponse<string>("Contraseña cambiada exitosamente"));
+    }
+
+    [HttpPost("verify-email-change")]
+    public async Task<IActionResult> VerifyEmailChange([FromBody] VerifyEmailChangeDTO dto)
+    {
+        var message = await _profileService.VerifyEmailChangeAsync(GetUserId(), dto);
+        return Ok(new GenericResponse<string>(message));
     }
 }
