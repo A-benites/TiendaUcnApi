@@ -317,32 +317,34 @@ public class UserService : IUserService
         return await _userRepository.DeleteUnconfirmedAsync();
     }
 
+    // En UserService.cs
+
     public async Task<string> ForgotPasswordAsync(ForgotPasswordDTO forgotPasswordDTO)
     {
         var user = await _userManager.FindByEmailAsync(forgotPasswordDTO.Email);
         if (user == null || !user.EmailConfirmed)
         {
-            // No reveles que el usuario no existe o no está confirmado
-            return "Si existe una cuenta con este correo, se ha enviado un enlace para restablecer la contraseña.";
+            // No reveles que el usuario no existe para mayor seguridad.
+            return "Si existe una cuenta asociada a este correo, se ha enviado un código para restablecer la contraseña.";
         }
 
-        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-        // Aquí deberías codificar el token para que sea seguro en una URL
-        var encodedToken = System.Web.HttpUtility.UrlEncode(token);
-
-        if (string.IsNullOrEmpty(user.Email) || string.IsNullOrEmpty(user.FirstName))
+        // Genera, guarda y envía un código de 6 dígitos.
+        string code = new Random().Next(100000, 999999).ToString();
+        var verificationCode = new VerificationCode
         {
-            Log.Warning($"Intento de restablecer contraseña para usuario con datos incompletos: ID {user.Id}");
-            return "Si existe una cuenta con este correo, se ha enviado un enlace para restablecer la contraseña.";
-        }
+            UserId = user.Id,
+            Code = code,
+            CodeType = CodeType.PasswordReset, // Importante usar el tipo correcto
+            ExpiryDate = DateTime.UtcNow.AddMinutes(_verificationCodeExpirationTimeInMinutes),
+        };
 
-        // todo: Construye la URL de reseteo. Esto debería apuntar a tu frontend.
-        var resetLink =
-            $"https://tu-frontend.com/reset-password?token={encodedToken}&email={user.Email}";
+        await _verificationCodeRepository.CreateAsync(verificationCode);
+        Log.Information("Código de reseteo de contraseña generado para {Email}", user.Email);
 
-        await _emailService.SendPasswordResetEmailAsync(user.Email, user.FirstName, resetLink);
+        // Llama al nuevo método del servicio de email
+        await _emailService.SendPasswordResetCodeEmailAsync(user.Email!, user.FirstName, code);
 
-        return "Si existe una cuenta con este correo, se ha enviado un enlace para restablecer la contraseña.";
+        return "Si existe una cuenta asociada a este correo, se ha enviado un código para restablecer la contraseña.";
     }
 
     public async Task<string> ResetPasswordAsync(ResetPasswordDTO resetPasswordDTO)
@@ -350,26 +352,58 @@ public class UserService : IUserService
         var user = await _userManager.FindByEmailAsync(resetPasswordDTO.Email);
         if (user == null)
         {
-            // Por seguridad, no reveles que el usuario no existe. Simula una respuesta exitosa.
-            return "Si existe una cuenta con este correo, la contraseña ha sido restablecida exitosamente.";
+            // No reveles que el usuario no existe.
+            return "La contraseña ha sido restablecida exitosamente.";
         }
 
-        var decodedToken = System.Web.HttpUtility.UrlDecode(resetPasswordDTO.Token);
+        // Busca y valida el código de 6 dígitos
+        var verificationCode = await _verificationCodeRepository.GetLatestByUserIdAsync(
+            user.Id,
+            CodeType.PasswordReset
+        );
 
+        if (
+            verificationCode == null
+            || verificationCode.Code != resetPasswordDTO.Code
+            || DateTime.UtcNow >= verificationCode.ExpiryDate
+        )
+        {
+            Log.Warning(
+                "Intento de restablecer contraseña con código inválido o expirado para {Email}",
+                resetPasswordDTO.Email
+            );
+            throw new ArgumentException(
+                "El código de restablecimiento es incorrecto o ha expirado."
+            );
+        }
+
+        // Si el código es válido, se procede a cambiar la contraseña.
+        // UserManager requiere un token de reseteo, así que lo generamos internamente justo antes de usarlo.
+        var internalToken = await _userManager.GeneratePasswordResetTokenAsync(user);
         var result = await _userManager.ResetPasswordAsync(
             user,
-            decodedToken,
+            internalToken,
             resetPasswordDTO.NewPassword
         );
 
         if (result.Succeeded)
         {
+            // Es una buena práctica eliminar el código una vez que se ha utilizado.
+            await _verificationCodeRepository.DeleteByUserIdAsync(user.Id, CodeType.PasswordReset);
+            Log.Information(
+                "Contraseña restablecida exitosamente para {Email}",
+                resetPasswordDTO.Email
+            );
             return "La contraseña ha sido restablecida exitosamente.";
         }
 
-        // Si falla, loggea los errores y lánzalos para que el middleware los maneje.
+        // Si falla (ej. la nueva contraseña no cumple las políticas de Identity), lanza los errores.
         var errorMessages = string.Join(" ", result.Errors.Select(e => e.Description));
-        Log.Warning($"Falló el restablecimiento de contraseña para {resetPasswordDTO.Email}: {errorMessages}");
+        Log.Warning(
+            "Falló el restablecimiento de contraseña para {Email}: {Errors}",
+            resetPasswordDTO.Email,
+            errorMessages
+        );
         throw new ArgumentException(errorMessages);
     }
 }

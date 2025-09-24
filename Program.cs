@@ -10,7 +10,6 @@ using System.Text;
 using TiendaUcnApi.src.API.Extensions;
 using TiendaUcnApi.src.API.Middlewares.ErrorHandlingMiddleware;
 using TiendaUcnApi.src.Application.Services.Implements;
-using TiendaUcnApi.src.Application.Services.Implements;
 using TiendaUcnApi.src.Application.Services.Interfaces;
 using TiendaUcnApi.src.Domain.Models;
 using TiendaUcnApi.src.Infrastructure.Data;
@@ -124,11 +123,12 @@ try
         {
             options.InvalidModelStateResponseFactory = context =>
             {
-                var errors = context.ModelState
-                    .Where(kvp => kvp.Value != null && kvp.Value.Errors.Any())
+                var errors = context
+                    .ModelState.Where(kvp => kvp.Value != null && kvp.Value.Errors.Any())
                     .ToDictionary(
                         kvp => kvp.Key,
-                        kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage ?? string.Empty).ToArray()
+                        kvp =>
+                            kvp.Value!.Errors.Select(e => e.ErrorMessage ?? string.Empty).ToArray()
                     );
 
                 return new BadRequestObjectResult(

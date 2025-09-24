@@ -102,7 +102,7 @@ public class ProductController : BaseController
     /// </summary>
     /// <param name="createProductDTO">Los datos del producto a crear.</param>
     /// <returns>El ID del producto creado.</returns>
-    [HttpPost()]
+    [HttpPost("admin/products")]
     [Authorize(Roles = "Administrador")]
     public async Task<IActionResult> CreateAsync([FromForm] ProductCreateDTO createProductDTO)
     {

@@ -6,10 +6,7 @@ using TiendaUcnApi.src.Application.Services.Interfaces;
 
 namespace TiendaUcnApi.src.API.Controllers;
 
-[ApiController]
-[Route("api/[controller]")]
-// Se unificó para heredar de BaseController y usar el constructor primario
-public class AuthController(IUserService userService) : ControllerBase
+public class AuthController(IUserService userService) : BaseController
 {
     private readonly IUserService _userService = userService;
 
@@ -71,19 +68,19 @@ public class AuthController(IUserService userService) : ControllerBase
     }
 
     /// <summary>
-    /// Envía un correo para restablecer la contraseña.
+    /// Envía un código para restablecer la contraseña.
     /// </summary>
-    [HttpPost("forgot-password")]
-    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDTO forgotPasswordDTO)
+    [HttpPost("recover-password")]
+    public async Task<IActionResult> RecoverPassword([FromBody] ForgotPasswordDTO forgotPasswordDTO)
     {
         var message = await _userService.ForgotPasswordAsync(forgotPasswordDTO);
         return Ok(new GenericResponse<string>("Solicitud de restablecimiento enviada", message));
     }
 
     /// <summary>
-    /// Restablece la contraseña del usuario.
+    /// Restablece la contraseña del usuario usando un código.
     /// </summary>
-    [HttpPost("reset-password")]
+    [HttpPatch("reset-password")]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDTO resetPasswordDTO)
     {
         var message = await _userService.ResetPasswordAsync(resetPasswordDTO);

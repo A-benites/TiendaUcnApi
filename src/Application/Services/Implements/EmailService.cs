@@ -99,6 +99,34 @@ public class EmailService : IEmailService
     }
 
     /// <summary>
+    /// Envía un código para restablecer la contraseña.
+    /// </summary>
+    public async Task SendPasswordResetCodeEmailAsync(string to, string userName, string code)
+    {
+        var replacements = new Dictionary<string, string>
+        {
+            { "{{UserName}}", userName },
+            { "{{CODE}}", code },
+        };
+        var htmlBody = await LoadTemplate("PasswordResetCode", replacements);
+
+        var message = new EmailMessage
+        {
+            To = to,
+            Subject =
+                _configuration["EmailConfiguration:PasswordResetSubject"]
+                ?? "Código para Restablecer tu Contraseña",
+            From =
+                _configuration["EmailConfiguration:From"]
+                ?? throw new InvalidOperationException(
+                    "La configuración de 'From' no puede ser nula."
+                ),
+            HtmlBody = htmlBody,
+        };
+        await _resend.EmailSendAsync(message);
+    }
+
+    /// <summary>
     /// Carga una plantilla de correo electrónico y reemplaza los marcadores de posición.
     /// </summary>
     /// <param name="templateName">El nombre de la plantilla sin extensión.</param>
