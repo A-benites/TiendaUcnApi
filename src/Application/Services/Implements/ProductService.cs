@@ -186,4 +186,58 @@ public class ProductService : IProductService
     {
         await _productRepository.ToggleActiveAsync(id);
     }
+
+    public async Task<ProductDetailDTO> UpdateAsync(int id, ProducUpdateDTO producUpdateDTO)
+    {
+        var productToUpdate =
+            await _productRepository.GetTrackedByIdForAdminAsync(id)
+            ?? throw new KeyNotFoundException($"Producto con ID {id} no encontrado.");
+
+        // --- LÓGICA DE ACTUALIZACIÓN MANUAL ---
+        // En lugar de usar Mapster, actualizamos campo por campo solo si viene en el DTO.
+
+        if (!string.IsNullOrEmpty(producUpdateDTO.Title))
+        {
+            productToUpdate.Title = producUpdateDTO.Title;
+        }
+        if (!string.IsNullOrEmpty(producUpdateDTO.Description))
+        {
+            productToUpdate.Description = producUpdateDTO.Description;
+        }
+        if (producUpdateDTO.Price.HasValue)
+        {
+            productToUpdate.Price = producUpdateDTO.Price.Value;
+        }
+        if (producUpdateDTO.Discount.HasValue)
+        {
+            productToUpdate.Discount = producUpdateDTO.Discount.Value;
+        }
+        if (producUpdateDTO.Stock.HasValue)
+        {
+            productToUpdate.Stock = producUpdateDTO.Stock.Value;
+        }
+        if (producUpdateDTO.Status.HasValue)
+        {
+            productToUpdate.Status = producUpdateDTO.Status.Value;
+        }
+
+        var updatedProduct = await _productRepository.UpdateAsync(productToUpdate);
+        Log.Information("Producto actualizado: {@Product}", updatedProduct);
+
+        return updatedProduct.Adapt<ProductDetailDTO>();
+    }
+
+    public async Task UpdateDiscountAsync(int id, UpdateProductDiscountDTO dto)
+    {
+        var product =
+            await _productRepository.GetByIdForAdminAsync(id)
+            ?? throw new KeyNotFoundException($"Producto con ID {id} no encontrado.");
+
+        await _productRepository.UpdateDiscountAsync(id, dto.Discount);
+        Log.Information(
+            "Descuento del producto {ProductId} actualizado a {Discount}%",
+            id,
+            dto.Discount
+        );
+    }
 }

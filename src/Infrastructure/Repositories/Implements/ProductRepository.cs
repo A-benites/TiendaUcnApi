@@ -231,4 +231,29 @@ public class ProductRepository : IProductRepository
         product.Stock = stock;
         await _context.SaveChangesAsync();
     }
+
+    public async Task<Product> UpdateAsync(Product product)
+    {
+        product.UpdatedAt = DateTime.UtcNow;
+        // La línea _context.Products.Update(product); ha sido eliminada.
+        await _context.SaveChangesAsync(); // EF Core ya sabe qué ha cambiado y lo guardará.
+        return product;
+    }
+
+    public async Task UpdateDiscountAsync(int productId, int discount)
+    {
+        await _context
+            .Products.Where(p => p.Id == productId)
+            .ExecuteUpdateAsync(s => s.SetProperty(p => p.Discount, discount));
+    }
+
+    public async Task<Product?> GetTrackedByIdForAdminAsync(int id)
+    {
+        return await _context
+            .Products.Where(p => p.Id == id)
+            .Include(p => p.Category)
+            .Include(p => p.Brand)
+            .Include(p => p.Images)
+            .FirstOrDefaultAsync();
+    }
 }

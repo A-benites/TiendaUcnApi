@@ -7,35 +7,24 @@ using TiendaUcnApi.src.Application.Services.Interfaces;
 
 namespace TiendaUcnApi.src.API.Controllers;
 
-/// <summary>
-/// Controlador para manejar las operaciones relacionadas con los productos.
-/// </summary>
-public class ProductController : BaseController
+[ApiController]
+[Route("api/admin/products")] // Ruta base ajustada para todos los endpoints de admin
+[Authorize(Roles = "Administrador")] // Protección a nivel de controlador
+public class ProductAdminController : ControllerBase // Cambiado para evitar conflicto de rutas
 {
-    /// <summary>
-    /// Controlador para manejar las operaciones relacionadas con los productos.
-    /// </summary>
     private readonly IProductService _productService;
+    private readonly IFileService _fileService;
 
-    public ProductController(IProductService productService)
+    public ProductAdminController(IProductService productService, IFileService fileService)
     {
         _productService = productService;
+        _fileService = fileService;
     }
 
-    /// <summary>
-    /// Obtiene todos los productos para el administrador con los parámetros de búsqueda especificados.
-    /// </summary>
-    /// <param name="searchParams">Parámetros de búsqueda para filtrar los productos.</param>
-    /// <returns>Una lista de productos filtrados para el administrador.</returns>
-    [HttpGet("admin/products")]
-    [Authorize(Roles = "Administrador")]
+    [HttpGet]
     public async Task<IActionResult> GetAllForAdminAsync([FromQuery] SearchParamsDTO searchParams)
     {
         var result = await _productService.GetFilteredForAdminAsync(searchParams);
-        if (result == null || result.Products.Count == 0)
-        {
-            throw new KeyNotFoundException("No se encontraron productos.");
-        }
         return Ok(
             new GenericResponse<ListedProductsForAdminDTO>(
                 "Productos obtenidos exitosamente",
@@ -44,90 +33,75 @@ public class ProductController : BaseController
         );
     }
 
-    /* [HttpGet("customer/products")]
-    [AllowAnonymous]
-    public async Task<IActionResult> GetAllForCustomerAsync(
-        [FromQuery] SearchParamsDTO searchParams
-    )
-    {
-        var result = await _productService.GetFilteredForCustomerAsync(searchParams);
-        if (result == null || result.Products.Count == 0)
-        {
-            throw new KeyNotFoundException("No se encontraron productos.");
-        }
-        return Ok(
-            new GenericResponse<ListedProductsForCustomerDTO>(
-                "Productos obtenidos exitosamente",
-                result
-            )
-        );
-    } */
-
-    /* /// <summary>
-    /// Obtiene un producto específico para el cliente.
-    /// </summary>
-    /// <param name="id">ID del producto a obtener.</param>
-    /// <returns>El producto solicitado.</returns>
     [HttpGet("{id}")]
-    [AllowAnonymous]
-    public async Task<IActionResult> GetByIdForCustomerAsync(int id)
-    {
-        var result = await _productService.GetByIdAsync(id);
-        if (result == null)
-        {
-            throw new KeyNotFoundException("Producto no encontrado.");
-        }
-        return Ok(new GenericResponse<ProductDetailDTO>("Producto obtenido exitosamente", result));
-    } */
-
-    /// <summary>
-    /// Obtiene un producto específico para el admin.
-    /// </summary>
-    /// <param name="id">ID del producto a obtener.</param>
-    /// <returns>El producto solicitado.</returns>
-    [HttpGet("admin/{id}")]
-    [Authorize(Roles = "Administrador")]
     public async Task<IActionResult> GetByIdForAdminAsync(int id)
     {
         var result = await _productService.GetByIdForAdminAsync(id);
-        if (result == null)
-        {
-            throw new KeyNotFoundException("Producto no encontrado.");
-        }
         return Ok(new GenericResponse<ProductDetailDTO>("Producto obtenido exitosamente", result));
     }
 
-    /// <summary>
-    /// Crea un nuevo producto en el sistema.
-    /// </summary>
-    /// <param name="createProductDTO">Los datos del producto a crear.</param>
-    /// <returns>El ID del producto creado.</returns>
-    [HttpPost("admin/products")]
-    [Authorize(Roles = "Administrador")]
+    [HttpPost]
     public async Task<IActionResult> CreateAsync([FromForm] ProductCreateDTO createProductDTO)
     {
         var result = await _productService.CreateAsync(createProductDTO);
         return Created(
-            $"/api/product/{result}",
+            $"/api/admin/products/{result}",
             new GenericResponse<string>("Producto creado exitosamente", result)
         );
     }
 
-    /// <summary>
-    /// Cambia el estado activo de un producto por su ID.
-    /// </summary>
-    /// <param name="id">El ID del producto cuyo estado se cambiará.</param>
-    /// <returns>Una respuesta que indica el resultado de la operación.</returns>
-    [HttpPatch("{id}/toggle-active")]
-    [Authorize(Roles = "Administrador")]
-    public async Task<IActionResult> ToggleActiveAsync(int id)
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateAsync(int id, [FromBody] ProducUpdateDTO producUpdateDTO)
+    {
+        var result = await _productService.UpdateAsync(id, producUpdateDTO);
+        return Ok(
+            new GenericResponse<ProductDetailDTO>("Producto actualizado exitosamente", result)
+        );
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteAsync(int id)
     {
         await _productService.ToggleActiveAsync(id);
-        return Ok(
-            new GenericResponse<string>(
-                "Estado del producto actualizado exitosamente",
-                "El estado del producto ha sido cambiado."
-            )
-        );
+        return Ok(new GenericResponse<string>("Producto desactivado exitosamente"));
+    }
+
+    [HttpPost("{id}/images")]
+    public async Task<IActionResult> UploadImages(int id, [FromForm] List<IFormFile> images)
+    {
+        if (images == null || !images.Any())
+        {
+            return BadRequest(new GenericResponse<string>("No se proporcionaron imágenes."));
+        }
+
+        foreach (var image in images)
+        {
+            await _fileService.UploadAsync(image, id);
+        }
+        return Ok(new GenericResponse<string>("Imágenes subidas exitosamente"));
+    }
+
+    [HttpDelete("{id}/images/{imageId}")]
+    public async Task<IActionResult> DeleteImageAsync(int id, int imageId)
+    {
+        await _fileService.DeleteAsync(imageId);
+        return Ok(new GenericResponse<string>("Imagen eliminada exitosamente"));
+    }
+
+    [HttpPatch("{id}/discount")]
+    public async Task<IActionResult> UpdateDiscountAsync(
+        int id,
+        [FromBody] UpdateProductDiscountDTO dto
+    )
+    {
+        await _productService.UpdateDiscountAsync(id, dto);
+        return Ok(new GenericResponse<string>("Descuento del producto actualizado exitosamente."));
+    }
+
+    [HttpPatch("{id}/status")]
+    public async Task<IActionResult> ToggleStatusAsync(int id)
+    {
+        await _productService.ToggleActiveAsync(id);
+        return Ok(new GenericResponse<string>("Estado del producto actualizado exitosamente"));
     }
 }

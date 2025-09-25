@@ -24,7 +24,7 @@ public class ProductCreateDTO
     public required int Discount { get; set; }
 
     [Required(ErrorMessage = "El stock del producto es obligatorio.")]
-    [Range(0, int.MaxValue, ErrorMessage = "El stock debe ser un valor positivo.")]
+    [Range(1, int.MaxValue, ErrorMessage = "El stock debe ser un valor positivo.")]
     public required int Stock { get; set; }
 
     [Required(ErrorMessage = "El estado del producto es obligatorio.")]

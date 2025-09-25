@@ -45,4 +45,9 @@ public class FileRepository : IFileRepository
         }
         return null;
     }
+
+    public async Task<Image?> GetImageByIdAsync(int imageId)
+    {
+        return await _context.Images.AsNoTracking().FirstOrDefaultAsync(i => i.Id == imageId);
+    }
 }

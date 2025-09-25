@@ -21,4 +21,6 @@ public interface IFileRepository
     /// <param name="publicId">El identificador público del archivo a eliminar.</param>
     /// <returns>True si el archivo se eliminó correctamente, de lo contrario false y null si la imagen no existe.</returns>
     Task<bool?> DeleteAsync(string publicId);
+
+    Task<Image?> GetImageByIdAsync(int imageId);
 }

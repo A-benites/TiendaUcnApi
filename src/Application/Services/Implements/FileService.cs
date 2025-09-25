@@ -260,4 +260,13 @@ public class FileService : IFileService
             return false;
         }
     }
+
+    public async Task<bool> DeleteAsync(int imageId)
+    {
+        var image =
+            await _fileRepository.GetImageByIdAsync(imageId)
+            ?? throw new KeyNotFoundException("La imagen no existe.");
+
+        return await DeleteAsync(image.PublicId);
+    }
 }

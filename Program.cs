@@ -9,6 +9,7 @@ using System.Security.Claims;
 using System.Text;
 using TiendaUcnApi.src.API.Extensions;
 using TiendaUcnApi.src.API.Middlewares.ErrorHandlingMiddleware;
+using TiendaUcnApi.src.Application.Mappers; // <-- Importación añadida
 using TiendaUcnApi.src.Application.Services.Implements;
 using TiendaUcnApi.src.Application.Services.Interfaces;
 using TiendaUcnApi.src.Domain.Models;
@@ -183,8 +184,11 @@ try
     builder.Services.AddHttpContextAccessor();
 
     // Configura los mapeos de Mapster
-    var mapper = new TiendaUcnApi.src.Application.Mappers.UserMapper();
-    mapper.ConfigureAllMappings();
+    var userMapper = new UserMapper();
+    userMapper.ConfigureAllMappings();
+
+    var productMapper = new ProductMapper(builder.Configuration); // <-- Línea añadida
+    productMapper.ConfigureAllMappings(); // <-- Línea añadida
 
     var app = builder.Build();
 

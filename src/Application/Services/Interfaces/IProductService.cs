@@ -45,4 +45,8 @@ public interface IProductService
     /// </summary>
     /// <param name="id">El ID del producto cuyo estado se cambiará.</param>
     Task ToggleActiveAsync(int id);
+
+    Task<ProductDetailDTO> UpdateAsync(int id, ProducUpdateDTO producUpdateDTO);
+
+    Task UpdateDiscountAsync(int id, UpdateProductDiscountDTO dto);
 }
