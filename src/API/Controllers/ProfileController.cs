@@ -7,6 +7,10 @@ using TiendaUcnApi.src.Application.Services.Interfaces;
 
 namespace TiendaUcnApi.src.API.Controllers;
 
+/// <summary>
+/// Controlador para gestión de perfil de usuario.
+/// Permite ver, actualizar perfil, cambiar contraseña y verificar cambio de email.
+/// </summary>
 [ApiController]
 [Route("api/user")]
 [Authorize]
@@ -19,6 +23,9 @@ public class ProfileController : BaseController
         _profileService = profileService;
     }
 
+    /// <summary>
+    /// Obtiene el identificador del usuario autenticado desde el token.
+    /// </summary>
     private int GetUserId()
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
@@ -31,6 +38,9 @@ public class ProfileController : BaseController
         return userId;
     }
 
+    /// <summary>
+    /// Obtiene el perfil del usuario autenticado.
+    /// </summary>
     [HttpGet("profile")]
     public async Task<ActionResult<ProfileDTO>> GetProfile()
     {
@@ -38,6 +48,9 @@ public class ProfileController : BaseController
         return Ok(new GenericResponse<ProfileDTO>("Perfil obtenido exitosamente", profile));
     }
 
+    /// <summary>
+    /// Actualiza el perfil del usuario autenticado.
+    /// </summary>
     [HttpPut("profile")] // MÉTODO Y RUTA CORREGIDOS
     public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileDTO dto)
     {
@@ -45,6 +58,9 @@ public class ProfileController : BaseController
         return Ok(new GenericResponse<string>(result));
     }
 
+    /// <summary>
+    /// Cambia la contraseña del usuario autenticado.
+    /// </summary>
     [HttpPatch("change-password")]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDTO dto)
     {
@@ -52,6 +68,9 @@ public class ProfileController : BaseController
         return Ok(new GenericResponse<string>("Contraseña cambiada exitosamente"));
     }
 
+    /// <summary>
+    /// Verifica el cambio de correo electrónico del usuario autenticado.
+    /// </summary>
     [HttpPost("verify-email-change")]
     public async Task<IActionResult> VerifyEmailChange([FromBody] VerifyEmailChangeDTO dto)
     {

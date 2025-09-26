@@ -14,15 +14,50 @@ namespace TiendaUcnApi.src.Application.Services.Implements;
 /// </summary>
 public class UserService : IUserService
 {
+    /// <summary>
+    /// Servicio para generación de tokens JWT.
+    /// </summary>
     private readonly ITokenService _tokenService;
+
+    /// <summary>
+    /// Repositorio de usuarios.
+    /// </summary>
     private readonly IUserRepository _userRepository;
+
+    /// <summary>
+    /// Servicio para envío de correos electrónicos.
+    /// </summary>
     private readonly IEmailService _emailService;
+
+    /// <summary>
+    /// Configuración de la aplicación.
+    /// </summary>
     private readonly IConfiguration _configuration;
+
+    /// <summary>
+    /// Repositorio de códigos de verificación.
+    /// </summary>
     private readonly IVerificationCodeRepository _verificationCodeRepository;
+
+    /// <summary>
+    /// Administrador de usuarios de Identity.
+    /// </summary>
     private readonly UserManager<User> _userManager;
+
+    /// <summary>
+    /// Tiempo de expiración de los códigos de verificación (en minutos).
+    /// </summary>
     private readonly int _verificationCodeExpirationTimeInMinutes;
 
-    // Constructor unificado con todas las dependencias necesarias
+    /// <summary>
+    /// Constructor unificado con todas las dependencias necesarias.
+    /// </summary>
+    /// <param name="tokenService">Servicio de tokens.</param>
+    /// <param name="userRepository">Repositorio de usuarios.</param>
+    /// <param name="emailService">Servicio de email.</param>
+    /// <param name="verificationCodeRepository">Repositorio de códigos de verificación.</param>
+    /// <param name="configuration">Configuración de la aplicación.</param>
+    /// <param name="userManager">Administrador de usuarios.</param>
     public UserService(
         ITokenService tokenService,
         IUserRepository userRepository,
@@ -46,6 +81,9 @@ public class UserService : IUserService
     /// <summary>
     /// Inicia sesión con el usuario proporcionado.
     /// </summary>
+    /// <param name="loginDTO">DTO con los datos de inicio de sesión.</param>
+    /// <param name="httpContext">Contexto HTTP actual.</param>
+    /// <returns>Token JWT y el ID del usuario.</returns>
     public async Task<(string token, int userId)> LoginAsync(
         LoginDTO loginDTO,
         HttpContext httpContext
@@ -95,6 +133,9 @@ public class UserService : IUserService
     /// <summary>
     /// Registra un nuevo usuario.
     /// </summary>
+    /// <param name="registerDTO">DTO con los datos de registro.</param>
+    /// <param name="httpContext">Contexto HTTP actual.</param>
+    /// <returns>Mensaje de confirmación.</returns>
     public async Task<string> RegisterAsync(RegisterDTO registerDTO, HttpContext httpContext)
     {
         var ipAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? "IP desconocida";
@@ -153,6 +194,8 @@ public class UserService : IUserService
     /// <summary>
     /// Reenvía el código de verificación al correo electrónico del usuario.
     /// </summary>
+    /// <param name="resendEmailVerificationCodeDTO">DTO con el email del usuario.</param>
+    /// <returns>Mensaje de confirmación.</returns>
     public async Task<string> ResendEmailVerificationCodeAsync(
         ResendEmailVerificationCodeDTO resendEmailVerificationCodeDTO
     )
@@ -213,6 +256,8 @@ public class UserService : IUserService
     /// <summary>
     /// Verifica el correo electrónico del usuario.
     /// </summary>
+    /// <param name="verifyEmailDTO">DTO con el email y código de verificación.</param>
+    /// <returns>Mensaje de confirmación.</returns>
     public async Task<string> VerifyEmailAsync(VerifyEmailDTO verifyEmailDTO)
     {
         User? user = await _userRepository.GetByEmailAsync(verifyEmailDTO.Email);
@@ -312,13 +357,17 @@ public class UserService : IUserService
     /// <summary>
     /// Elimina usuarios no confirmados.
     /// </summary>
+    /// <returns>Cantidad de usuarios eliminados.</returns>
     public async Task<int> DeleteUnconfirmedAsync()
     {
         return await _userRepository.DeleteUnconfirmedAsync();
     }
 
-    // En UserService.cs
-
+    /// <summary>
+    /// Solicita el envío de un código para restablecer la contraseña.
+    /// </summary>
+    /// <param name="forgotPasswordDTO">DTO con el email del usuario.</param>
+    /// <returns>Mensaje de confirmación.</returns>
     public async Task<string> ForgotPasswordAsync(ForgotPasswordDTO forgotPasswordDTO)
     {
         var user = await _userManager.FindByEmailAsync(forgotPasswordDTO.Email);
@@ -347,6 +396,11 @@ public class UserService : IUserService
         return "Si existe una cuenta asociada a este correo, se ha enviado un código para restablecer la contraseña.";
     }
 
+    /// <summary>
+    /// Restablece la contraseña del usuario usando un código.
+    /// </summary>
+    /// <param name="resetPasswordDTO">DTO con el email, código y nueva contraseña.</param>
+    /// <returns>Mensaje de confirmación.</returns>
     public async Task<string> ResetPasswordAsync(ResetPasswordDTO resetPasswordDTO)
     {
         var user = await _userManager.FindByEmailAsync(resetPasswordDTO.Email);

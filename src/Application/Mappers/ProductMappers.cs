@@ -6,12 +6,30 @@ using TiendaUcnApi.src.Domain.Models;
 
 namespace TiendaUcnApi.src.Application.Mappers;
 
+/// <summary>
+/// Clase encargada de configurar los mapeos entre entidades de producto y sus DTOs.
+/// </summary>
 public class ProductMapper
 {
+    /// <summary>
+    /// Configuración de la aplicación (usada para obtener valores de configuración).
+    /// </summary>
     private readonly IConfiguration _configuration;
+
+    /// <summary>
+    /// URL de la imagen por defecto para productos sin imágenes.
+    /// </summary>
     private readonly string? _defaultImageURL;
+
+    /// <summary>
+    /// Cantidad mínima para considerar que hay pocas unidades disponibles.
+    /// </summary>
     private readonly int _fewUnitsAvailable;
 
+    /// <summary>
+    /// Inicializa una nueva instancia de <see cref="ProductMapper"/>.
+    /// </summary>
+    /// <param name="configuration">Configuración de la aplicación.</param>
     public ProductMapper(IConfiguration configuration)
     {
         _configuration = configuration;
@@ -27,11 +45,17 @@ public class ProductMapper
             );
     }
 
+    /// <summary>
+    /// Configura todos los mapeos relacionados con productos.
+    /// </summary>
     public void ConfigureAllMappings()
     {
         ConfigureProductMappings();
     }
 
+    /// <summary>
+    /// Configura los mapeos entre entidades <see cref="Product"/> y sus DTOs.
+    /// </summary>
     public void ConfigureProductMappings()
     {
         TypeAdapterConfig<Product, ProductDetailDTO>
@@ -101,8 +125,8 @@ public class ProductMapper
     /// <summary>
     /// Obtiene el indicador de stock basado en la cantidad disponible.
     /// </summary>
-    /// <param name="stock">Stock del producto</param>
-    /// <returns>Retorna el mensaje adecuado</returns>
+    /// <param name="stock">Stock del producto.</param>
+    /// <returns>Retorna el mensaje adecuado según el stock.</returns>
     private string GetStockIndicator(int stock)
     {
         if (stock == 0)

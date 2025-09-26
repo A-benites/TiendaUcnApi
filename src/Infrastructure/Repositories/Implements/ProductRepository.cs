@@ -11,11 +11,26 @@ namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements;
 /// </summary>
 public class ProductRepository : IProductRepository
 {
+    /// <summary>
+    /// Contexto de base de datos de la aplicación.
+    /// </summary>
     private readonly AppDbContext _context;
+
+    /// <summary>
+    /// Configuración de la aplicación.
+    /// </summary>
     private readonly IConfiguration _configuration;
 
+    /// <summary>
+    /// Tamaño de página por defecto.
+    /// </summary>
     private readonly int _defaultPageSize;
 
+    /// <summary>
+    /// Constructor que inyecta dependencias necesarias.
+    /// </summary>
+    /// <param name="context">Contexto de base de datos.</param>
+    /// <param name="configuration">Configuración de la aplicación.</param>
     public ProductRepository(AppDbContext context, IConfiguration configuration)
     {
         _context = context;
@@ -31,7 +46,7 @@ public class ProductRepository : IProductRepository
     /// Crea un nuevo producto en el repositorio.
     /// </summary>
     /// <param name="product">El producto a crear.</param>
-    /// <returns>Una tarea que representa la operación asíncrona, con el id del producto creado</returns>
+    /// <returns>Id del producto creado.</returns>
     public async Task<int> CreateAsync(Product product)
     {
         await _context.Products.AddAsync(product);
@@ -42,8 +57,8 @@ public class ProductRepository : IProductRepository
     /// <summary>
     /// Crea o obtiene una marca por su nombre.
     /// </summary>
-    /// <param name="brandName">El nombre de la marca.</param>
-    /// <returns>Una tarea que representa la operación asíncrona, con la marca creada o encontrada.</returns>
+    /// <param name="brandName">Nombre de la marca.</param>
+    /// <returns>Marca creada o encontrada.</returns>
     public async Task<Brand> CreateOrGetBrandAsync(string brandName)
     {
         var brand = await _context
@@ -63,8 +78,8 @@ public class ProductRepository : IProductRepository
     /// <summary>
     /// Crea o obtiene una categoría por su nombre.
     /// </summary>
-    /// <param name="categoryName">El nombre de la categoría.</param>
-    /// <returns>Una tarea que representa la operación asíncrona, con la categoría creada o encontrada.</returns>
+    /// <param name="categoryName">Nombre de la categoría.</param>
+    /// <returns>Categoría creada o encontrada.</returns>
     public async Task<Category> CreateOrGetCategoryAsync(string categoryName)
     {
         var category = await _context
@@ -84,8 +99,8 @@ public class ProductRepository : IProductRepository
     /// <summary>
     /// Retorna un producto específico por su ID.
     /// </summary>
-    /// <param name="id">El ID del producto a buscar.</param>
-    /// <returns>Una tarea que representa la operación asíncrona, con el producto encontrado o null si no se encuentra.</returns>
+    /// <param name="id">ID del producto a buscar.</param>
+    /// <returns>Producto encontrado o null si no existe.</returns>
     public async Task<Product?> GetByIdAsync(int id)
     {
         return await _context
@@ -100,8 +115,8 @@ public class ProductRepository : IProductRepository
     /// <summary>
     /// Retorna un producto específico por su ID desde el punto de vista de un admin.
     /// </summary>
-    /// <param name="id">El ID del producto a buscar.</param>
-    /// <returns>Una tarea que representa la operación asíncrona, con el producto encontrado o null si no se encuentra.</returns>
+    /// <param name="id">ID del producto a buscar.</param>
+    /// <returns>Producto encontrado o null si no existe.</returns>
     public async Task<Product?> GetByIdForAdminAsync(int id)
     {
         return await _context
@@ -113,11 +128,11 @@ public class ProductRepository : IProductRepository
             .FirstOrDefaultAsync();
     }
 
-    // <summary>
+    /// <summary>
     /// Retorna una lista de productos para el administrador con los parámetros de búsqueda especificados.
     /// </summary>
     /// <param name="searchParams">Parámetros de búsqueda para filtrar los productos.</param>
-    /// <returns>Una tarea que representa la operación asíncrona, con una lista de productos para el administrador y el conteo total de productos.</returns>
+    /// <returns>Lista de productos y el conteo total.</returns>
     public async Task<(IEnumerable<Product> products, int totalCount)> GetFilteredForAdminAsync(
         SearchParamsDTO searchParams
     )
@@ -125,7 +140,7 @@ public class ProductRepository : IProductRepository
         var query = _context
             .Products.Include(p => p.Category)
             .Include(p => p.Brand)
-            .Include(p => p.Images.OrderBy(i => i.CreatedAt).Take(1)) // Cargamos la URL de la imagen principal a la hora de crear el producto
+            .Include(p => p.Images.OrderBy(i => i.CreatedAt).Take(1))
             .AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(searchParams.SearchTerm))
@@ -156,7 +171,7 @@ public class ProductRepository : IProductRepository
     /// Retorna una lista de productos para el cliente con los parámetros de búsqueda especificados.
     /// </summary>
     /// <param name="searchParams">Parámetros de búsqueda para filtrar los productos.</param>
-    /// <returns>Una tarea que representa la operación asíncrona, con una lista de productos para el cliente y el conteo total de productos.</returns>
+    /// <returns>Lista de productos y el conteo total.</returns>
     public async Task<(IEnumerable<Product> products, int totalCount)> GetFilteredForCustomerAsync(
         SearchParamsDTO searchParams
     )
@@ -195,8 +210,8 @@ public class ProductRepository : IProductRepository
     /// <summary>
     /// Obtiene el stock real de un producto por su ID.
     /// </summary>
-    /// <param name="productId">El ID del producto cuyo stock se obtendrá.</param>
-    /// <returns>Una tarea que representa la operación asíncrona, con el stock real del producto.</returns>
+    /// <param name="productId">ID del producto.</param>
+    /// <returns>Stock real del producto.</returns>
     public async Task<int> GetRealStockAsync(int productId)
     {
         return await _context
@@ -209,7 +224,7 @@ public class ProductRepository : IProductRepository
     /// <summary>
     /// Cambia el estado activo de un producto por su ID.
     /// </summary>
-    /// <param name="id">El ID del producto cuyo estado se cambiará.</param>
+    /// <param name="id">ID del producto.</param>
     public async Task ToggleActiveAsync(int id)
     {
         await _context
@@ -220,9 +235,8 @@ public class ProductRepository : IProductRepository
     /// <summary>
     /// Actualiza el stock de un producto por su ID.
     /// </summary>
-    /// <param name="productId">El ID del producto cuyo stock se actualizará.</param>
-    /// <param name="stock">El nuevo stock del producto.</param>
-    /// <returns>Una tarea que representa la operación asíncrona.</returns>
+    /// <param name="productId">ID del producto.</param>
+    /// <param name="stock">Nuevo stock.</param>
     public async Task UpdateStockAsync(int productId, int stock)
     {
         Product? product =
@@ -232,14 +246,23 @@ public class ProductRepository : IProductRepository
         await _context.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Actualiza los datos de un producto.
+    /// </summary>
+    /// <param name="product">Producto con los datos actualizados.</param>
+    /// <returns>Producto actualizado.</returns>
     public async Task<Product> UpdateAsync(Product product)
     {
         product.UpdatedAt = DateTime.UtcNow;
-        // La línea _context.Products.Update(product); ha sido eliminada.
-        await _context.SaveChangesAsync(); // EF Core ya sabe qué ha cambiado y lo guardará.
+        await _context.SaveChangesAsync();
         return product;
     }
 
+    /// <summary>
+    /// Actualiza el descuento de un producto.
+    /// </summary>
+    /// <param name="productId">ID del producto.</param>
+    /// <param name="discount">Nuevo descuento.</param>
     public async Task UpdateDiscountAsync(int productId, int discount)
     {
         await _context
@@ -247,6 +270,11 @@ public class ProductRepository : IProductRepository
             .ExecuteUpdateAsync(s => s.SetProperty(p => p.Discount, discount));
     }
 
+    /// <summary>
+    /// Obtiene un producto con seguimiento de cambios por su ID para administración.
+    /// </summary>
+    /// <param name="id">ID del producto.</param>
+    /// <returns>Producto encontrado o null si no existe.</returns>
     public async Task<Product?> GetTrackedByIdForAdminAsync(int id)
     {
         return await _context

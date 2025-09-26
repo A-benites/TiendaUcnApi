@@ -9,14 +9,44 @@ using TiendaUcnApi.src.Infrastructure.Repositories.Interfaces;
 
 namespace TiendaUcnApi.src.Application.Services.Implements;
 
+/// <summary>
+/// Servicio para la gestión del perfil de usuario.
+/// </summary>
 public class ProfileService : IProfileService
 {
+    /// <summary>
+    /// Repositorio de usuarios.
+    /// </summary>
     private readonly IUserRepository _userRepository;
+
+    /// <summary>
+    /// Administrador de usuarios de Identity.
+    /// </summary>
     private readonly UserManager<User> _userManager;
+
+    /// <summary>
+    /// Servicio para envío de correos electrónicos.
+    /// </summary>
     private readonly IEmailService _emailService;
+
+    /// <summary>
+    /// Repositorio de códigos de verificación.
+    /// </summary>
     private readonly IVerificationCodeRepository _verificationCodeRepository;
+
+    /// <summary>
+    /// Configuración de la aplicación.
+    /// </summary>
     private readonly IConfiguration _configuration;
 
+    /// <summary>
+    /// Constructor con todas las dependencias necesarias.
+    /// </summary>
+    /// <param name="userRepository">Repositorio de usuarios.</param>
+    /// <param name="userManager">Administrador de usuarios.</param>
+    /// <param name="emailService">Servicio de email.</param>
+    /// <param name="verificationCodeRepository">Repositorio de códigos de verificación.</param>
+    /// <param name="configuration">Configuración de la aplicación.</param>
     public ProfileService(
         IUserRepository userRepository,
         UserManager<User> userManager,
@@ -32,6 +62,11 @@ public class ProfileService : IProfileService
         _configuration = configuration;
     }
 
+    /// <summary>
+    /// Obtiene el perfil del usuario por su ID.
+    /// </summary>
+    /// <param name="userId">ID del usuario.</param>
+    /// <returns>DTO con los datos del perfil.</returns>
     public async Task<ProfileDTO> GetProfileAsync(int userId)
     {
         var user =
@@ -40,6 +75,12 @@ public class ProfileService : IProfileService
         return user.Adapt<ProfileDTO>();
     }
 
+    /// <summary>
+    /// Actualiza los datos del perfil del usuario.
+    /// </summary>
+    /// <param name="userId">ID del usuario.</param>
+    /// <param name="dto">DTO con los datos a actualizar.</param>
+    /// <returns>Mensaje de confirmación.</returns>
     public async Task<string> UpdateProfileAsync(int userId, UpdateProfileDTO dto)
     {
         var user =
@@ -125,6 +166,12 @@ public class ProfileService : IProfileService
         return "Tus datos han sido actualizados. Si solicitaste un cambio de correo, por favor verifica el código enviado a tu nueva dirección.";
     }
 
+    /// <summary>
+    /// Verifica el cambio de correo electrónico del usuario.
+    /// </summary>
+    /// <param name="userId">ID del usuario.</param>
+    /// <param name="dto">DTO con el nuevo email y código de verificación.</param>
+    /// <returns>Mensaje de confirmación.</returns>
     public async Task<string> VerifyEmailChangeAsync(int userId, VerifyEmailChangeDTO dto)
     {
         var user =
@@ -165,6 +212,11 @@ public class ProfileService : IProfileService
         return "Tu correo electrónico ha sido actualizado exitosamente.";
     }
 
+    /// <summary>
+    /// Cambia la contraseña del usuario.
+    /// </summary>
+    /// <param name="userId">ID del usuario.</param>
+    /// <param name="dto">DTO con la contraseña actual y la nueva.</param>
     public async Task ChangePasswordAsync(int userId, ChangePasswordDTO dto)
     {
         var user =
@@ -183,8 +235,6 @@ public class ProfileService : IProfileService
             throw new ArgumentException($"Error al cambiar la contraseña: {errors}");
         }
 
-        // --- LÍNEA CLAVE PARA INVALIDAR SESIONES (R35) ---
-        // Esto cambia el SecurityStamp del usuario, invalidando todos los tokens JWT emitidos previamente.
         await _userManager.UpdateSecurityStampAsync(user);
 
         Log.Information(

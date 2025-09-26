@@ -8,15 +8,37 @@ using TiendaUcnApi.src.Infrastructure.Repositories.Interfaces;
 
 namespace TiendaUcnApi.src.Application.Services.Implements;
 
+/// <summary>
+/// Servicio para la gestión de productos.
+/// </summary>
 public class ProductService : IProductService
 {
+    /// <summary>
+    /// Repositorio de productos.
+    /// </summary>
     private readonly IProductRepository _productRepository;
+
+    /// <summary>
+    /// Configuración de la aplicación.
+    /// </summary>
     private readonly IConfiguration _configuration;
 
+    /// <summary>
+    /// Servicio para manejo de archivos (imágenes).
+    /// </summary>
     private readonly IFileService _fileService;
 
+    /// <summary>
+    /// Tamaño de página por defecto para paginación.
+    /// </summary>
     private readonly int _defaultPageSize;
 
+    /// <summary>
+    /// Constructor con todas las dependencias necesarias.
+    /// </summary>
+    /// <param name="productRepository">Repositorio de productos.</param>
+    /// <param name="configuration">Configuración de la aplicación.</param>
+    /// <param name="fileService">Servicio de archivos.</param>
     public ProductService(
         IProductRepository productRepository,
         IConfiguration configuration,
@@ -38,7 +60,7 @@ public class ProductService : IProductService
     /// Crea un nuevo producto en el sistema.
     /// </summary>
     /// <param name="createProductDTO">Los datos del producto a crear.</param>
-    /// <returns>Una tarea que representa la operación asíncrona, con el ID del producto creado.</returns>
+    /// <returns>ID del producto creado.</returns>
     public async Task<string> CreateAsync(ProductCreateDTO createProductDTO)
     {
         Product product = createProductDTO.Adapt<Product>();
@@ -71,8 +93,8 @@ public class ProductService : IProductService
     /// <summary>
     /// Retorna un producto específico por su ID.
     /// </summary>
-    /// <param name="id">El ID del producto a buscar.</param>
-    /// <returns>Una tarea que representa la operación asíncrona, con el producto encontrado o null si no se encuentra.</returns>
+    /// <param name="id">ID del producto.</param>
+    /// <returns>DTO con los datos del producto.</returns>
     public async Task<ProductDetailDTO> GetByIdAsync(int id)
     {
         var product =
@@ -85,8 +107,8 @@ public class ProductService : IProductService
     /// <summary>
     /// Retorna un producto específico por su ID desde el punto de vista de un admin.
     /// </summary>
-    /// <param name="id">El ID del producto a buscar.</param>
-    /// <returns>Una tarea que representa la operación asíncrona, con el producto encontrado o null si no se encuentra.</returns>
+    /// <param name="id">ID del producto.</param>
+    /// <returns>DTO con los datos del producto.</returns>
     public async Task<ProductDetailDTO> GetByIdForAdminAsync(int id)
     {
         var product =
@@ -99,8 +121,8 @@ public class ProductService : IProductService
     /// <summary>
     /// Retorna todos los productos para el administrador según los parámetros de búsqueda.
     /// </summary>
-    /// <param name="searchParams">Parámetros de búsqueda para filtrar los productos.</param>
-    /// <returns>Una lista de productos filtrados para el administrador.</returns>
+    /// <param name="searchParams">Parámetros de búsqueda.</param>
+    /// <returns>Lista paginada de productos para administración.</returns>
     public async Task<ListedProductsForAdminDTO> GetFilteredForAdminAsync(
         SearchParamsDTO searchParams
     )
@@ -128,7 +150,6 @@ public class ProductService : IProductService
             pageSize
         );
 
-        // Convertimos los productos filtrados a DTOs para la respuesta
         return new ListedProductsForAdminDTO
         {
             Products = products.Adapt<List<ProductForAdminDTO>>(),
@@ -139,62 +160,26 @@ public class ProductService : IProductService
         };
     }
 
-    /* /// <summary>
-    /// Retorna todos los productos para el cliente según los parámetros de búsqueda.
-    /// </summary>
-    /// <param name="searchParams">Parámetros de búsqueda para filtrar los productos.</param>
-    /// <returns>Una lista de productos filtrados para el cliente.</returns>
-    public async Task<ListedProductsForCustomerDTO> GetFilteredForCustomerAsync(
-        SearchParamsDTO searchParams
-    )
-    {
-        var (products, totalCount) = await _productRepository.GetFilteredForCustomerAsync(
-            searchParams
-        );
-        var totalPages = (int)
-            Math.Ceiling((double)totalCount / (searchParams.PageSize ?? _defaultPageSize));
-        int currentPage = searchParams.PageNumber;
-        int pageSize = searchParams.PageSize ?? _defaultPageSize;
-        if (currentPage < 1 || currentPage > totalPages)
-        {
-            throw new ArgumentOutOfRangeException("El número de página está fuera de rango.");
-        }
-        Log.Information(
-            "Total de productos encontrados: {TotalCount}, Total de páginas: {TotalPages}, Página actual: {CurrentPage}, Tamaño de página: {PageSize}",
-            totalCount,
-            totalPages,
-            currentPage,
-            pageSize
-        );
-
-        // Convertimos los productos filtrados a DTOs para la respuesta
-        return new ListedProductsForCustomerDTO
-        {
-            Products = products.Adapt<List<ProductForCustomerDTO>>(),
-            TotalCount = totalCount,
-            TotalPages = totalPages,
-            CurrentPage = currentPage,
-            PageSize = products.Count(),
-        };
-    } */
-
     /// <summary>
     /// Cambia el estado activo de un producto por su ID.
     /// </summary>
-    /// <param name="id">El ID del producto cuyo estado se cambiará.</param>
+    /// <param name="id">ID del producto.</param>
     public async Task ToggleActiveAsync(int id)
     {
         await _productRepository.ToggleActiveAsync(id);
     }
 
+    /// <summary>
+    /// Actualiza los datos de un producto.
+    /// </summary>
+    /// <param name="id">ID del producto.</param>
+    /// <param name="producUpdateDTO">DTO con los datos a actualizar.</param>
+    /// <returns>DTO con los datos actualizados del producto.</returns>
     public async Task<ProductDetailDTO> UpdateAsync(int id, ProducUpdateDTO producUpdateDTO)
     {
         var productToUpdate =
             await _productRepository.GetTrackedByIdForAdminAsync(id)
             ?? throw new KeyNotFoundException($"Producto con ID {id} no encontrado.");
-
-        // --- LÓGICA DE ACTUALIZACIÓN MANUAL ---
-        // En lugar de usar Mapster, actualizamos campo por campo solo si viene en el DTO.
 
         if (!string.IsNullOrEmpty(producUpdateDTO.Title))
         {
@@ -227,6 +212,11 @@ public class ProductService : IProductService
         return updatedProduct.Adapt<ProductDetailDTO>();
     }
 
+    /// <summary>
+    /// Actualiza el descuento de un producto.
+    /// </summary>
+    /// <param name="id">ID del producto.</param>
+    /// <param name="dto">DTO con el nuevo descuento.</param>
     public async Task UpdateDiscountAsync(int id, UpdateProductDiscountDTO dto)
     {
         var product =

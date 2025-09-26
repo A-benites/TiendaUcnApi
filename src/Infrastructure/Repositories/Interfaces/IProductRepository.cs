@@ -82,9 +82,25 @@ public interface IProductRepository
     /// <returns>Una tarea que representa la operación asíncrona, con el producto encontrado o null si no se encuentra.</returns>
     Task<Product?> GetByIdForAdminAsync(int id);
 
+    /// <summary>
+    /// Actualiza los datos de un producto.
+    /// </summary>
+    /// <param name="product">Producto con los datos actualizados.</param>
+    /// <returns>Una tarea que representa la operación asíncrona, con el producto actualizado.</returns>
     Task<Product> UpdateAsync(Product product);
 
+    /// <summary>
+    /// Actualiza el descuento de un producto.
+    /// </summary>
+    /// <param name="productId">ID del producto.</param>
+    /// <param name="discount">Nuevo descuento.</param>
+    /// <returns>Una tarea que representa la operación asíncrona.</returns>
     Task UpdateDiscountAsync(int productId, int discount);
 
+    /// <summary>
+    /// Obtiene un producto con seguimiento de cambios por su ID para administración.
+    /// </summary>
+    /// <param name="id">ID del producto.</param>
+    /// <returns>Una tarea que representa la operación asíncrona, con el producto encontrado o null si no existe.</returns>
     Task<Product?> GetTrackedByIdForAdminAsync(int id);
 }

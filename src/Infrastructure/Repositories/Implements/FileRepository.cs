@@ -5,10 +5,20 @@ using TiendaUcnApi.src.Infrastructure.Repositories.Interfaces;
 
 namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements;
 
+/// <summary>
+/// Implementación del repositorio de archivos de imagen.
+/// </summary>
 public class FileRepository : IFileRepository
 {
+    /// <summary>
+    /// Contexto de base de datos de la aplicación.
+    /// </summary>
     private readonly AppDbContext _context;
 
+    /// <summary>
+    /// Inicializa una nueva instancia del repositorio de archivos.
+    /// </summary>
+    /// <param name="context">Contexto de base de datos.</param>
     public FileRepository(AppDbContext context)
     {
         _context = context;
@@ -46,6 +56,11 @@ public class FileRepository : IFileRepository
         return null;
     }
 
+    /// <summary>
+    /// Obtiene una imagen por su ID.
+    /// </summary>
+    /// <param name="imageId">ID de la imagen.</param>
+    /// <returns>La imagen encontrada o null si no existe.</returns>
     public async Task<Image?> GetImageByIdAsync(int imageId)
     {
         return await _context.Images.AsNoTracking().FirstOrDefaultAsync(i => i.Id == imageId);

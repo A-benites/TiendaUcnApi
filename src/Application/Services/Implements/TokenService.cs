@@ -13,11 +13,26 @@ namespace TiendaUcnApi.src.Application.Services.Implements
     /// </summary>
     public class TokenService : ITokenService
     {
+        /// <summary>
+        /// Configuración de la aplicación.
+        /// </summary>
         private readonly IConfiguration _configuration;
-        private readonly string _jwtSecret;
-        private readonly UserManager<User> _userManager; // Necesitas el UserManager
 
-        // Modifica el constructor para inyectar UserManager
+        /// <summary>
+        /// Clave secreta para la firma de los tokens JWT.
+        /// </summary>
+        private readonly string _jwtSecret;
+
+        /// <summary>
+        /// Administrador de usuarios de Identity.
+        /// </summary>
+        private readonly UserManager<User> _userManager;
+
+        /// <summary>
+        /// Constructor que inyecta la configuración y el UserManager.
+        /// </summary>
+        /// <param name="configuration">Configuración de la aplicación.</param>
+        /// <param name="userManager">Administrador de usuarios.</param>
         public TokenService(IConfiguration configuration, UserManager<User> userManager)
         {
             _configuration =
@@ -28,6 +43,13 @@ namespace TiendaUcnApi.src.Application.Services.Implements
             _userManager = userManager;
         }
 
+        /// <summary>
+        /// Genera un token JWT para el usuario.
+        /// </summary>
+        /// <param name="user">Usuario autenticado.</param>
+        /// <param name="roleName">Rol del usuario.</param>
+        /// <param name="rememberMe">Indica si el token debe durar más tiempo.</param>
+        /// <returns>Token JWT generado.</returns>
         public string GenerateToken(User user, string roleName, bool rememberMe = false)
         {
             try
@@ -37,8 +59,6 @@ namespace TiendaUcnApi.src.Application.Services.Implements
                     new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                     new Claim(ClaimTypes.Email, user.Email!),
                     new Claim(ClaimTypes.Role, roleName),
-                    // --- LÍNEA CLAVE AÑADIDA ---
-                    // Esta claim es la que buscará tu lógica de validación en Program.cs
                     new Claim(
                         new IdentityOptions().ClaimsIdentity.SecurityStampClaimType,
                         user.SecurityStamp!

@@ -13,19 +13,71 @@ namespace TiendaUcnApi.src.Application.Services.Implements;
 /// </summary>
 public class FileService : IFileService
 {
+    /// <summary>
+    /// Configuración de la aplicación.
+    /// </summary>
     private readonly IConfiguration _configuration;
+
+    /// <summary>
+    /// Instancia de Cloudinary para operaciones en la nube.
+    /// </summary>
     private readonly Cloudinary _cloudinary;
+
+    /// <summary>
+    /// Extensiones permitidas para archivos de imagen.
+    /// </summary>
     private readonly string[] _allowedExtensions;
+
+    /// <summary>
+    /// Tamaño máximo permitido para archivos de imagen (en bytes).
+    /// </summary>
     private readonly int _maxFileSizeInBytes;
+
+    /// <summary>
+    /// Repositorio de archivos.
+    /// </summary>
     private readonly IFileRepository _fileRepository;
+
+    /// <summary>
+    /// Nombre de la nube en Cloudinary.
+    /// </summary>
     private readonly string _cloudName;
+
+    /// <summary>
+    /// API Key de Cloudinary.
+    /// </summary>
     private readonly string _cloudApiKey;
+
+    /// <summary>
+    /// API Secret de Cloudinary.
+    /// </summary>
     private readonly string _cloudApiSecret;
+
+    /// <summary>
+    /// Ancho de la transformación de imagen.
+    /// </summary>
     private readonly int _transformationWidth;
+
+    /// <summary>
+    /// Tipo de recorte para la transformación de imagen.
+    /// </summary>
     private readonly string _transformationCrop;
+
+    /// <summary>
+    /// Calidad de la transformación de imagen.
+    /// </summary>
     private readonly string _transformationQuality;
+
+    /// <summary>
+    /// Formato de imagen para la transformación.
+    /// </summary>
     private readonly string _transformationFetchFormat;
 
+    /// <summary>
+    /// Constructor con todas las dependencias necesarias.
+    /// </summary>
+    /// <param name="configuration">Configuración de la aplicación.</param>
+    /// <param name="fileRepository">Repositorio de archivos.</param>
     public FileService(IConfiguration configuration, IFileRepository fileRepository)
     {
         _configuration = configuration;
@@ -41,7 +93,7 @@ public class FileService : IFileService
             ?? throw new InvalidOperationException("La configuración de ApiSecret es obligatoria");
         Account account = new Account(_cloudName, _cloudApiKey, _cloudApiSecret);
         _cloudinary = new Cloudinary(account);
-        _cloudinary.Api.Secure = true; // Aseguramos  que las URLs sean seguras con HTTPS
+        _cloudinary.Api.Secure = true;
         _allowedExtensions =
             _configuration.GetSection("Products:ImageAllowedExtensions").Get<string[]>()
             ?? throw new InvalidOperationException(
@@ -161,7 +213,7 @@ public class FileService : IFileService
         if (result is bool && !result.Value!)
         {
             Log.Error($"Error al guardar la imagen en la base de datos: {file.FileName}");
-            var deleteResult = await DeleteInCloudinaryAsync(uploadResult.PublicId); // Eliminamos la imagen de Cloudinary si falla la creación de la imagen en la bdd
+            var deleteResult = await DeleteInCloudinaryAsync(uploadResult.PublicId);
             if (!deleteResult)
             {
                 Log.Error(
@@ -249,8 +301,8 @@ public class FileService : IFileService
         try
         {
             using var stream = file.OpenReadStream();
-            using var skiaStream = new SKManagedStream(stream); // SkiaSharp es una librería de procesamiento de imágenes (dotnet add package SkiaSharp)
-            using var codec = SKCodec.Create(skiaStream); // Crea un codec para leer la imagen (codificador/decodificador)
+            using var skiaStream = new SKManagedStream(stream);
+            using var codec = SKCodec.Create(skiaStream);
 
             return codec != null && codec.Info.Width > 0 && codec.Info.Height > 0;
         }
@@ -261,6 +313,11 @@ public class FileService : IFileService
         }
     }
 
+    /// <summary>
+    /// Elimina una imagen por su ID.
+    /// </summary>
+    /// <param name="imageId">ID de la imagen.</param>
+    /// <returns>True si la eliminación fue exitosa, de lo contrario false.</returns>
     public async Task<bool> DeleteAsync(int imageId)
     {
         var image =

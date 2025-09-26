@@ -6,6 +6,10 @@ using TiendaUcnApi.src.Application.Services.Interfaces;
 
 namespace TiendaUcnApi.src.API.Controllers;
 
+/// <summary>
+/// Controlador para autenticación y registro de usuarios.
+/// Incluye login, registro, verificación de email y recuperación de contraseña.
+/// </summary>
 public class AuthController(IUserService userService) : BaseController
 {
     private readonly IUserService _userService = userService;
