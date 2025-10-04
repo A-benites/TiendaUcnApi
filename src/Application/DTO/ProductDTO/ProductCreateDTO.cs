@@ -53,20 +53,16 @@ public class ProductCreateDTO
     public required Status Status { get; set; }
 
     /// <summary>
-    /// Nombre de la categoría del producto.
+    /// ID de la categoría del producto.
     /// </summary>
-    [Required(ErrorMessage = "El nombre de la categoría es obligatorio.")]
-    [StringLength(50, ErrorMessage = "El nombre de la categoría no puede exceder los 50 caracteres.")]
-    [MinLength(3, ErrorMessage = "El nombre de la categoría debe tener al menos 3 caracteres.")]
-    public required string CategoryName { get; set; }
+    [Required(ErrorMessage = "El ID de la categoría es obligatorio.")]
+    public required int CategoryId { get; set; }
 
     /// <summary>
-    /// Nombre de la marca del producto.
+    /// ID de la marca del producto.
     /// </summary>
-    [Required(ErrorMessage = "El nombre de la marca es obligatorio.")]
-    [StringLength(50, ErrorMessage = "El nombre de la marca no puede exceder los 50 caracteres.")]
-    [MinLength(3, ErrorMessage = "El nombre de la marca debe tener al menos 3 caracteres.")]
-    public required string BrandName { get; set; }
+    [Required(ErrorMessage = "El ID de la marca es obligatorio.")]
+    public required int BrandId { get; set; }
 
     /// <summary>
     /// Imágenes del producto.

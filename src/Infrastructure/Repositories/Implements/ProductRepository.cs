@@ -55,45 +55,23 @@ public class ProductRepository : IProductRepository
     }
 
     /// <summary>
-    /// Crea o obtiene una marca por su nombre.
+    /// Obtiene una marca por su Id.
     /// </summary>
-    /// <param name="brandName">Nombre de la marca.</param>
-    /// <returns>Marca creada o encontrada.</returns>
-    public async Task<Brand> CreateOrGetBrandAsync(string brandName)
+    /// <param name="id">Id de la marca.</param>
+    /// <returns>Marca encontrada.</returns>
+    public async Task<Brand?> GetBrandByIdAsync(int id)
     {
-        var brand = await _context
-            .Brands.AsNoTracking()
-            .FirstOrDefaultAsync(b => b.Name.ToLower() == brandName.ToLower());
-
-        if (brand != null)
-        {
-            return brand;
-        }
-        brand = new Brand { Name = brandName };
-        await _context.Brands.AddAsync(brand);
-        await _context.SaveChangesAsync();
-        return brand;
+        return await _context.Brands.AsNoTracking().FirstOrDefaultAsync(b => b.Id == id);
     }
 
     /// <summary>
-    /// Crea o obtiene una categoría por su nombre.
+    /// Obtiene una categoría por su Id.
     /// </summary>
-    /// <param name="categoryName">Nombre de la categoría.</param>
-    /// <returns>Categoría creada o encontrada.</returns>
-    public async Task<Category> CreateOrGetCategoryAsync(string categoryName)
+    /// <param name="id">Id de la categoría.</param>
+    /// <returns>Categoría encontrada.</returns>
+    public async Task<Category?> GetCategoryByIdAsync(int id)
     {
-        var category = await _context
-            .Categories.AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Name.ToLower() == categoryName.ToLower());
-
-        if (category != null)
-        {
-            return category;
-        }
-        category = new Category { Name = categoryName };
-        await _context.Categories.AddAsync(category);
-        await _context.SaveChangesAsync();
-        return category;
+        return await _context.Categories.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
     }
 
     /// <summary>

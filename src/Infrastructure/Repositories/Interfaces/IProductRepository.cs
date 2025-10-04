@@ -41,18 +41,18 @@ public interface IProductRepository
     Task<int> CreateAsync(Product product);
 
     /// <summary>
-    /// Crea o obtiene una categoría por su nombre.
+    /// Obtiene una categoría por su Id.
     /// </summary>
-    /// <param name="categoryName">El nombre de la categoría.</param>
-    /// <returns>Una tarea que representa la operación asíncrona, con la categoría creada o encontrada.</returns>
-    Task<Category> CreateOrGetCategoryAsync(string categoryName);
+    /// <param name="id">Id de la categoría.</param>
+    /// <returns>Una tarea que representa la operación asíncrona, con la categoría encontrada.</returns>
+    Task<Category?> GetCategoryByIdAsync(int id);
 
     /// <summary>
-    /// Crea o obtiene una marca por su nombre.
+    /// Obtiene una marca por su Id.
     /// </summary>
-    /// <param name="brandName">El nombre de la marca.</param>
-    /// <returns>Una tarea que representa la operación asíncrona, con la marca creada o encontrada.</returns>
-    Task<Brand> CreateOrGetBrandAsync(string brandName);
+    /// <param name="id">Id de la marca.</param>
+    /// <returns>Una tarea que representa la operación asíncrona, con la marca encontrada.</returns>
+    Task<Brand?> GetBrandByIdAsync(int id);
 
     /// <summary>
     /// Cambia el estado activo de un producto por su ID.

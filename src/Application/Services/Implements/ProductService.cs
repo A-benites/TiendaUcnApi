@@ -65,11 +65,11 @@ public class ProductService : IProductService
     {
         Product product = createProductDTO.Adapt<Product>();
         Category category =
-            await _productRepository.CreateOrGetCategoryAsync(createProductDTO.CategoryName)
-            ?? throw new Exception("Error al crear o obtener la categoría del producto.");
+            await _productRepository.GetCategoryByIdAsync(createProductDTO.CategoryId)
+            ?? throw new Exception("La categoría especificada no existe.");
         Brand brand =
-            await _productRepository.CreateOrGetBrandAsync(createProductDTO.BrandName)
-            ?? throw new Exception("Error al crear o obtener la marca del producto.");
+            await _productRepository.GetBrandByIdAsync(createProductDTO.BrandId)
+            ?? throw new Exception("La marca especificada no existe.");
         product.CategoryId = category.Id;
         product.BrandId = brand.Id;
         product.Images = new List<Image>();
