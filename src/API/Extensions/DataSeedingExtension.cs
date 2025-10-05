@@ -1,6 +1,6 @@
+// Extensions/DataSeedingExtension.cs
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using TiendaUcnApi.src.Domain.Models;
 using TiendaUcnApi.src.Infrastructure.Data;
 
@@ -17,7 +17,6 @@ public static class DataSeedingExtension
         {
             var services = scope.ServiceProvider;
             var logger = services.GetRequiredService<ILogger<Program>>();
-            var configuration = services.GetRequiredService<IConfiguration>();
 
             try
             {
@@ -31,7 +30,7 @@ public static class DataSeedingExtension
                 await context.Database.MigrateAsync();
 
                 // Call the seeder method to populate initial data.
-                await DataSeeder.SeedAsync(context, userManager, roleManager, configuration);
+                await DataSeeder.SeedAsync(context, userManager, roleManager);
 
                 logger.LogInformation("Database seeding completed successfully.");
             }

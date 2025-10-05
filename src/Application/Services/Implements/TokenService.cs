@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using System.IdentityModel.Tokens.Jwt;
@@ -13,71 +12,50 @@ namespace TiendaUcnApi.src.Application.Services.Implements
     /// </summary>
     public class TokenService : ITokenService
     {
-        /// <summary>
-        /// Configuración de la aplicación.
-        /// </summary>
+        //Cargamos la configuración desde appsettings.json
         private readonly IConfiguration _configuration;
-
-        /// <summary>
-        /// Clave secreta para la firma de los tokens JWT.
-        /// </summary>
         private readonly string _jwtSecret;
 
-        /// <summary>
-        /// Administrador de usuarios de Identity.
-        /// </summary>
-        private readonly UserManager<User> _userManager;
-
-        /// <summary>
-        /// Constructor que inyecta la configuración y el UserManager.
-        /// </summary>
-        /// <param name="configuration">Configuración de la aplicación.</param>
-        /// <param name="userManager">Administrador de usuarios.</param>
-        public TokenService(IConfiguration configuration, UserManager<User> userManager)
+        public TokenService(IConfiguration configuration)
         {
-            _configuration =
-                configuration ?? throw new ArgumentNullException(nameof(configuration));
-            _jwtSecret =
-                _configuration["JWTSecret"]
-                ?? throw new InvalidOperationException("La clave secreta JWT no está configurada.");
-            _userManager = userManager;
+            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration), "La configuración no puede ser nula");
+            _jwtSecret = _configuration["JWTSecret"] ?? throw new InvalidOperationException("La clave secreta JWT no está configurada.");
         }
 
         /// <summary>
-        /// Genera un token JWT para el usuario.
+        /// Genera un token JWT para el usuario proporcionado.
         /// </summary>
-        /// <param name="user">Usuario autenticado.</param>
-        /// <param name="roleName">Rol del usuario.</param>
-        /// <param name="rememberMe">Indica si el token debe durar más tiempo.</param>
-        /// <returns>Token JWT generado.</returns>
+        /// <param name="user">El usuario para el cual se generará el token.</param>
+        /// <param name="rememberMe">Indica si se debe recordar al usuario.</param>
+        /// <param name="roleName">El nombre del rol del usuario.</param>
+        /// <returns>Un string que representa el token JWT generado.</returns>
         public string GenerateToken(User user, string roleName, bool rememberMe = false)
         {
             try
             {
+                // Listamos los claims que queremos incluir en el token (solo las necesarias, no todas las propiedades del usuario)
                 var claims = new List<Claim>
                 {
                     new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                     new Claim(ClaimTypes.Email, user.Email!),
-                    new Claim(ClaimTypes.Role, roleName),
-                    new Claim(
-                        new IdentityOptions().ClaimsIdentity.SecurityStampClaimType,
-                        user.SecurityStamp!
-                    ),
+                    new Claim(ClaimTypes.Role, roleName)
                 };
 
+                // Creamos la clave de seguridad
                 var key = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(_jwtSecret));
+
+                // Creamos las credenciales de firma, ojo la clave debe ser lo suficientemente larga y segura (256 bits mínimo para HMACSHA256) que son 32 caracteres
                 var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
+                // Creamos el token
                 var token = new JwtSecurityToken(
                     claims: claims,
-                    expires: DateTime.Now.AddHours(rememberMe ? 24 : 1),
+                    expires: DateTime.Now.AddHours(rememberMe ? 24 : 1), // Si RememberMe es true, el token expira en 24 horas, sino en 1 hora
                     signingCredentials: creds
                 );
 
-                Log.Information(
-                    "Token JWT generado exitosamente para el usuario {UserId}",
-                    user.Id
-                );
+                // Serializamos el token a string
+                Log.Information("Token JWT generado exitosamente para el usuario {UserId}", user.Id);
                 return new JwtSecurityTokenHandler().WriteToken(token);
             }
             catch (Exception ex)
@@ -85,6 +63,7 @@ namespace TiendaUcnApi.src.Application.Services.Implements
                 Log.Error(ex, "Error al generar el token JWT para el usuario {UserId}", user.Id);
                 throw new InvalidOperationException("Error al generar el token JWT", ex);
             }
+
         }
     }
 }

@@ -1,64 +1,58 @@
 using Bogus;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using TiendaUcnApi.src.Domain.Models;
 
 namespace TiendaUcnApi.src.Infrastructure.Data;
 
-/// <summary>
-/// Clase encargada de poblar la base de datos con datos iniciales como roles, usuario administrador, categorías, marcas y productos.
-/// </summary>
 public class DataSeeder
 {
     /// <summary>
-    /// Pobla la base de datos con datos iniciales, incluyendo roles, usuario administrador, categorías, marcas y productos.
+    /// Seeds the database with initial data, including roles, an admin user, categories, brands, and products.
     /// </summary>
-    /// <param name="context">Contexto de la base de datos de la aplicación.</param>
-    /// <param name="userManager">Gestor de usuarios para crear usuarios.</param>
-    /// <param name="roleManager">Gestor de roles para crear roles.</param>
-    /// <param name="configuration">Configuración de la aplicación.</param>
+    /// <param name="context">The application database context.</param>
+    /// <param name="userManager">The user manager for creating users.</param>
+    /// <param name="roleManager">The role manager for creating roles.</param>
     public static async Task SeedAsync(
         AppDbContext context,
         UserManager<User> userManager,
-        RoleManager<Role> roleManager,
-        IConfiguration configuration
+        RoleManager<Role> roleManager
     )
     {
-        // Aplica migraciones pendientes antes de poblar.
+        // Apply any pending migrations before seeding.
         await context.Database.MigrateAsync();
 
-        // 1. Crea roles ("Administrador", "Cliente") si no existen
+        // 1. Create roles ("Administrador", "Cliente") if they do not exist
         if (!await roleManager.Roles.AnyAsync())
         {
             await roleManager.CreateAsync(new Role { Name = "Administrador" });
             await roleManager.CreateAsync(new Role { Name = "Cliente" });
         }
 
-        // 2. Crea usuario administrador si no existen usuarios
+        // 2. Create administrator user if no users exist
         if (!await userManager.Users.AnyAsync())
         {
             var adminUser = new User
             {
-                UserName = configuration["User:AdminUser:Email"],
-                Email = configuration["User:AdminUser:Email"],
-                FirstName = configuration["User:AdminUser:FirstName"],
-                LastName = configuration["User:AdminUser:LastName"],
-                Rut = configuration["User:AdminUser:Rut"],
-                Gender = Enum.Parse<Gender>(configuration["User:AdminUser:Gender"]),
-                BirthDate = DateOnly.Parse(configuration["User:AdminUser:BirthDate"]),
+                UserName = "admin@tiendaucn.cl",
+                Email = "admin@tiendaucn.cl",
+                FirstName = "Admin",
+                LastName = "Sistema",
+                Rut = "1-9",
+                Gender = Gender.Otro,
+                BirthDate = new DateOnly(1990, 1, 1),
                 EmailConfirmed = true,
-                IsSeed = true, // Marca como usuario semilla
+                IsSeed = true, // Mark as seed user
             };
 
-            await userManager.CreateAsync(adminUser, configuration["User:AdminUser:Password"]);
+            await userManager.CreateAsync(adminUser, "Admin123!");
             await userManager.AddToRoleAsync(adminUser, "Administrador");
         }
 
-        // 3. Crea categorías, marcas y productos si la tabla de productos está vacía
+        // 3. Create categories, brands, and products if the products table is empty
         if (!await context.Products.AnyAsync())
         {
-            // Genera 10 categorías usando Bogus
+            // Generate 10 categories using Bogus
             var categoryFaker = new Faker<Category>().RuleFor(
                 c => c.Name,
                 f => f.Commerce.Department()
@@ -66,14 +60,14 @@ public class DataSeeder
             var categories = categoryFaker.Generate(10);
             await context.Categories.AddRangeAsync(categories);
 
-            // Genera 20 marcas usando Bogus
+            // Generate 20 brands using Bogus
             var brandFaker = new Faker<Brand>().RuleFor(b => b.Name, f => f.Company.CompanyName());
             var brands = brandFaker.Generate(20);
             await context.Brands.AddRangeAsync(brands);
 
-            await context.SaveChangesAsync(); // Guarda para obtener los IDs
+            await context.SaveChangesAsync(); // Save to get IDs
 
-            // Genera 50 productos usando Bogus
+            // Generate 50 products using Bogus
             var productFaker = new Faker<Product>()
                 .RuleFor(p => p.Title, f => f.Commerce.ProductName())
                 .RuleFor(p => p.Description, f => f.Commerce.ProductDescription())

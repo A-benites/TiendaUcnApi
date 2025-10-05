@@ -8,13 +8,6 @@ namespace TiendaUcnApi.src.Application.DTO;
 /// <param name="data">Datos de la respuesta (opcional).</param>
 public class GenericResponse<T>(string message, T? data = default)
 {
-    /// <summary>
-    /// Mensaje principal de la respuesta.
-    /// </summary>
     public string Message { get; set; } = message;
-
-    /// <summary>
-    /// Datos de la respuesta (pueden ser nulos).
-    /// </summary>
     public T? Data { get; set; } = data;
 }

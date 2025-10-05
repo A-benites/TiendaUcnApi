@@ -21,12 +21,4 @@ public interface IEmailService
     Task SendWelcomeEmailAsync(string email);
 
     Task SendPasswordResetEmailAsync(string to, string userName, string resetLink);
-
-    /// <summary>
-    /// Envía un código para restablecer la contraseña.
-    /// </summary>
-    /// <param name="to">El correo electrónico del destinatario.</param>
-    /// <param name="userName">El nombre del usuario.</param>
-    /// <param name="code">El código de 6 dígitos.</param>
-    Task SendPasswordResetCodeEmailAsync(string to, string userName, string code);
 }
