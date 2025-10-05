@@ -42,7 +42,7 @@ Sigue estas instrucciones para clonar y ejecutar el proyecto en tu máquina loca
 
 1.  **Clona el repositorio:**
     ```sh
-    git clone <URL_DEL_REPOSITORIO>
+    git clone <[URL_DEL_REPOSITORIO](https://github.com/A-benites/TiendaUcnApi.git)>
     ```
 
 2.  **Navega al directorio del proyecto:**
