@@ -1,10 +1,11 @@
+using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace TiendaUcnApi.src.Application.DTO.AuthDTO;
 
-/// <summary>
-/// DTO para la verificación de correo electrónico del usuario.
-/// </summary>
 public class VerifyEmailDTO
 {
     /// <summary>
@@ -18,6 +19,9 @@ public class VerifyEmailDTO
     /// Código de verificación enviado al correo electrónico.
     /// </summary>
     [Required(ErrorMessage = "El código de verificación es obligatorio.")]
-    [RegularExpression(@"^\d{6}$", ErrorMessage = "El código de verificación debe tener 6 dígitos.")]
+    [RegularExpression(
+        @"^\d{6}$",
+        ErrorMessage = "El código de verificación debe tener 6 dígitos."
+    )]
     public required string VerificationCode { get; set; }
 }

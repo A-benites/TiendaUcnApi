@@ -6,11 +6,10 @@ using TiendaUcnApi.src.Application.Services.Interfaces;
 
 namespace TiendaUcnApi.src.API.Controllers;
 
-/// <summary>
-/// Controlador para autenticación y registro de usuarios.
-/// Incluye login, registro, verificación de email y recuperación de contraseña.
-/// </summary>
-public class AuthController(IUserService userService) : BaseController
+[ApiController]
+[Route("api/[controller]")]
+// Se unificó para heredar de BaseController y usar el constructor primario
+public class AuthController(IUserService userService) : ControllerBase
 {
     private readonly IUserService _userService = userService;
 
@@ -40,16 +39,13 @@ public class AuthController(IUserService userService) : BaseController
     public async Task<IActionResult> Register([FromBody] RegisterDTO registerDTO)
     {
         var message = await _userService.RegisterAsync(registerDTO, HttpContext);
-        return Created(
-            "/api/user/profile",
-            new GenericResponse<string>("Registro exitoso", message)
-        );
+        return Ok(new GenericResponse<string>("Registro exitoso", message));
     }
 
     /// <summary>
     /// Verifica el correo electrónico del usuario.
     /// </summary>
-    [HttpPost("verify")]
+    [HttpPost("verify-email")]
     public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailDTO verifyEmailDTO)
     {
         var message = await _userService.VerifyEmailAsync(verifyEmailDTO);
@@ -75,19 +71,19 @@ public class AuthController(IUserService userService) : BaseController
     }
 
     /// <summary>
-    /// Envía un código para restablecer la contraseña.
+    /// Envía un correo para restablecer la contraseña.
     /// </summary>
-    [HttpPost("recover-password")]
-    public async Task<IActionResult> RecoverPassword([FromBody] ForgotPasswordDTO forgotPasswordDTO)
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDTO forgotPasswordDTO)
     {
         var message = await _userService.ForgotPasswordAsync(forgotPasswordDTO);
         return Ok(new GenericResponse<string>("Solicitud de restablecimiento enviada", message));
     }
 
     /// <summary>
-    /// Restablece la contraseña del usuario usando un código.
+    /// Restablece la contraseña del usuario.
     /// </summary>
-    [HttpPatch("reset-password")]
+    [HttpPost("reset-password")]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDTO resetPasswordDTO)
     {
         var message = await _userService.ResetPasswordAsync(resetPasswordDTO);
