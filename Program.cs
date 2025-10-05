@@ -9,6 +9,7 @@ using System.Security.Claims;
 using System.Text;
 using TiendaUcnApi.src.API.Extensions;
 using TiendaUcnApi.src.API.Middlewares.ErrorHandlingMiddleware;
+using TiendaUcnApi.src.Application.Mappers; // <-- Importación añadida
 using TiendaUcnApi.src.Application.Services.Implements;
 using TiendaUcnApi.src.Application.Services.Interfaces;
 using TiendaUcnApi.src.Domain.Models;
@@ -55,6 +56,9 @@ try
             options.Password.RequireUppercase = false;
             options.Password.RequireLowercase = false;
             options.User.RequireUniqueEmail = true;
+
+            // Habilitar la validación del SecurityStamp
+            // options.SecurityStampValidationInterval = TimeSpan.Zero; // Esta opción no existe en IdentityOptions
         })
         .AddRoles<Role>() // Asegúrate de tener un modelo Role
         .AddEntityFrameworkStores<AppDbContext>()
@@ -84,6 +88,38 @@ try
                 ValidateLifetime = true,
                 ClockSkew = TimeSpan.Zero, // No hay tolerancia para tokens expirados
             };
+
+            // --- CÓDIGO AÑADIDO PARA VALIDAR EL SECURITY STAMP (R35) ---
+            options.Events = new JwtBearerEvents
+            {
+                // Este evento se ejecuta después de validar el token, pero antes de que se establezca la identidad del usuario.
+                OnTokenValidated = async context =>
+                {
+                    var userManager = context.HttpContext.RequestServices.GetRequiredService<
+                        UserManager<User>
+                    >();
+                    var claimsPrincipal = context.Principal;
+                    if (claimsPrincipal == null)
+                    {
+                        context.Fail("Token inválido.");
+                        return;
+                    }
+
+                    var userId = claimsPrincipal.FindFirstValue(ClaimTypes.NameIdentifier);
+                    var user = await userManager.FindByIdAsync(userId);
+
+                    // Compara el SecurityStamp del token con el de la base de datos.
+                    // Si no coinciden, significa que la contraseña cambió (u otra acción de seguridad) y el token ya no es válido.
+                    if (
+                        user == null
+                        || user.SecurityStamp
+                            != claimsPrincipal.FindFirstValue("AspNet.Identity.SecurityStamp")
+                    )
+                    {
+                        context.Fail("Token inválido. Sesión expirada por cambio de seguridad.");
+                    }
+                },
+            };
         });
     #endregion
 
@@ -95,6 +131,10 @@ try
     builder.Services.AddScoped<IUserRepository, UserRepository>();
     builder.Services.AddScoped<IVerificationCodeRepository, VerificationCodeRepository>();
     builder.Services.AddScoped<IProfileService, ProfileService>();
+    builder.Services.AddScoped<IFileRepository, FileRepository>();
+    builder.Services.AddScoped<IProductRepository, ProductRepository>();
+    builder.Services.AddScoped<IProductService, ProductService>();
+    builder.Services.AddScoped<IFileService, FileService>();
     #endregion
 
     #region Email Service Configuration
@@ -119,11 +159,12 @@ try
         {
             options.InvalidModelStateResponseFactory = context =>
             {
-                var errors = context.ModelState
-                    .Where(kvp => kvp.Value != null && kvp.Value.Errors.Any())
+                var errors = context
+                    .ModelState.Where(kvp => kvp.Value != null && kvp.Value.Errors.Any())
                     .ToDictionary(
                         kvp => kvp.Key,
-                        kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage ?? string.Empty).ToArray()
+                        kvp =>
+                            kvp.Value!.Errors.Select(e => e.ErrorMessage ?? string.Empty).ToArray()
                     );
 
                 return new BadRequestObjectResult(
@@ -141,11 +182,13 @@ try
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
     builder.Services.AddHttpContextAccessor();
-    builder.Services.AddScoped<IProfileService, ProfileService>();
 
     // Configura los mapeos de Mapster
-    var mapper = new TiendaUcnApi.src.Application.Mappers.UserMapper();
-    mapper.ConfigureAllMappings();
+    var userMapper = new UserMapper();
+    userMapper.ConfigureAllMappings();
+
+    var productMapper = new ProductMapper(builder.Configuration); // <-- Línea añadida
+    productMapper.ConfigureAllMappings(); // <-- Línea añadida
 
     var app = builder.Build();
 

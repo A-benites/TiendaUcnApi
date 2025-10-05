@@ -7,7 +7,14 @@ namespace TiendaUcnApi.src.Application.DTO.BaseResponse
     /// <param name="details">Detalles adicionales del error (opcional).</param>
     public class ErrorDetail(string message, string? details = null)
     {
+        /// <summary>
+        /// Mensaje principal del error.
+        /// </summary>
         public string Message { get; set; } = message;
+
+        /// <summary>
+        /// Detalles adicionales del error (opcional).
+        /// </summary>
         public string? Details { get; set; } = details;
     }
 }
