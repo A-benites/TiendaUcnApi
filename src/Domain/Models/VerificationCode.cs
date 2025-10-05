@@ -6,6 +6,7 @@ namespace TiendaUcnApi.src.Domain.Models;
 public enum CodeType
 {
     EmailVerification,
+    EmailChange,
     PasswordReset,
     PasswordChange,
 }
