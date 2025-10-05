@@ -1,9 +1,13 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace TiendaUcnApi.src.Application.DTO.AuthDTO;
-
+/// <summary>
+/// DTO para solicitar el restablecimiento de contraseña.
+/// </summary>
 public class ForgotPasswordDTO
 {
+    /// <summary>
+    /// Correo electrónico del usuario.
+    /// </summary>
     [EmailAddress]
     public required string Email { get; set; }
 }

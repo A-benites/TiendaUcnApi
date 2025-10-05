@@ -14,15 +14,50 @@ namespace TiendaUcnApi.src.Application.Services.Implements;
 /// </summary>
 public class UserService : IUserService
 {
+    /// <summary>
+    /// Servicio para generación de tokens JWT.
+    /// </summary>
     private readonly ITokenService _tokenService;
+
+    /// <summary>
+    /// Repositorio de usuarios.
+    /// </summary>
     private readonly IUserRepository _userRepository;
+
+    /// <summary>
+    /// Servicio para envío de correos electrónicos.
+    /// </summary>
     private readonly IEmailService _emailService;
+
+    /// <summary>
+    /// Configuración de la aplicación.
+    /// </summary>
     private readonly IConfiguration _configuration;
+
+    /// <summary>
+    /// Repositorio de códigos de verificación.
+    /// </summary>
     private readonly IVerificationCodeRepository _verificationCodeRepository;
+
+    /// <summary>
+    /// Administrador de usuarios de Identity.
+    /// </summary>
     private readonly UserManager<User> _userManager;
+
+    /// <summary>
+    /// Tiempo de expiración de los códigos de verificación (en minutos).
+    /// </summary>
     private readonly int _verificationCodeExpirationTimeInMinutes;
 
-    // Constructor unificado con todas las dependencias necesarias
+    /// <summary>
+    /// Constructor unificado con todas las dependencias necesarias.
+    /// </summary>
+    /// <param name="tokenService">Servicio de tokens.</param>
+    /// <param name="userRepository">Repositorio de usuarios.</param>
+    /// <param name="emailService">Servicio de email.</param>
+    /// <param name="verificationCodeRepository">Repositorio de códigos de verificación.</param>
+    /// <param name="configuration">Configuración de la aplicación.</param>
+    /// <param name="userManager">Administrador de usuarios.</param>
     public UserService(
         ITokenService tokenService,
         IUserRepository userRepository,
@@ -46,6 +81,9 @@ public class UserService : IUserService
     /// <summary>
     /// Inicia sesión con el usuario proporcionado.
     /// </summary>
+    /// <param name="loginDTO">DTO con los datos de inicio de sesión.</param>
+    /// <param name="httpContext">Contexto HTTP actual.</param>
+    /// <returns>Token JWT y el ID del usuario.</returns>
     public async Task<(string token, int userId)> LoginAsync(
         LoginDTO loginDTO,
         HttpContext httpContext
@@ -95,6 +133,9 @@ public class UserService : IUserService
     /// <summary>
     /// Registra un nuevo usuario.
     /// </summary>
+    /// <param name="registerDTO">DTO con los datos de registro.</param>
+    /// <param name="httpContext">Contexto HTTP actual.</param>
+    /// <returns>Mensaje de confirmación.</returns>
     public async Task<string> RegisterAsync(RegisterDTO registerDTO, HttpContext httpContext)
     {
         var ipAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? "IP desconocida";
@@ -153,6 +194,8 @@ public class UserService : IUserService
     /// <summary>
     /// Reenvía el código de verificación al correo electrónico del usuario.
     /// </summary>
+    /// <param name="resendEmailVerificationCodeDTO">DTO con el email del usuario.</param>
+    /// <returns>Mensaje de confirmación.</returns>
     public async Task<string> ResendEmailVerificationCodeAsync(
         ResendEmailVerificationCodeDTO resendEmailVerificationCodeDTO
     )
@@ -213,6 +256,8 @@ public class UserService : IUserService
     /// <summary>
     /// Verifica el correo electrónico del usuario.
     /// </summary>
+    /// <param name="verifyEmailDTO">DTO con el email y código de verificación.</param>
+    /// <returns>Mensaje de confirmación.</returns>
     public async Task<string> VerifyEmailAsync(VerifyEmailDTO verifyEmailDTO)
     {
         User? user = await _userRepository.GetByEmailAsync(verifyEmailDTO.Email);
@@ -312,64 +357,107 @@ public class UserService : IUserService
     /// <summary>
     /// Elimina usuarios no confirmados.
     /// </summary>
+    /// <returns>Cantidad de usuarios eliminados.</returns>
     public async Task<int> DeleteUnconfirmedAsync()
     {
         return await _userRepository.DeleteUnconfirmedAsync();
     }
 
+    /// <summary>
+    /// Solicita el envío de un código para restablecer la contraseña.
+    /// </summary>
+    /// <param name="forgotPasswordDTO">DTO con el email del usuario.</param>
+    /// <returns>Mensaje de confirmación.</returns>
     public async Task<string> ForgotPasswordAsync(ForgotPasswordDTO forgotPasswordDTO)
     {
         var user = await _userManager.FindByEmailAsync(forgotPasswordDTO.Email);
         if (user == null || !user.EmailConfirmed)
         {
-            // No reveles que el usuario no existe o no está confirmado
-            return "Si existe una cuenta con este correo, se ha enviado un enlace para restablecer la contraseña.";
+            // No reveles que el usuario no existe para mayor seguridad.
+            return "Si existe una cuenta asociada a este correo, se ha enviado un código para restablecer la contraseña.";
         }
 
-        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-        // Aquí deberías codificar el token para que sea seguro en una URL
-        var encodedToken = System.Web.HttpUtility.UrlEncode(token);
-
-        if (string.IsNullOrEmpty(user.Email) || string.IsNullOrEmpty(user.FirstName))
+        // Genera, guarda y envía un código de 6 dígitos.
+        string code = new Random().Next(100000, 999999).ToString();
+        var verificationCode = new VerificationCode
         {
-            Log.Warning($"Intento de restablecer contraseña para usuario con datos incompletos: ID {user.Id}");
-            return "Si existe una cuenta con este correo, se ha enviado un enlace para restablecer la contraseña.";
-        }
+            UserId = user.Id,
+            Code = code,
+            CodeType = CodeType.PasswordReset, // Importante usar el tipo correcto
+            ExpiryDate = DateTime.UtcNow.AddMinutes(_verificationCodeExpirationTimeInMinutes),
+        };
 
-        // todo: Construye la URL de reseteo. Esto debería apuntar a tu frontend.
-        var resetLink =
-            $"https://tu-frontend.com/reset-password?token={encodedToken}&email={user.Email}";
+        await _verificationCodeRepository.CreateAsync(verificationCode);
+        Log.Information("Código de reseteo de contraseña generado para {Email}", user.Email);
 
-        await _emailService.SendPasswordResetEmailAsync(user.Email, user.FirstName, resetLink);
+        // Llama al nuevo método del servicio de email
+        await _emailService.SendPasswordResetCodeEmailAsync(user.Email!, user.FirstName, code);
 
-        return "Si existe una cuenta con este correo, se ha enviado un enlace para restablecer la contraseña.";
+        return "Si existe una cuenta asociada a este correo, se ha enviado un código para restablecer la contraseña.";
     }
 
+    /// <summary>
+    /// Restablece la contraseña del usuario usando un código.
+    /// </summary>
+    /// <param name="resetPasswordDTO">DTO con el email, código y nueva contraseña.</param>
+    /// <returns>Mensaje de confirmación.</returns>
     public async Task<string> ResetPasswordAsync(ResetPasswordDTO resetPasswordDTO)
     {
         var user = await _userManager.FindByEmailAsync(resetPasswordDTO.Email);
         if (user == null)
         {
-            // Por seguridad, no reveles que el usuario no existe. Simula una respuesta exitosa.
-            return "Si existe una cuenta con este correo, la contraseña ha sido restablecida exitosamente.";
+            // No reveles que el usuario no existe.
+            return "La contraseña ha sido restablecida exitosamente.";
         }
 
-        var decodedToken = System.Web.HttpUtility.UrlDecode(resetPasswordDTO.Token);
+        // Busca y valida el código de 6 dígitos
+        var verificationCode = await _verificationCodeRepository.GetLatestByUserIdAsync(
+            user.Id,
+            CodeType.PasswordReset
+        );
 
+        if (
+            verificationCode == null
+            || verificationCode.Code != resetPasswordDTO.Code
+            || DateTime.UtcNow >= verificationCode.ExpiryDate
+        )
+        {
+            Log.Warning(
+                "Intento de restablecer contraseña con código inválido o expirado para {Email}",
+                resetPasswordDTO.Email
+            );
+            throw new ArgumentException(
+                "El código de restablecimiento es incorrecto o ha expirado."
+            );
+        }
+
+        // Si el código es válido, se procede a cambiar la contraseña.
+        // UserManager requiere un token de reseteo, así que lo generamos internamente justo antes de usarlo.
+        var internalToken = await _userManager.GeneratePasswordResetTokenAsync(user);
         var result = await _userManager.ResetPasswordAsync(
             user,
-            decodedToken,
+            internalToken,
             resetPasswordDTO.NewPassword
         );
 
         if (result.Succeeded)
         {
+            // Es una buena práctica eliminar el código una vez que se ha utilizado.
+            await _verificationCodeRepository.DeleteByUserIdAsync(user.Id, CodeType.PasswordReset);
+            Log.Information(
+                "Contraseña restablecida exitosamente para {Email}",
+                resetPasswordDTO.Email
+            );
             return "La contraseña ha sido restablecida exitosamente.";
         }
 
-        // Si falla, loggea los errores y lánzalos para que el middleware los maneje.
+        // Si falla (ej. la nueva contraseña no cumple las políticas de Identity), lanza los errores.
         var errorMessages = string.Join(" ", result.Errors.Select(e => e.Description));
-        Log.Warning($"Falló el restablecimiento de contraseña para {resetPasswordDTO.Email}: {errorMessages}");
+        Log.Warning(
+            "Falló el restablecimiento de contraseña para {Email}: {Errors}",
+            resetPasswordDTO.Email,
+            errorMessages
+        );
         throw new ArgumentException(errorMessages);
     }
 }

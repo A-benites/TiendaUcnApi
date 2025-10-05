@@ -10,8 +10,15 @@ namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements;
 /// </summary>
 public class VerificationCodeRepository : IVerificationCodeRepository
 {
+    /// <summary>
+    /// Contexto de base de datos de la aplicación.
+    /// </summary>
     private readonly AppDbContext _context;
 
+    /// <summary>
+    /// Inicializa una nueva instancia del repositorio de códigos de verificación.
+    /// </summary>
+    /// <param name="dataContext">Contexto de base de datos.</param>
     public VerificationCodeRepository(AppDbContext dataContext)
     {
         _context = dataContext;
@@ -34,7 +41,7 @@ public class VerificationCodeRepository : IVerificationCodeRepository
     /// </summary>
     /// <param name="id">El ID del usuario.</param>
     /// <param name="codeType">El tipo de código de verificación.</param>
-    /// <returns>True si se eliminó correctamente, false si no existía.</returns
+    /// <returns>True si se eliminó correctamente, false si no existía.</returns>
     public async Task<bool> DeleteByUserIdAsync(int id, CodeType codeType)
     {
         await _context
