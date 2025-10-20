@@ -135,6 +135,9 @@ try
     builder.Services.AddScoped<IProductRepository, ProductRepository>();
     builder.Services.AddScoped<IProductService, ProductService>();
     builder.Services.AddScoped<IFileService, FileService>();
+    builder.Services.AddScoped<ICartRepository, CartRepository>();
+    builder.Services.AddScoped<ICartService, CartService>();
+
     #endregion
 
     #region Email Service Configuration
@@ -210,6 +213,8 @@ try
 
     // Middleware personalizado para manejo de excepciones
     app.UseMiddleware<ErrorHandlingMiddleware>();
+    app.UseMiddleware<TiendaUcnApi.src.API.Middleware.BuyerIdMiddleware>();
+
 
     app.UseHttpsRedirection();
 
