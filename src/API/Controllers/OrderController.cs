@@ -11,7 +11,7 @@ namespace TiendaUcnApi.src.API.Controllers;
 /// </summary>
 [Route("api/orders")]
 [ApiController]
-[Authorize(Roles = "Customer")]
+[Authorize] // Permitir cualquier usuario autenticado
 public class OrderController : BaseController
 {
     private readonly IOrderService _orderService;
