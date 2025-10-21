@@ -1,3 +1,4 @@
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TiendaUcnApi.src.Application.DTO;
@@ -15,12 +16,12 @@ namespace TiendaUcnApi.src.API.Controllers;
 [ApiController]
 [Route("api/admin/products")] // Ruta base ajustada para todos los endpoints de admin
 [Authorize(Roles = "Administrador")] // Protección a nivel de controlador
-public class ProductAdminController : ControllerBase // Cambiado para evitar conflicto de rutas
+public class AdminProductController : ControllerBase // Cambiado para evitar conflicto de rutas
 {
     private readonly IProductService _productService;
     private readonly IFileService _fileService;
 
-    public ProductAdminController(IProductService productService, IFileService fileService)
+    public AdminProductController(IProductService productService, IFileService fileService)
     {
         _productService = productService;
         _fileService = fileService;

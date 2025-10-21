@@ -1,16 +1,13 @@
-using Microsoft.EntityFrameworkCore;
 using System.Globalization;
+using Microsoft.EntityFrameworkCore;
 using TiendaUcnApi.src.Domain.Models;
 using TiendaUcnApi.src.Infrastructure.Data;
 using TiendaUcnApi.src.Infrastructure.Repositories.Interfaces;
 
-
 namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements
 {
-
     public class CartRepository : ICartRepository
     {
-
         private readonly AppDbContext _context;
 
         public CartRepository(AppDbContext dataContext)
@@ -18,15 +15,17 @@ namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements
             _context = dataContext;
         }
 
-
         public async Task<Cart?> FindAsync(string buyerId, int? userId)
         {
             Cart? cart = null;
 
             if (userId.HasValue)
             {
-                cart = await _context.Carts.Include(c => c.CartItems).ThenInclude(ci => ci.Product).ThenInclude(p => p.Images).FirstOrDefaultAsync(c => c.UserId == userId);
-
+                cart = await _context
+                    .Carts.Include(c => c.CartItems)
+                    .ThenInclude(ci => ci.Product)
+                    .ThenInclude(p => p.Images)
+                    .FirstOrDefaultAsync(c => c.UserId == userId);
 
                 if (cart != null)
                 {
@@ -35,19 +34,15 @@ namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements
                         cart.BuyerId = buyerId;
                         cart.UpdatedAt = DateTime.UtcNow;
                         await _context.SaveChangesAsync();
-
                     }
                     return cart;
                 }
-
-
-
-
             }
-            cart = await _context.Carts.Include(c => c.CartItems)
-                                            .ThenInclude(ci => ci.Product)
-                                                .ThenInclude(p => p.Images)
-                                        .FirstOrDefaultAsync(c => c.BuyerId == buyerId && c.UserId == null);
+            cart = await _context
+                .Carts.Include(c => c.CartItems)
+                .ThenInclude(ci => ci.Product)
+                .ThenInclude(p => p.Images)
+                .FirstOrDefaultAsync(c => c.BuyerId == buyerId && c.UserId == null);
 
             if (cart != null && userId.HasValue)
             {
@@ -57,25 +52,23 @@ namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements
             }
 
             return cart;
-
-
-
         }
-
 
         public async Task<Cart?> GetByUserIdAsync(int userId)
         {
-            return await _context.Carts.Include(c => c.CartItems)
-                                            .ThenInclude(ci => ci.Product)
-                                        .FirstOrDefaultAsync(c => c.UserId == userId);
+            return await _context
+                .Carts.Include(c => c.CartItems)
+                .ThenInclude(ci => ci.Product)
+                .FirstOrDefaultAsync(c => c.UserId == userId);
         }
 
         public async Task<Cart?> GetAnonymousAsync(string buyerId)
         {
-            return await _context.Carts.Include(c => c.CartItems)
-                                            .ThenInclude(ci => ci.Product)
-                                                .ThenInclude(p => p.Images)
-                                        .FirstOrDefaultAsync(c => c.BuyerId == buyerId && c.UserId == null);
+            return await _context
+                .Carts.Include(c => c.CartItems)
+                .ThenInclude(ci => ci.Product)
+                .ThenInclude(p => p.Images)
+                .FirstOrDefaultAsync(c => c.BuyerId == buyerId && c.UserId == null);
         }
 
         public async Task<Cart> CreateAsync(string buyerId, int? userId = null)
@@ -87,19 +80,18 @@ namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements
                 SubTotal = 0,
                 Total = 0,
                 CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                UpdatedAt = DateTime.UtcNow,
             };
 
             _context.Carts.Add(cart);
             await _context.SaveChangesAsync();
 
-            return await _context.Carts.Include(c => c.CartItems)
-                                            .ThenInclude(ci => ci.Product)
-                                                .ThenInclude(p => p.Images)
-                                        .FirstAsync(c => c.Id == cart.Id);
+            return await _context
+                .Carts.Include(c => c.CartItems)
+                .ThenInclude(ci => ci.Product)
+                .ThenInclude(p => p.Images)
+                .FirstAsync(c => c.Id == cart.Id);
         }
-
-
 
         public async Task UpdateAsync(Cart cart)
         {
@@ -140,9 +132,19 @@ namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements
             await _context.SaveChangesAsync();
         }
 
-
-
+        public async Task<Cart?> GetByBuyerIdAsync(string buyerId)
+        {
+            return await _context
+                .Carts.Include(c => c.CartItems)
+                .ThenInclude(ci => ci.Product)
+                .ThenInclude(p => p.Images)
+                .Include(c => c.CartItems)
+                .ThenInclude(ci => ci.Product)
+                .ThenInclude(p => p.Brand)
+                .Include(c => c.CartItems)
+                .ThenInclude(ci => ci.Product)
+                .ThenInclude(p => p.Category)
+                .FirstOrDefaultAsync(c => c.BuyerId == buyerId);
+        }
     }
-
-
 }

@@ -1,5 +1,8 @@
+using TiendaUcnApi.src.Application.DTO;
+using TiendaUcnApi.src.Application.DTO.BaseResponse;
 using TiendaUcnApi.src.Application.DTO.ProductDTO;
 using TiendaUcnApi.src.Application.DTO.ProductDTO.AdminDTO;
+using TiendaUcnApi.src.Application.DTO.ProductDTO.ConsumerDTO;
 
 namespace TiendaUcnApi.src.Application.Services.Interfaces;
 
@@ -17,7 +20,7 @@ public interface IProductService
     /// </summary>
     /// <param name="searchParams">Parámetros de búsqueda para filtrar los productos.</param>
     /// <returns>Una lista de productos filtrados para el cliente.</returns>
-    //Task<ListedProductsForCustomerDTO> GetFilteredForCustomerAsync(SearchParamsDTO searchParams);
+    Task<GenericResponse<object>> GetFilteredForCustomerAsync(SearchParamsDTO searchParams);
 
     /// <summary>
     /// Retorna un producto específico por su ID.
@@ -32,6 +35,13 @@ public interface IProductService
     /// <param name="id">El ID del producto a buscar.</param>
     /// <returns>Una tarea que representa la operación asíncrona, con el producto encontrado o null si no se encuentra.</returns>
     Task<ProductDetailDTO> GetByIdForAdminAsync(int id);
+
+    /// <summary>
+    /// Retorna un producto específico por su ID para el cliente.
+    /// </summary>
+    /// <param name="id">El ID del producto a buscar.</param>
+    /// <returns>Respuesta con el producto encontrado.</returns>
+    Task<GenericResponse<ProductDetailDTO>> GetByIdForCustomerAsync(int id);
 
     /// <summary>
     /// Crea un nuevo producto en el sistema.

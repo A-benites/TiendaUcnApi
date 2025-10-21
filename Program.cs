@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -5,8 +7,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Resend;
 using Serilog;
-using System.Security.Claims;
-using System.Text;
 using TiendaUcnApi.src.API.Extensions;
 using TiendaUcnApi.src.API.Middlewares.ErrorHandlingMiddleware;
 using TiendaUcnApi.src.Application.Mappers; // <-- Importación añadida
@@ -137,6 +137,8 @@ try
     builder.Services.AddScoped<IFileService, FileService>();
     builder.Services.AddScoped<ICartRepository, CartRepository>();
     builder.Services.AddScoped<ICartService, CartService>();
+    builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+    builder.Services.AddScoped<IOrderService, OrderService>();
 
     #endregion
 
@@ -190,8 +192,14 @@ try
     var userMapper = new UserMapper();
     userMapper.ConfigureAllMappings();
 
-    var productMapper = new ProductMapper(builder.Configuration); // <-- Línea añadida
-    productMapper.ConfigureAllMappings(); // <-- Línea añadida
+    var productMapper = new ProductMapper(builder.Configuration);
+    productMapper.ConfigureAllMappings();
+
+    var cartMapper = new Tienda_UCN_api.Src.Application.Mappers.CartMapper(builder.Configuration);
+    cartMapper.ConfigureAllMappings();
+
+    var orderMapper = new TiendaUcnApi.src.Application.Mappers.OrderMapper();
+    orderMapper.ConfigureAllMappings();
 
     var app = builder.Build();
 
@@ -214,7 +222,6 @@ try
     // Middleware personalizado para manejo de excepciones
     app.UseMiddleware<ErrorHandlingMiddleware>();
     app.UseMiddleware<TiendaUcnApi.src.API.Middleware.BuyerIdMiddleware>();
-
 
     app.UseHttpsRedirection();
 

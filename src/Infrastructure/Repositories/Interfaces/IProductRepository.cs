@@ -82,6 +82,9 @@ public interface IProductRepository
     /// <returns>Una tarea que representa la operación asíncrona, con el producto encontrado o null si no se encuentra.</returns>
     Task<Product?> GetByIdForAdminAsync(int id);
 
+    Task<Product?> GetByIdForCustomerAsync(int id);
+
+
     /// <summary>
     /// Actualiza los datos de un producto.
     /// </summary>
