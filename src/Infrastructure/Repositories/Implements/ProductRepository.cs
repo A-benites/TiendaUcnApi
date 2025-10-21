@@ -106,6 +106,17 @@ public class ProductRepository : IProductRepository
             .FirstOrDefaultAsync();
     }
 
+    public async Task<Product?> GetByIdForCustomerAsync(int id)
+    {
+        return await _context
+            .Products.AsNoTracking()
+            .Where(p => p.Id == id && p.IsAvailable)
+            .Include(p => p.Category)
+            .Include(p => p.Brand)
+            .Include(p => p.Images)
+            .FirstOrDefaultAsync();
+    }
+
     /// <summary>
     /// Retorna una lista de productos para el administrador con los parámetros de búsqueda especificados.
     /// </summary>
