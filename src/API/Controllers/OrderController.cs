@@ -58,6 +58,25 @@ public class OrderController : BaseController
         return Ok(response);
     }
 
+    /// <summary>
+    /// Obtiene el detalle de una orden específica del usuario autenticado.
+    /// </summary>
+    /// <param name="id">ID de la orden.</param>
+    /// <returns>Detalle de la orden.</returns>
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetOrderById(int id)
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+        {
+            return Unauthorized(new GenericResponse<object>("Usuario no autenticado", null));
+        }
+
+        var response = await _orderService.GetOrderDetailByIdAsync(id, userId);
+        return Ok(response);
+    }
+
     private string GetBuyerId()
     {
         var buyerId = HttpContext.Items["BuyerId"]?.ToString();

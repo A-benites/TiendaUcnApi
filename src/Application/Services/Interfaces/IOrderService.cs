@@ -19,4 +19,34 @@ public interface IOrderService
     /// <param name="userId">Identificador del usuario.</param>
     /// <returns>Lista de órdenes del usuario.</returns>
     Task<GenericResponse<List<OrderDTO>>> GetAllByUser(int userId);
+
+    /// <summary>
+    /// Obtiene el detalle de una orden por su ID (solo si pertenece al usuario).
+    /// </summary>
+    /// <param name="orderId">Identificador de la orden.</param>
+    /// <param name="userId">Identificador del usuario.</param>
+    /// <returns>Detalle de la orden.</returns>
+    Task<GenericResponse<OrderDTO>> GetOrderDetailByIdAsync(int orderId, int userId);
+
+    /// <summary>
+    /// Obtiene todas las órdenes con filtros (solo admin).
+    /// </summary>
+    /// <param name="filter">Filtros de búsqueda.</param>
+    /// <returns>Lista paginada de órdenes.</returns>
+    Task<GenericResponse<OrderListDTO>> GetAllOrdersAsync(OrderFilterDTO filter);
+
+    /// <summary>
+    /// Obtiene el detalle de cualquier orden por su ID (solo admin).
+    /// </summary>
+    /// <param name="orderId">Identificador de la orden.</param>
+    /// <returns>Detalle de la orden.</returns>
+    Task<GenericResponse<OrderDTO>> GetOrderByIdAsync(int orderId);
+
+    /// <summary>
+    /// Actualiza el estado de una orden (solo admin).
+    /// </summary>
+    /// <param name="orderId">Identificador de la orden.</param>
+    /// <param name="dto">DTO con el nuevo estado.</param>
+    /// <returns>Orden actualizada.</returns>
+    Task<GenericResponse<OrderDTO>> UpdateOrderStatusAsync(int orderId, UpdateOrderStatusDTO dto);
 }
