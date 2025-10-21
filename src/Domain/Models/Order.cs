@@ -3,6 +3,15 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TiendaUcnApi.src.Domain.Models;
 
+public enum OrderStatus
+{
+    Pending = 0,
+    Processing = 1,
+    Shipped = 2,
+    Delivered = 3,
+    Cancelled = 4,
+}
+
 public class Order
 {
     /// <summary>
@@ -40,6 +49,12 @@ public class Order
     /// Order update date.
     /// </summary>
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Order status.
+    /// </summary>
+    [Required]
+    public OrderStatus Status { get; set; } = OrderStatus.Pending;
 
     // --- Relationship with User ---
     /// <summary>
