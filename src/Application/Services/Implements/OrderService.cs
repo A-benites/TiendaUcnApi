@@ -122,4 +122,93 @@ public class OrderService : IOrderService
 
         return new GenericResponse<List<OrderDTO>>("Órdenes obtenidas exitosamente", ordersDto);
     }
+
+    public async Task<GenericResponse<OrderDTO>> GetOrderDetailByIdAsync(int orderId, int userId)
+    {
+        var order = await _orderRepository.GetByIdAsync(orderId);
+
+        if (order == null)
+        {
+            Log.Warning("Order not found. OrderId: {OrderId}", orderId);
+            throw new KeyNotFoundException($"Order with ID {orderId} not found.");
+        }
+
+        // Verify that the order belongs to the user
+        if (order.UserId != userId)
+        {
+            Log.Warning(
+                "User {UserId} attempted to access order {OrderId} that does not belong to them.",
+                userId,
+                orderId
+            );
+            throw new UnauthorizedAccessException("You do not have permission to access this order.");
+        }
+
+        var orderDto = order.Adapt<OrderDTO>();
+        Log.Information(
+            "Order detail obtained. OrderId: {OrderId}, UserId: {UserId}",
+            orderId,
+            userId
+        );
+
+        return new GenericResponse<OrderDTO>("Order detail obtained successfully", orderDto);
+    }
+
+    public async Task<GenericResponse<OrderListDTO>> GetAllOrdersAsync(OrderFilterDTO filter)
+    {
+        var (orders, totalCount) = await _orderRepository.GetAllAsync(filter);
+
+        var ordersDto = orders.Adapt<List<OrderDTO>>();
+        var totalPages = (int)Math.Ceiling(totalCount / (double)filter.PageSize);
+
+        var result = new OrderListDTO
+        {
+            Orders = ordersDto,
+            TotalCount = totalCount,
+            CurrentPage = filter.Page,
+            PageSize = filter.PageSize,
+            TotalPages = totalPages
+        };
+
+        Log.Information(
+            "Orders obtained for admin. Total: {TotalCount}, Page: {Page}",
+            totalCount,
+            filter.Page
+        );
+
+        return new GenericResponse<OrderListDTO>("Orders obtained successfully", result);
+    }
+
+    public async Task<GenericResponse<OrderDTO>> GetOrderByIdAsync(int orderId)
+    {
+        var order = await _orderRepository.GetByIdAsync(orderId);
+
+        if (order == null)
+        {
+            Log.Warning("Order not found. OrderId: {OrderId}", orderId);
+            throw new KeyNotFoundException($"Order with ID {orderId} not found.");
+        }
+
+        var orderDto = order.Adapt<OrderDTO>();
+        Log.Information("Order detail obtained by admin. OrderId: {OrderId}", orderId);
+
+        return new GenericResponse<OrderDTO>("Order detail obtained successfully", orderDto);
+    }
+
+    public async Task<GenericResponse<OrderDTO>> UpdateOrderStatusAsync(
+        int orderId,
+        UpdateOrderStatusDTO dto
+    )
+    {
+        var order = await _orderRepository.UpdateStatusAsync(orderId, dto.Status);
+
+        Log.Information(
+            "Order status updated. OrderId: {OrderId}, New status: {Status}",
+            orderId,
+            dto.Status
+        );
+
+        var orderDto = order.Adapt<OrderDTO>();
+        return new GenericResponse<OrderDTO>("Order status updated successfully", orderDto);
+    }
 }
