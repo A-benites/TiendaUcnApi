@@ -186,8 +186,11 @@ try
 
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
-    builder.Services.AddHttpContextAccessor();
-
+    builder.Services.AddHttpContextAccessor(); ;
+    
+    builder.Services.AddIdentity<User, IdentityRole<int>>()
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddDefaultTokenProviders();
     // Configura los mapeos de Mapster
     var userMapper = new UserMapper();
     userMapper.ConfigureAllMappings();
