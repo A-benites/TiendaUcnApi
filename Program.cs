@@ -139,6 +139,7 @@ try
     builder.Services.AddScoped<ICartService, CartService>();
     builder.Services.AddScoped<IOrderRepository, OrderRepository>();
     builder.Services.AddScoped<IOrderService, OrderService>();
+    builder.Services.AddScoped<IUserAdminService, UserAdminService>();
 
     #endregion
 
@@ -186,11 +187,8 @@ try
 
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
-    builder.Services.AddHttpContextAccessor(); ;
-    
-    builder.Services.AddIdentity<User, IdentityRole<int>>()
-    .AddEntityFrameworkStores<AppDbContext>()
-    .AddDefaultTokenProviders();
+    builder.Services.AddHttpContextAccessor();
+
     // Configura los mapeos de Mapster
     var userMapper = new UserMapper();
     userMapper.ConfigureAllMappings();
