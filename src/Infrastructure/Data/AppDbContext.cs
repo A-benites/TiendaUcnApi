@@ -21,6 +21,9 @@ namespace TiendaUcnApi.src.Infrastructure.Data
         /// </summary>
         public DbSet<Product> Products { get; set; } = null!;
 
+
+        public DbSet<AuditRecord> AuditRecords { get; set; } = null!;
+
         /// <summary>
         /// Tabla de imágenes de productos.
         /// </summary>

@@ -142,11 +142,11 @@ try
     builder.Services.AddScoped<ICartService, CartService>();
     builder.Services.AddScoped<IOrderRepository, OrderRepository>();
     builder.Services.AddScoped<IOrderService, OrderService>();
+    builder.Services.AddScoped<IUserAdminService, UserAdminService>();
     builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
     builder.Services.AddScoped<IBrandRepository, BrandRepository>();
     builder.Services.AddScoped<ICategoryService, CategoryService>();
     builder.Services.AddScoped<IBrandService, BrandService>();
-
 
     #endregion
 
