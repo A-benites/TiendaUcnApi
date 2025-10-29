@@ -16,6 +16,9 @@ using TiendaUcnApi.src.Domain.Models;
 using TiendaUcnApi.src.Infrastructure.Data;
 using TiendaUcnApi.src.Infrastructure.Repositories.Implements;
 using TiendaUcnApi.src.Infrastructure.Repositories.Interfaces;
+using TiendaUcnApi.src.Application.Services.Implements;
+using TiendaUcnApi.src.Infrastructure.Repositories.Implements;
+
 
 // Configura un logger de arranque para capturar errores durante el inicio.
 Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateBootstrapLogger();
@@ -140,6 +143,10 @@ try
     builder.Services.AddScoped<IOrderRepository, OrderRepository>();
     builder.Services.AddScoped<IOrderService, OrderService>();
     builder.Services.AddScoped<IUserAdminService, UserAdminService>();
+    builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+    builder.Services.AddScoped<IBrandRepository, BrandRepository>();
+    builder.Services.AddScoped<ICategoryService, CategoryService>();
+    builder.Services.AddScoped<IBrandService, BrandService>();
 
     #endregion
 
