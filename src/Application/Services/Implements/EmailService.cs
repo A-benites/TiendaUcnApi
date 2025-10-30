@@ -183,4 +183,26 @@ public class EmailService : IEmailService
 
         return html;
     }
+
+    public async Task SendAbandonedCartReminderAsync(string to, string cartSummary)
+    {
+        var replacements = new Dictionary<string, string>
+        {
+            { "{{CART_SUMMARY}}", cartSummary }
+        };
+
+        var htmlBody = await LoadTemplate("AbandonedCartReminder", replacements);
+
+        var message = new EmailMessage
+        {
+            To = to,
+            Subject = _configuration["EmailConfiguration:AbandonedCartSubject"]
+                    ?? "Don't forget your cart!",
+            From = _configuration["EmailConfiguration:From"]
+                ?? throw new InvalidOperationException("The 'From' configuration cannot be null."),
+            HtmlBody = htmlBody,
+        };
+
+        await _resend.EmailSendAsync(message);
+    }
 }

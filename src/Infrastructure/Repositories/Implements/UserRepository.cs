@@ -230,4 +230,22 @@ public class UserRepository : IUserRepository
         var roles = await _userManager.GetRolesAsync(user);
         return roles.FirstOrDefault()!;
     }
+
+    public async Task<List<User>> GetUnconfirmedUsersAsync()
+    {
+        return await _context.Users
+            .Where(u => !u.EmailConfirmed)
+            .ToListAsync();
+    }
+
+        /// <summary>
+    /// Obtiene todos los usuarios registrados.
+    /// </summary>
+    /// <returns>Lista de usuarios existentes.</returns>
+    public async Task<List<User>> GetAllAsync()
+    {
+        return await _context.Users.ToListAsync();
+    }
+
+
 }
