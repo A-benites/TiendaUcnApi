@@ -10,5 +10,5 @@ public interface IEmailService
     Task SendPasswordResetCodeEmailAsync(string to, string userName, string code);
 
     // New method for Hangfire cart reminder
-    Task SendAbandonedCartReminderAsync(string to, string cartSummary);
+    Task SendAbandonedCartReminderAsync(string toEmail, string userName, string cartItemsHtml, string cartUrl);
 }

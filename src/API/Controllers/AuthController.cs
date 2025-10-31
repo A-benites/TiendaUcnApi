@@ -6,17 +6,11 @@ using TiendaUcnApi.src.Application.Services.Interfaces;
 
 namespace TiendaUcnApi.src.API.Controllers;
 
-/// <summary>
-/// Controlador para autenticación y registro de usuarios.
-/// Incluye login, registro, verificación de email y recuperación de contraseña.
-/// </summary>
 public class AuthController(IUserService userService) : BaseController
 {
     private readonly IUserService _userService = userService;
 
-    /// <summary>
-    /// Inicia sesión con el usuario proporcionado.
-    /// </summary>
+    
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDTO loginDTO)
     {
@@ -33,9 +27,7 @@ public class AuthController(IUserService userService) : BaseController
         return Ok(new GenericResponse<string>("Inicio de sesión exitoso", token));
     }
 
-    /// <summary>
-    /// Registra un nuevo usuario.
-    /// </summary>
+    
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterDTO registerDTO)
     {
@@ -46,9 +38,7 @@ public class AuthController(IUserService userService) : BaseController
         );
     }
 
-    /// <summary>
-    /// Verifica el correo electrónico del usuario.
-    /// </summary>
+    
     [HttpPost("verify")]
     public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailDTO verifyEmailDTO)
     {
@@ -58,9 +48,7 @@ public class AuthController(IUserService userService) : BaseController
         );
     }
 
-    /// <summary>
-    /// Reenvía el código de verificación al correo electrónico del usuario.
-    /// </summary>
+    
     [HttpPost("resend-email-verification-code")]
     public async Task<IActionResult> ResendEmailVerificationCode(
         [FromBody] ResendEmailVerificationCodeDTO resendEmailVerificationCodeDTO
@@ -74,9 +62,7 @@ public class AuthController(IUserService userService) : BaseController
         );
     }
 
-    /// <summary>
-    /// Envía un código para restablecer la contraseña.
-    /// </summary>
+    
     [HttpPost("recover-password")]
     public async Task<IActionResult> RecoverPassword([FromBody] ForgotPasswordDTO forgotPasswordDTO)
     {
@@ -84,9 +70,7 @@ public class AuthController(IUserService userService) : BaseController
         return Ok(new GenericResponse<string>("Solicitud de restablecimiento enviada", message));
     }
 
-    /// <summary>
-    /// Restablece la contraseña del usuario usando un código.
-    /// </summary>
+    
     [HttpPatch("reset-password")]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDTO resetPasswordDTO)
     {

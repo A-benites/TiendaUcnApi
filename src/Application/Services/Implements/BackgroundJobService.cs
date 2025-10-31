@@ -81,7 +81,12 @@ namespace TiendaUcnApi.src.Application.Services.Implements
 
                     var cartSummary = string.Join("<br>", cartItemsList);
 
-                    await _emailService.SendAbandonedCartReminderAsync(cart.User.Email, cartSummary);
+                    await _emailService.SendAbandonedCartReminderAsync(
+                        cart.User.Email,
+                        cart.User.FirstName ?? "Cliente",
+                        cartSummary,
+                        "https://tienda-ucn.cl/cart"
+                    );
                     Log.Information("Sent abandoned cart reminder to: {Email}", cart.User.Email);
                 }
 
