@@ -23,15 +23,13 @@ namespace TiendaUcnApi.src.API.Controllers
             _categoryService = categoryService;
         }
 
-        /// <summary>
-        /// Obtiene todas las categorías (con búsqueda opcional).
-        /// </summary>
+        
         [HttpGet]
         [AllowAnonymous]
         public async Task<IActionResult> GetAll([FromQuery] string? search)
         {
             var categories = await _categoryService.GetAllAsync(search, 1, 100); 
-            // 👆 page y size por compatibilidad, aunque no uses paginación real aún
+            
 
             var data = new
             {
@@ -44,9 +42,7 @@ namespace TiendaUcnApi.src.API.Controllers
             ));
         }
 
-        /// <summary>
-        /// Obtiene una categoría por ID.
-        /// </summary>
+        
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -60,9 +56,7 @@ namespace TiendaUcnApi.src.API.Controllers
             ));
         }
 
-        /// <summary>
-        /// Crea una nueva categoría.
-        /// </summary>
+       
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CategoryCreateDTO dto)
         {
@@ -76,9 +70,7 @@ namespace TiendaUcnApi.src.API.Controllers
             ));
         }
 
-        /// <summary>
-        /// Actualiza una categoría existente.
-        /// </summary>
+        
         [HttpPut("{id:int}")]
         public async Task<IActionResult> Update(int id, [FromBody] CategoryUpdateDTO dto)
         {
@@ -92,9 +84,7 @@ namespace TiendaUcnApi.src.API.Controllers
             ));
         }
 
-        /// <summary>
-        /// Elimina una categoría.
-        /// </summary>
+        
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {

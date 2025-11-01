@@ -183,4 +183,41 @@ public class EmailService : IEmailService
 
         return html;
     }
+
+    public async Task SendAbandonedCartReminderAsync(string toEmail, string userName, string cartItemsHtml, string cartUrl)
+    {
+        // 🔹 Obtener el directorio raíz del proyecto (subimos desde bin/Debug/netX.X)
+        string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+        string? projectRoot = Directory.GetParent(baseDir)?
+            .Parent?.Parent?.Parent?.FullName;
+
+        if (projectRoot == null)
+            throw new DirectoryNotFoundException("No se pudo determinar la ruta del proyecto.");
+
+        // 🔹 Construir la ruta correcta al template
+        string templatePath = Path.Combine(projectRoot, "src", "Application", "Templates", "Email", "AbandonedCartReminder.html");
+
+        if (!File.Exists(templatePath))
+            throw new FileNotFoundException($"No se encontró la plantilla en: {templatePath}");
+
+        // 🔹 Leer el archivo HTML y reemplazar variables
+        string template = await File.ReadAllTextAsync(templatePath);
+        string body = template
+            .Replace("{{UserName}}", userName)
+            .Replace("{{CartItems}}", cartItemsHtml)
+            .Replace("{{CartUrl}}", cartUrl);
+
+        // 🔹 Enviar el correo usando Resend
+        var message = new EmailMessage
+        {
+            From = "TiendaUCN <onboarding@resend.dev>",
+            To = toEmail,
+            Subject = "¡Aún tienes productos en tu carrito! 🛒",
+            HtmlBody = body
+        };
+
+        await _resend.EmailSendAsync(message);
+    }
+
+
 }

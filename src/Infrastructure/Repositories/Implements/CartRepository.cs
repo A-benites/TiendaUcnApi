@@ -38,6 +38,7 @@ namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements
                     return cart;
                 }
             }
+
             cart = await _context
                 .Carts.Include(c => c.CartItems)
                 .ThenInclude(ci => ci.Product)
@@ -108,21 +109,15 @@ namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements
 
         public async Task AddItemAsync(Cart cart, CartItem cartItem)
         {
-            // Aseguramos que el producto ya existe en la BD
             _context.Attach(cartItem.Product);
 
-            // También adjuntamos sus relaciones si existen
             if (cartItem.Product.Brand != null)
                 _context.Attach(cartItem.Product.Brand);
             if (cartItem.Product.Category != null)
                 _context.Attach(cartItem.Product.Category);
 
-            // Adjuntamos el carrito también, por si no está trackeado
             _context.Attach(cart);
-
-            // Finalmente agregamos el ítem
             _context.CartItems.Add(cartItem);
-
             await _context.SaveChangesAsync();
         }
 
@@ -145,6 +140,36 @@ namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements
                 .ThenInclude(ci => ci.Product)
                 .ThenInclude(p => p.Category)
                 .FirstOrDefaultAsync(c => c.BuyerId == buyerId);
+        }
+
+        // ✅ Todos los carritos (para depuración o mantenimiento)
+        public async Task<List<Cart>> GetAllAsync()
+        {
+            return await _context.Carts
+                .Include(c => c.User)
+                .Include(c => c.CartItems)
+                    .ThenInclude(i => i.Product)
+                .ThenInclude(p => p.Images)
+                .ToListAsync();
+        }
+
+        // ✅ Carritos abandonados (no actualizados en 3 días y con items)
+        public async Task<List<Cart>> GetAbandonedCartsAsync()
+        {
+            DateTime threshold = DateTime.UtcNow.AddDays(-3);
+
+            return await _context.Carts
+                .Include(c => c.User)
+                .Include(c => c.CartItems)
+                    .ThenInclude(i => i.Product)
+                .ThenInclude(p => p.Images)
+                .Where(c =>
+                    c.UpdatedAt < threshold &&
+                    c.CartItems.Any() &&
+                    c.User != null &&
+                    c.User.Email != null
+                )
+                .ToListAsync();
         }
     }
 }

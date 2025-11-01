@@ -60,5 +60,14 @@ namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements
             _context.Categories.Remove(category);
             await _context.SaveChangesAsync();
         }
+
+        public async Task<List<Cart>> GetAllAsync()
+        {
+            return await _context.Carts
+                .Include(c => c.CartItems)   // adjust name if your property is different
+                    .ThenInclude(ci => ci.Product) // optional: include product data
+                .Include(c => c.User)        // include user navigation if exists
+                .ToListAsync();
+        }
     }
 }

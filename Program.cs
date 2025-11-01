@@ -1,5 +1,7 @@
 using System.Security.Claims;
 using System.Text;
+using Hangfire;
+using Hangfire.Storage.SQLite;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -9,128 +11,117 @@ using Resend;
 using Serilog;
 using TiendaUcnApi.src.API.Extensions;
 using TiendaUcnApi.src.API.Middlewares.ErrorHandlingMiddleware;
-using TiendaUcnApi.src.Application.Mappers; // <-- Importación añadida
+using TiendaUcnApi.src.Application.Mappers;
 using TiendaUcnApi.src.Application.Services.Implements;
 using TiendaUcnApi.src.Application.Services.Interfaces;
 using TiendaUcnApi.src.Domain.Models;
 using TiendaUcnApi.src.Infrastructure.Data;
 using TiendaUcnApi.src.Infrastructure.Repositories.Implements;
 using TiendaUcnApi.src.Infrastructure.Repositories.Interfaces;
-using TiendaUcnApi.src.Application.Services.Implements;
-using TiendaUcnApi.src.Infrastructure.Repositories.Implements;
 
-
-// Configura un logger de arranque para capturar errores durante el inicio.
+// Bootstrap logger
 Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateBootstrapLogger();
-
-Log.Information("Iniciando la aplicación");
+Log.Information("Starting application");
 
 try
 {
     var builder = WebApplication.CreateBuilder(args);
 
     #region Logging Configuration
-    // Reemplaza el logger por defecto de .NET con Serilog.
-    builder.Host.UseSerilog(
-        (context, services, configuration) =>
-            configuration
-                .ReadFrom.Configuration(context.Configuration)
-                .ReadFrom.Services(services)
-                .Enrich.FromLogContext()
-    );
+    builder.Host.UseSerilog((context, services, configuration) =>
+        configuration.ReadFrom.Configuration(context.Configuration)
+                     .ReadFrom.Services(services)
+                     .Enrich.FromLogContext());
     #endregion
 
     #region Database Configuration
-    Log.Information("Configurando base de datos SQLite");
+    Log.Information("Configuring SQLite database");
     builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"))
+        options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+    #endregion
+
+    #region Hangfire Configuration
+    Log.Information("Configuring Hangfire with SQLite storage");
+
+    builder.Services.AddHangfire(config =>
+        config.UseSimpleAssemblyNameTypeSerializer()
+              .UseRecommendedSerializerSettings()
+              .UseSQLiteStorage(builder.Configuration.GetConnectionString("DefaultConnection"))
     );
+
+    builder.Services.AddHangfireServer();
     #endregion
 
     #region Identity Configuration
-    Log.Information("Configurando Identity");
-    // Se usa AddIdentityCore para un control más fino.
-    builder
-        .Services.AddIdentityCore<User>(options =>
-        {
-            options.Password.RequireDigit = true;
-            options.Password.RequiredLength = 8;
-            options.Password.RequireNonAlphanumeric = false;
-            options.Password.RequireUppercase = false;
-            options.Password.RequireLowercase = false;
-            options.User.RequireUniqueEmail = true;
-
-            // Habilitar la validación del SecurityStamp
-            // options.SecurityStampValidationInterval = TimeSpan.Zero; // Esta opción no existe en IdentityOptions
-        })
-        .AddRoles<Role>() // Asegúrate de tener un modelo Role
-        .AddEntityFrameworkStores<AppDbContext>()
-        .AddDefaultTokenProviders();
+    Log.Information("Configuring Identity");
+    builder.Services.AddIdentityCore<User>(options =>
+    {
+        options.Password.RequireDigit = true;
+        options.Password.RequiredLength = 8;
+        options.Password.RequireNonAlphanumeric = false;
+        options.Password.RequireUppercase = false;
+        options.Password.RequireLowercase = false;
+        options.User.RequireUniqueEmail = true;
+    })
+    .AddRoles<Role>()
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddDefaultTokenProviders();
     #endregion
 
     #region Authentication Configuration
-    Log.Information("Configurando autenticación JWT");
-    builder
-        .Services.AddAuthentication(options =>
-        {
-            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-        })
-        .AddJwtBearer(options =>
-        {
-            string jwtSecret =
-                builder.Configuration["JWTSecret"]
-                ?? throw new InvalidOperationException("La clave secreta JWT no está configurada.");
-            options.MapInboundClaims = false;
-            options.TokenValidationParameters = new TokenValidationParameters
-            {
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
-                ValidateIssuer = false,
-                ValidateAudience = false,
-                ValidateLifetime = true,
-                ClockSkew = TimeSpan.Zero, // No hay tolerancia para tokens expirados
-            };
+    Log.Information("Configuring JWT authentication");
+    builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
+    {
+        string jwtSecret = builder.Configuration["JWTSecret"]
+            ?? throw new InvalidOperationException("JWT secret key not configured.");
 
-            // --- CÓDIGO AÑADIDO PARA VALIDAR EL SECURITY STAMP (R35) ---
-            options.Events = new JwtBearerEvents
+        options.MapInboundClaims = false;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero,
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
             {
-                // Este evento se ejecuta después de validar el token, pero antes de que se establezca la identidad del usuario.
-                OnTokenValidated = async context =>
+                var userManager = context.HttpContext.RequestServices.GetRequiredService<UserManager<User>>();
+                var claimsPrincipal = context.Principal;
+
+                if (claimsPrincipal == null)
                 {
-                    var userManager = context.HttpContext.RequestServices.GetRequiredService<
-                        UserManager<User>
-                    >();
-                    var claimsPrincipal = context.Principal;
-                    if (claimsPrincipal == null)
-                    {
-                        context.Fail("Token inválido.");
-                        return;
-                    }
+                    context.Fail("Invalid token.");
+                    return;
+                }
 
-                    var userId = claimsPrincipal.FindFirstValue(ClaimTypes.NameIdentifier);
-                    var user = await userManager.FindByIdAsync(userId);
+                var userId = claimsPrincipal.FindFirstValue(ClaimTypes.NameIdentifier);
+                var user = await userManager.FindByIdAsync(userId);
 
-                    // Compara el SecurityStamp del token con el de la base de datos.
-                    // Si no coinciden, significa que la contraseña cambió (u otra acción de seguridad) y el token ya no es válido.
-                    if (
-                        user == null
-                        || user.SecurityStamp
-                            != claimsPrincipal.FindFirstValue("AspNet.Identity.SecurityStamp")
-                    )
-                    {
-                        context.Fail("Token inválido. Sesión expirada por cambio de seguridad.");
-                    }
-                },
-            };
-        });
+                if (user == null || user.SecurityStamp != claimsPrincipal.FindFirstValue("AspNet.Identity.SecurityStamp"))
+                {
+                    context.Fail("Invalid token. Session expired due to security change.");
+                }
+            },
+        };
+    });
     #endregion
 
     #region Dependency Injection
-    Log.Information("Configurando inyección de dependencias");
+    Log.Information("Configuring dependency injection");
+
     builder.Services.AddScoped<IUserService, UserService>();
     builder.Services.AddScoped<IEmailService, EmailService>();
-    builder.Services.AddScoped<ITokenService, TokenService>(); // Registro del servicio de token
+    builder.Services.AddScoped<ITokenService, TokenService>();
     builder.Services.AddScoped<IUserRepository, UserRepository>();
     builder.Services.AddScoped<IVerificationCodeRepository, VerificationCodeRepository>();
     builder.Services.AddScoped<IProfileService, ProfileService>();
@@ -148,55 +139,48 @@ try
     builder.Services.AddScoped<ICategoryService, CategoryService>();
     builder.Services.AddScoped<IBrandService, BrandService>();
 
+    // Register background job service
+    builder.Services.AddScoped<IBackgroundJobService, BackgroundJobService>();
     #endregion
 
     #region Email Service Configuration
-    Log.Information("Configurando servicio de Email");
+    Log.Information("Configuring email service");
     builder.Services.AddOptions();
     builder.Services.AddHttpClient<ResendClient>();
     builder.Services.Configure<ResendClientOptions>(o =>
     {
-        o.ApiToken =
-            builder.Configuration["ResendAPIKey"]
-            ?? throw new InvalidOperationException(
-                "El token de API de Resend no está configurado."
-            );
+        o.ApiToken = builder.Configuration["ResendAPIKey"]
+            ?? throw new InvalidOperationException("Resend API key not configured.");
     });
     builder.Services.AddTransient<IResend, ResendClient>();
     #endregion
 
-    // Configura los controladores y el comportamiento de la API
-    builder
-        .Services.AddControllers()
-        .ConfigureApiBehaviorOptions(options =>
+    builder.Services.AddControllers().ConfigureApiBehaviorOptions(options =>
+    {
+        options.InvalidModelStateResponseFactory = context =>
         {
-            options.InvalidModelStateResponseFactory = context =>
-            {
-                var errors = context
-                    .ModelState.Where(kvp => kvp.Value != null && kvp.Value.Errors.Any())
-                    .ToDictionary(
-                        kvp => kvp.Key,
-                        kvp =>
-                            kvp.Value!.Errors.Select(e => e.ErrorMessage ?? string.Empty).ToArray()
-                    );
-
-                return new BadRequestObjectResult(
-                    new
-                    {
-                        status = 400,
-                        message = "Errores de validación",
-                        errors,
-                        timestamp = DateTime.UtcNow,
-                    }
+            var errors = context.ModelState
+                .Where(kvp => kvp.Value != null && kvp.Value.Errors.Any())
+                .ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage ?? string.Empty).ToArray()
                 );
-            };
-        });
+
+            return new BadRequestObjectResult(new
+            {
+                status = 400,
+                message = "Validation errors",
+                errors,
+                timestamp = DateTime.UtcNow,
+            });
+        };
+    });
 
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
     builder.Services.AddHttpContextAccessor();
 
-    // Configura los mapeos de Mapster
+    // Configure Mapster mappers
     var userMapper = new UserMapper();
     userMapper.ConfigureAllMappings();
 
@@ -212,9 +196,8 @@ try
     var app = builder.Build();
 
     #region Pipeline Configuration
-    Log.Information("Configurando el pipeline de la aplicación");
+    Log.Information("Configuring middleware pipeline");
 
-    // Middleware para logs de requests
     app.UseSerilogRequestLogging();
 
     if (app.Environment.IsDevelopment())
@@ -223,34 +206,50 @@ try
         app.UseSwaggerUI(c =>
         {
             c.SwaggerEndpoint("/swagger/v1/swagger.json", "Tienda UCN API V1");
-            c.RoutePrefix = string.Empty; // Swagger en la raíz
+            c.RoutePrefix = string.Empty;
         });
     }
 
-    // Middleware personalizado para manejo de excepciones
     app.UseMiddleware<ErrorHandlingMiddleware>();
     app.UseMiddleware<TiendaUcnApi.src.API.Middleware.BuyerIdMiddleware>();
 
-    app.UseHttpsRedirection();
+    // Hangfire Dashboard (solo local)
+    app.UseHangfireDashboard("/hangfire", new DashboardOptions
+    {
+        Authorization = new[] { new Hangfire.Dashboard.LocalRequestsOnlyAuthorizationFilter() }
+    });
 
-    // IMPORTANTE: El orden de UseAuthentication y UseAuthorization es crucial
+    app.UseHttpsRedirection();
     app.UseAuthentication();
     app.UseAuthorization();
-
     app.MapControllers();
 
-    // Aplica migraciones y datos semilla al iniciar
+    // Apply migrations and seed data
     await app.SeedDatabaseAsync();
+
+    // 🕒 Register recurring jobs (configuración temporal para pruebas)
+    RecurringJob.AddOrUpdate<IBackgroundJobService>(
+        "delete-unconfirmed-users",
+        service => service.DeleteUnconfirmedUsersAsync(),
+        "*/2 * * * *" // cada 2 minutos
+    );
+
+    RecurringJob.AddOrUpdate<IBackgroundJobService>(
+        "send-cart-reminders",
+        service => service.SendAbandonedCartRemindersAsync(),
+        "*/3 * * * *" // cada 30 minutos
+    );
+
     #endregion
 
     app.Run();
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "La aplicación falló al iniciar");
+    Log.Fatal(ex, "Application failed to start");
 }
 finally
 {
-    Log.Information("Apagando la aplicación");
+    Log.Information("Shutting down application");
     Log.CloseAndFlush();
 }
