@@ -86,4 +86,14 @@ public interface IUserRepository
     /// </summary>
     /// <returns>Número de usuarios eliminados</returns>
     Task<int> DeleteUnconfirmedAsync();
+    /// <summary>
+    /// Obtiene los usuarios que aún no han confirmado su correo electrónico.
+    /// </summary>
+    Task<List<User>> GetUnconfirmedUsersAsync();
+        /// <summary>
+    /// Obtiene todos los usuarios registrados en la base de datos.
+    /// </summary>
+    Task<List<User>> GetAllAsync();
+
+
 }
