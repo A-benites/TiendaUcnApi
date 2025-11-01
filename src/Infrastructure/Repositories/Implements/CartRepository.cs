@@ -142,7 +142,7 @@ namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements
                 .FirstOrDefaultAsync(c => c.BuyerId == buyerId);
         }
 
-        // ✅ Nuevo: obtiene todos los carritos (para tareas de mantenimiento)
+        // ✅ Todos los carritos (para depuración o mantenimiento)
         public async Task<List<Cart>> GetAllAsync()
         {
             return await _context.Carts
@@ -153,7 +153,7 @@ namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements
                 .ToListAsync();
         }
 
-        // ✅ Nuevo: obtiene los carritos abandonados (no actualizados en 3 días)
+        // ✅ Carritos abandonados (no actualizados en 3 días y con items)
         public async Task<List<Cart>> GetAbandonedCartsAsync()
         {
             DateTime threshold = DateTime.UtcNow.AddDays(-3);
@@ -163,7 +163,12 @@ namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements
                 .Include(c => c.CartItems)
                     .ThenInclude(i => i.Product)
                 .ThenInclude(p => p.Images)
-                .Where(c => c.UpdatedAt < threshold && c.CartItems.Any())
+                .Where(c =>
+                    c.UpdatedAt < threshold &&
+                    c.CartItems.Any() &&
+                    c.User != null &&
+                    c.User.Email != null
+                )
                 .ToListAsync();
         }
     }

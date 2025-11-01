@@ -33,7 +33,6 @@ namespace TiendaUcnApi.src.Application.Services.Implements
         {
             try
             {
-                // Retrieve all unverified users
                 var unverifiedUsers = await _userRepository.GetUnconfirmedUsersAsync();
 
                 foreach (var user in unverifiedUsers)
@@ -58,39 +57,47 @@ namespace TiendaUcnApi.src.Application.Services.Implements
         {
             try
             {
-                var abandonedCarts = await _cartRepository.GetAllAsync();
+                // 🔹 Trae directamente los carritos abandonados desde el repositorio
+                var abandonedCarts = await _cartRepository.GetAbandonedCartsAsync();
 
-                // Filter carts that have not been updated in the last 3 days
-                var oldCarts = abandonedCarts
-                    .Where(c => (DateTime.UtcNow - c.UpdatedAt).TotalDays >= 3)
-                    .ToList();
+                Log.Information("Job started: found {Count} abandoned carts", abandonedCarts.Count);
 
-                foreach (var cart in oldCarts)
+                foreach (var cart in abandonedCarts)
                 {
                     if (cart.User?.Email == null)
+                    {
+                        Log.Warning("Skipping cart {Id} because user email is null", cart.Id);
                         continue;
+                    }
 
-                    // Generate a simple HTML list of cart items
+                    if (cart.CartItems == null || cart.CartItems.Count == 0)
+                    {
+                        Log.Warning("Skipping cart {Id} because it has no items", cart.Id);
+                        continue;
+                    }
+
+                    // 🔹 Genera una lista HTML de productos
                     var cartItemsList = new List<string>();
                     foreach (var item in cart.CartItems)
                     {
-                        // Safely access Product information
-                        var title = item.Product?.Title ?? "Unknown product";
-                        cartItemsList.Add($"• {title} - {item.Quantity} units");
+                        var title = item.Product?.Title ?? "Producto desconocido";
+                        cartItemsList.Add($"• {title} - {item.Quantity} unidades");
                     }
 
                     var cartSummary = string.Join("<br>", cartItemsList);
 
+                    // 🔹 Enviar correo recordatorio
                     await _emailService.SendAbandonedCartReminderAsync(
                         cart.User.Email,
                         cart.User.FirstName ?? "Cliente",
                         cartSummary,
                         "https://tienda-ucn.cl/cart"
                     );
+
                     Log.Information("Sent abandoned cart reminder to: {Email}", cart.User.Email);
                 }
 
-                Log.Information("Job completed: reminders sent for {Count} abandoned carts", oldCarts.Count);
+                Log.Information("Job completed: reminders sent for {Count} abandoned carts", abandonedCarts.Count);
             }
             catch (Exception ex)
             {

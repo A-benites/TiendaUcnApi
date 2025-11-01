@@ -213,7 +213,7 @@ try
     app.UseMiddleware<ErrorHandlingMiddleware>();
     app.UseMiddleware<TiendaUcnApi.src.API.Middleware.BuyerIdMiddleware>();
 
-    // Hangfire Dashboard (protegido solo para dev)
+    // Hangfire Dashboard (solo local)
     app.UseHangfireDashboard("/hangfire", new DashboardOptions
     {
         Authorization = new[] { new Hangfire.Dashboard.LocalRequestsOnlyAuthorizationFilter() }
@@ -227,22 +227,19 @@ try
     // Apply migrations and seed data
     await app.SeedDatabaseAsync();
 
-    // Register recurring jobs (se ejecutan automáticamente)
+    // 🕒 Register recurring jobs (configuración temporal para pruebas)
     RecurringJob.AddOrUpdate<IBackgroundJobService>(
         "delete-unconfirmed-users",
         service => service.DeleteUnconfirmedUsersAsync(),
-        Cron.Daily
+        "*/2 * * * *" // cada 2 minutos
     );
 
     RecurringJob.AddOrUpdate<IBackgroundJobService>(
         "send-cart-reminders",
         service => service.SendAbandonedCartRemindersAsync(),
-        Cron.Hourly
+        "*/3 * * * *" // cada 30 minutos
     );
 
-    // ✅ TEST MANUAL DESDE INICIO (solo para desarrollo)
-    BackgroundJob.Enqueue<IBackgroundJobService>(job => job.DeleteUnconfirmedUsersAsync());
-    BackgroundJob.Enqueue<IBackgroundJobService>(job => job.SendAbandonedCartRemindersAsync());
     #endregion
 
     app.Run();

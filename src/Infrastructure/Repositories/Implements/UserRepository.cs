@@ -124,9 +124,53 @@ public class UserRepository : IUserRepository
     public async Task<bool> DeleteAsync(int userId)
     {
         var user = await _userManager.FindByIdAsync(userId.ToString());
-        var result = await _userManager.DeleteAsync(user!);
+        if (user == null) return false;
+
+        
+        var carts = await _context.Carts
+            .Include(c => c.CartItems)
+            .Where(c => c.UserId == userId)
+            .ToListAsync();
+
+        foreach (var cart in carts)
+        {
+            _context.CartItems.RemoveRange(cart.CartItems);
+            _context.Carts.Remove(cart);
+        }
+
+        await _context.SaveChangesAsync();
+
+        
+        await _verificationCodeRepository.DeleteByUserIdAsync(userId);
+
+        
+        var claims = await _userManager.GetClaimsAsync(user);
+        if (claims.Any())
+            await _userManager.RemoveClaimsAsync(user, claims);
+
+        
+        var logins = await _userManager.GetLoginsAsync(user);
+        foreach (var login in logins)
+            await _userManager.RemoveLoginAsync(user, login.LoginProvider, login.ProviderKey);
+
+        
+        var tokens = await _context.Set<IdentityUserToken<int>>()
+            .Where(t => t.UserId == userId)
+            .ToListAsync();
+        _context.RemoveRange(tokens);
+
+        
+        var roles = await _userManager.GetRolesAsync(user);
+        if (roles.Any())
+            await _userManager.RemoveFromRolesAsync(user, roles);
+
+        await _context.SaveChangesAsync();
+
+        
+        var result = await _userManager.DeleteAsync(user);
+
         return result.Succeeded;
-    }
+}
 
     /// <summary>
     /// Elimina usuarios no confirmados y sus códigos de verificación asociados.
