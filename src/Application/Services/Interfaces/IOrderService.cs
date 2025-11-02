@@ -26,7 +26,10 @@ public interface IOrderService
     /// <param name="userId">Identificador del usuario.</param>
     /// <param name="filter">Filtros de paginación.</param>
     /// <returns>Lista paginada de órdenes del usuario.</returns>
-    Task<GenericResponse<OrderListDTO>> GetAllByUserPaginated(int userId, UserOrderFilterDTO filter);
+    Task<GenericResponse<OrderListDTO>> GetAllByUserPaginated(
+        int userId,
+        UserOrderFilterDTO filter
+    );
 
     /// <summary>
     /// Obtiene el detalle de una orden por su ID (solo si pertenece al usuario).
@@ -55,6 +58,11 @@ public interface IOrderService
     /// </summary>
     /// <param name="orderId">Identificador de la orden.</param>
     /// <param name="dto">DTO con el nuevo estado.</param>
+    /// <param name="adminId">Identificador del administrador que realiza el cambio.</param>
     /// <returns>Orden actualizada.</returns>
-    Task<GenericResponse<OrderDTO>> UpdateOrderStatusAsync(int orderId, UpdateOrderStatusDTO dto);
+    Task<GenericResponse<OrderDTO>> UpdateOrderStatusAsync(
+        int orderId,
+        UpdateOrderStatusDTO dto,
+        int adminId
+    );
 }

@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using TiendaUcnApi.src.Application.DTO.OrderDTO;
+using TiendaUcnApi.src.Application.Exceptions;
+using TiendaUcnApi.src.Application.Services;
 using TiendaUcnApi.src.Domain.Models;
 using TiendaUcnApi.src.Infrastructure.Data;
 using TiendaUcnApi.src.Infrastructure.Repositories.Interfaces;
@@ -113,7 +115,7 @@ public class OrderRepository : IOrderRepository
         return (orders, totalCount);
     }
 
-    public async Task<Order> UpdateStatusAsync(int id, OrderStatus status)
+    public async Task<Order> UpdateStatusAsync(int id, OrderStatus status, int adminId)
     {
         var order = await _context.Orders.FindAsync(id);
         if (order == null)
@@ -121,8 +123,35 @@ public class OrderRepository : IOrderRepository
             throw new KeyNotFoundException($"Order with ID {id} not found.");
         }
 
+        // R123: Validate state transition using state machine
+        var previousStatus = order.Status;
+        if (!OrderStatusTransitionValidator.IsValidTransition(previousStatus, status))
+        {
+            var errorMessage = OrderStatusTransitionValidator.GetTransitionErrorMessage(
+                previousStatus,
+                status
+            );
+            throw new InvalidOperationException(errorMessage);
+        }
+
+        // R125: Create audit record before changing status
+        var auditRecord = new AuditRecord
+        {
+            ChangedById = adminId,
+            TargetUserId = order.UserId,
+            Action = "ChangeOrderStatus",
+            PreviousValue = previousStatus.ToString(),
+            NewValue = status.ToString(),
+            Reason = $"Order {order.Code} status changed from {previousStatus} to {status}",
+            ChangedAt = DateTime.UtcNow,
+        };
+
+        _context.AuditRecords.Add(auditRecord);
+
+        // Update order status
         order.Status = status;
         order.UpdatedAt = DateTime.UtcNow;
+
         await _context.SaveChangesAsync();
 
         return order;

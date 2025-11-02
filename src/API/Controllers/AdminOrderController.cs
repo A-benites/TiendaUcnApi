@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TiendaUcnApi.src.Application.DTO;
@@ -56,7 +57,14 @@ public class AdminOrderController : ControllerBase
     [HttpPatch("{id}/status")]
     public async Task<IActionResult> UpdateOrderStatus(int id, [FromBody] UpdateOrderStatusDTO dto)
     {
-        var response = await _orderService.UpdateOrderStatusAsync(id, dto);
+        // R125: Extract adminId from authenticated user claims
+        var adminIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (adminIdClaim == null || !int.TryParse(adminIdClaim.Value, out var adminId))
+        {
+            return Unauthorized(new { message = "Invalid admin credentials" });
+        }
+
+        var response = await _orderService.UpdateOrderStatusAsync(id, dto, adminId);
         return Ok(response);
     }
 }

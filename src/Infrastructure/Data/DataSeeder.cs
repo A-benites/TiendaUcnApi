@@ -48,11 +48,32 @@ public class DataSeeder
                 Gender = Enum.Parse<Gender>(configuration["User:AdminUser:Gender"]),
                 BirthDate = DateOnly.Parse(configuration["User:AdminUser:BirthDate"]),
                 EmailConfirmed = true,
-                IsSeed = true, // Marca como usuario semilla
+                IsSeed = true,
             };
 
             await userManager.CreateAsync(adminUser, configuration["User:AdminUser:Password"]);
             await userManager.AddToRoleAsync(adminUser, "Administrador");
+        }
+
+        // Crea usuario cliente de prueba si no existe
+        if (!await userManager.Users.AnyAsync(u => u.Email == "cliente@test.com"))
+        {
+            var customerUser = new User
+            {
+                UserName = "cliente@test.com",
+                Email = "cliente@test.com",
+                FirstName = "Cliente",
+                LastName = "DePrueba",
+                Rut = "55.555.555-5",
+                Gender = Gender.Femenino,
+                BirthDate = DateOnly.Parse("1998-05-10"),
+                PhoneNumber = "+56955555555",
+                EmailConfirmed = true,
+                IsSeed = true,
+            };
+
+            await userManager.CreateAsync(customerUser, "Cliente123!");
+            await userManager.AddToRoleAsync(customerUser, "Cliente");
         }
 
         // 3. Crea categorías, marcas y productos si la tabla de productos está vacía

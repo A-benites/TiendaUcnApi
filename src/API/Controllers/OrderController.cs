@@ -48,7 +48,10 @@ public class OrderController : BaseController
     /// <param name="pageSize">Tamaño de página (por defecto 10).</param>
     /// <returns>Lista paginada de órdenes.</returns>
     [HttpGet]
-    public async Task<IActionResult> GetOrders([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+    public async Task<IActionResult> GetOrders(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10
+    )
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
@@ -57,11 +60,7 @@ public class OrderController : BaseController
             return Unauthorized(new GenericResponse<object>("Usuario no autenticado", null));
         }
 
-        var filter = new UserOrderFilterDTO
-        {
-            Page = page,
-            PageSize = pageSize
-        };
+        var filter = new UserOrderFilterDTO { Page = page, PageSize = pageSize };
 
         var response = await _orderService.GetAllByUserPaginated(userId, filter);
         return Ok(response);

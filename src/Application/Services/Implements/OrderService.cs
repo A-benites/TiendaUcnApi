@@ -275,14 +275,16 @@ public class OrderService : IOrderService
 
     public async Task<GenericResponse<OrderDTO>> UpdateOrderStatusAsync(
         int orderId,
-        UpdateOrderStatusDTO dto
+        UpdateOrderStatusDTO dto,
+        int adminId
     )
     {
-        var order = await _orderRepository.UpdateStatusAsync(orderId, dto.Status);
+        var order = await _orderRepository.UpdateStatusAsync(orderId, dto.Status, adminId);
 
         Log.Information(
-            "Order status updated. OrderId: {OrderId}, New status: {Status}",
+            "Order status updated. OrderId: {OrderId}, AdminId: {AdminId}, New status: {Status}",
             orderId,
+            adminId,
             dto.Status
         );
 

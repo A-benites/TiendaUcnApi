@@ -113,12 +113,11 @@ namespace TiendaUcnApi.src.Application.Services.Implements
                     var existingUserCart = await _cartRepository.GetByUserIdAsync(userId.Value);
                     if (existingUserCart != null)
                     {
-                        var removedProducts =
-                            await ValidateAndCleanUnavailableProductsAsync(
-                                existingUserCart,
-                                buyerId,
-                                userId
-                            );
+                        var removedProducts = await ValidateAndCleanUnavailableProductsAsync(
+                            existingUserCart,
+                            buyerId,
+                            userId
+                        );
                         var cartDto = existingUserCart.Adapt<CartDTO>();
                         cartDto.RemovedUnavailableProducts = removedProducts;
                         return cartDto;
