@@ -56,5 +56,10 @@ namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements
             _context.Brands.Remove(brand);
             await _context.SaveChangesAsync();
         }
+
+        public async Task<bool> HasAssociatedProductsAsync(int brandId)
+        {
+            return await _context.Products.AnyAsync(p => p.BrandId == brandId);
+        }
     }
 }

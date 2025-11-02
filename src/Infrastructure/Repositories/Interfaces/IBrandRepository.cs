@@ -10,5 +10,6 @@ namespace TiendaUcnApi.src.Infrastructure.Repositories.Interfaces
         Task CreateAsync(Brand brand);
         Task UpdateAsync(Brand brand);
         Task DeleteAsync(Brand brand);
+        Task<bool> HasAssociatedProductsAsync(int brandId);
     }
 }

@@ -1,4 +1,5 @@
 using TiendaUcnApi.src.Application.DTO.BrandDTO;
+using TiendaUcnApi.src.Application.Exceptions;
 using TiendaUcnApi.src.Application.Services.Interfaces;
 using TiendaUcnApi.src.Domain.Models;
 using TiendaUcnApi.src.Infrastructure.Repositories.Interfaces;
@@ -90,6 +91,15 @@ namespace TiendaUcnApi.src.Application.Services.Implements
             var brand = await _repository.GetByIdAsync(id);
             if (brand == null)
                 return false;
+
+            // R110: Verify if brand has associated products before deletion
+            var hasProducts = await _repository.HasAssociatedProductsAsync(id);
+            if (hasProducts)
+            {
+                throw new ConflictException(
+                    "No se puede eliminar la marca porque tiene productos asociados."
+                );
+            }
 
             await _repository.DeleteAsync(brand);
             return true;

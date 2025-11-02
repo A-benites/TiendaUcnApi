@@ -12,32 +12,34 @@ namespace TiendaUcnApi.src.API.Controllers.Admin
     public class BrandController : BaseController
     {
         private readonly IBrandService _brandService;
-        private readonly ICategoryService _categoryService;
 
-        public BrandController(IBrandService brandService,ICategoryService cartegoryService)
+        public BrandController(IBrandService brandService)
         {
             _brandService = brandService;
-
-            _categoryService = cartegoryService;
-
         }
 
-        
         [HttpGet]
         public async Task<IActionResult> GetAll(
             [FromQuery] string? search,
             [FromQuery] int page = 1,
-            [FromQuery] int size = 10)
+            [FromQuery] int size = 10
+        )
         {
-            
-            if (page <= 0) throw new ArgumentOutOfRangeException(nameof(page), "Page must be greater than 0.");
-            if (size <= 0) throw new ArgumentOutOfRangeException(nameof(size), "Size must be greater than 0.");
+            if (page <= 0)
+                throw new ArgumentOutOfRangeException(
+                    nameof(page),
+                    "Page must be greater than 0."
+                );
+            if (size <= 0)
+                throw new ArgumentOutOfRangeException(
+                    nameof(size),
+                    "Size must be greater than 0."
+                );
 
-            
-            var result = await _categoryService.GetAllAsync(search, page, size);
+            // Fixed R111: Call _brandService instead of _categoryService
+            var result = await _brandService.GetAllAsync(search, page, size);
 
-           
-            return Ok(new GenericResponse<object>("Categories retrieved successfully", result));
+            return Ok(new GenericResponse<object>("Brands retrieved successfully", result));
         }
 
         

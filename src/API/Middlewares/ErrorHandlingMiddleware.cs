@@ -2,6 +2,7 @@ using Serilog;
 using System.Security;
 using System.Text.Json;
 using TiendaUcnApi.src.Application.DTO.BaseResponse;
+using TiendaUcnApi.src.Application.Exceptions;
 
 namespace TiendaUcnApi.src.API.Middlewares.ErrorHandlingMiddleware;
 
@@ -65,6 +66,7 @@ public class ErrorHandlingMiddleware(RequestDelegate next)
     {
         return ex switch
         {
+            ConflictException _ => (StatusCodes.Status409Conflict, "Conflicto"),
             UnauthorizedAccessException _ => (StatusCodes.Status401Unauthorized, "No autorizado"),
             ArgumentNullException _ => (StatusCodes.Status400BadRequest, "Solicitud inválida"),
             KeyNotFoundException _ => (StatusCodes.Status404NotFound, "Recurso no encontrado"),
