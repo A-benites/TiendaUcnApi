@@ -1,8 +1,8 @@
 using Mapster;
 using Serilog;
-using TiendaUcnApi.src.Domain.Models;
 using TiendaUcnApi.src.Application.DTO.CartDTO;
 using TiendaUcnApi.src.Application.Services.Interfaces;
+using TiendaUcnApi.src.Domain.Models;
 using TiendaUcnApi.src.Infrastructure.Repositories.Interfaces;
 
 namespace TiendaUcnApi.src.Application.Services.Implements
@@ -21,7 +21,12 @@ namespace TiendaUcnApi.src.Application.Services.Implements
             _productRepository = productRepository;
         }
 
-        public async Task<CartDTO> AddItemAsync(string buyerId, int productId, int quantity, int? userId = null)
+        public async Task<CartDTO> AddItemAsync(
+            string buyerId,
+            int productId,
+            int quantity,
+            int? userId = null
+        )
         {
             Cart? cart = await _cartRepository.FindAsync(buyerId, userId);
             Product? product = await _productRepository.GetByIdAsync(productId);
@@ -40,7 +45,11 @@ namespace TiendaUcnApi.src.Application.Services.Implements
             {
                 Log.Information(
                     "CartService: Actualizando cantidad de producto existente. BuyerId: {BuyerId}, UserId: {UserId}, ProductId: {ProductId}, CantidadAnterior: {CantidadAnterior}, CantidadNueva: {CantidadNueva}",
-                    buyerId, userId, productId, existingProduct.Quantity, existingProduct.Quantity + quantity
+                    buyerId,
+                    userId,
+                    productId,
+                    existingProduct.Quantity,
+                    existingProduct.Quantity + quantity
                 );
                 existingProduct.Quantity += quantity;
             }
@@ -56,7 +65,11 @@ namespace TiendaUcnApi.src.Application.Services.Implements
                 await _cartRepository.AddItemAsync(cart, newCartItem);
                 Log.Information(
                     "CartService: Item agregado al carrito. BuyerId: {BuyerId}, UserId: {UserId}, ProductId: {ProductId}, Cantidad: {Cantidad}, ProductTitle: {ProductTitle}",
-                    buyerId, userId, productId, quantity, product.Title
+                    buyerId,
+                    userId,
+                    productId,
+                    quantity,
+                    product.Title
                 );
             }
 
@@ -71,7 +84,9 @@ namespace TiendaUcnApi.src.Application.Services.Implements
         {
             Cart? cart = await _cartRepository.FindAsync(buyerId, userId);
             if (cart == null)
-                throw new KeyNotFoundException("El carrito no existe para el comprador especificado.");
+                throw new KeyNotFoundException(
+                    "El carrito no existe para el comprador especificado."
+                );
 
             var itemCount = cart.CartItems.Count;
             cart.CartItems.Clear();
@@ -80,7 +95,9 @@ namespace TiendaUcnApi.src.Application.Services.Implements
 
             Log.Information(
                 "CartService: Carrito vaciado. BuyerId: {BuyerId}, UserId: {UserId}, ItemsEliminados: {ItemsEliminados}",
-                buyerId, userId, itemCount
+                buyerId,
+                userId,
+                itemCount
             );
 
             return cart.Adapt<CartDTO>();
@@ -95,20 +112,103 @@ namespace TiendaUcnApi.src.Application.Services.Implements
                 {
                     var existingUserCart = await _cartRepository.GetByUserIdAsync(userId.Value);
                     if (existingUserCart != null)
-                        return existingUserCart.Adapt<CartDTO>();
+                    {
+                        var removedProducts =
+                            await ValidateAndCleanUnavailableProductsAsync(
+                                existingUserCart,
+                                buyerId,
+                                userId
+                            );
+                        var cartDto = existingUserCart.Adapt<CartDTO>();
+                        cartDto.RemovedUnavailableProducts = removedProducts;
+                        return cartDto;
+                    }
                 }
 
                 cart = await _cartRepository.CreateAsync(buyerId, userId);
+            }
+            else
+            {
+                var removedProducts = await ValidateAndCleanUnavailableProductsAsync(
+                    cart,
+                    buyerId,
+                    userId
+                );
+                var cartDto = cart.Adapt<CartDTO>();
+                cartDto.RemovedUnavailableProducts = removedProducts;
+                return cartDto;
             }
 
             return cart.Adapt<CartDTO>();
         }
 
-        public async Task<CartDTO> RemoveItemAsync(string buyerId, int productId, int? userId = null)
+        /// <summary>
+        /// Validates and removes unavailable products from the cart.
+        /// Implements R49 rubric requirement: exclude unavailable products when viewing cart.
+        /// </summary>
+        /// <returns>List of product IDs that were removed.</returns>
+        private async Task<List<int>> ValidateAndCleanUnavailableProductsAsync(
+            Cart cart,
+            string buyerId,
+            int? userId
+        )
+        {
+            var itemsToRemove = new List<CartItem>();
+
+            foreach (var item in cart.CartItems.ToList())
+            {
+                var product = await _productRepository.GetByIdAsync(item.ProductId);
+
+                // Remove items if product doesn't exist or is not available
+                if (product == null || !product.IsAvailable)
+                {
+                    itemsToRemove.Add(item);
+                }
+            }
+
+            var removedProductIds = new List<int>();
+
+            if (itemsToRemove.Any())
+            {
+                foreach (var item in itemsToRemove)
+                {
+                    removedProductIds.Add(item.ProductId);
+                    cart.CartItems.Remove(item);
+                    await _cartRepository.RemoveItemAsync(item);
+
+                    Log.Information(
+                        "CartService: Item eliminado del carrito por producto inactivo o eliminado. BuyerId: {BuyerId}, UserId: {UserId}, ProductId: {ProductId}",
+                        buyerId,
+                        userId,
+                        item.ProductId
+                    );
+                }
+
+                RecalculateCartTotals(cart);
+                await _cartRepository.UpdateAsync(cart);
+
+                Log.Information(
+                    "CartService: Se eliminaron {Count} productos no disponibles del carrito. BuyerId: {BuyerId}, UserId: {UserId}",
+                    itemsToRemove.Count,
+                    buyerId,
+                    userId
+                );
+            }
+
+            return removedProductIds;
+        }
+
+        public async Task<CartDTO> RemoveItemAsync(
+            string buyerId,
+            int productId,
+            int? userId = null
+        )
         {
             Cart? cart = await _cartRepository.FindAsync(buyerId, userId);
             if (cart == null)
-                throw new KeyNotFoundException("El carrito no existe para el comprador especificado.");
+                throw new KeyNotFoundException(
+                    "El carrito no existe para el comprador especificado."
+                );
 
             CartItem? itemToRemove = cart.CartItems.FirstOrDefault(ci => ci.ProductId == productId);
             if (itemToRemove == null)
@@ -121,7 +221,10 @@ namespace TiendaUcnApi.src.Application.Services.Implements
 
             Log.Information(
                 "CartService: Item eliminado del carrito. BuyerId: {BuyerId}, UserId: {UserId}, ProductId: {ProductId}, CantidadEliminada: {CantidadEliminada}",
-                buyerId, userId, productId, itemToRemove.Quantity
+                buyerId,
+                userId,
+                productId,
+                itemToRemove.Quantity
             );
 
             return cart.Adapt<CartDTO>();
@@ -130,7 +233,8 @@ namespace TiendaUcnApi.src.Application.Services.Implements
         public async Task AssociateWithUserAsync(string buyerId, int userId)
         {
             Cart? cart = await _cartRepository.GetAnonymousAsync(buyerId);
-            if (cart == null) return;
+            if (cart == null)
+                return;
 
             var existingUserCart = await _cartRepository.GetByUserIdAsync(userId);
 
@@ -141,7 +245,9 @@ namespace TiendaUcnApi.src.Application.Services.Implements
 
                 foreach (var anonymousItem in cart.CartItems)
                 {
-                    var existingItem = existingUserCart.CartItems.FirstOrDefault(i => i.ProductId == anonymousItem.ProductId);
+                    var existingItem = existingUserCart.CartItems.FirstOrDefault(i =>
+                        i.ProductId == anonymousItem.ProductId
+                    );
                     if (existingItem != null)
                     {
                         existingItem.Quantity += anonymousItem.Quantity;
@@ -161,7 +267,10 @@ namespace TiendaUcnApi.src.Application.Services.Implements
 
                 Log.Information(
                     "CartService: Carrito anónimo fusionado con carrito de usuario. BuyerId: {BuyerId}, UserId: {UserId}, ItemsFusionados: {ItemsMerged}, ItemsAgregados: {ItemsAdded}",
-                    buyerId, userId, itemsMerged, itemsAdded
+                    buyerId,
+                    userId,
+                    itemsMerged,
+                    itemsAdded
                 );
             }
             else
@@ -171,16 +280,25 @@ namespace TiendaUcnApi.src.Application.Services.Implements
 
                 Log.Information(
                     "CartService: Carrito anónimo asociado a usuario. BuyerId: {BuyerId}, UserId: {UserId}, ItemsCount: {ItemsCount}",
-                    buyerId, userId, cart.CartItems.Count
+                    buyerId,
+                    userId,
+                    cart.CartItems.Count
                 );
             }
         }
 
-        public async Task<CartDTO> UpdateItemQuantityAsync(string buyerId, int productId, int quantity, int? userId = null)
+        public async Task<CartDTO> UpdateItemQuantityAsync(
+            string buyerId,
+            int productId,
+            int quantity,
+            int? userId = null
+        )
         {
             Cart? cart = await _cartRepository.FindAsync(buyerId, userId);
             if (cart == null)
-                throw new KeyNotFoundException("El carrito no existe para el comprador especificado.");
+                throw new KeyNotFoundException(
+                    "El carrito no existe para el comprador especificado."
+                );
 
             var product = await _productRepository.GetByIdAsync(productId);
             if (product == null)
@@ -200,7 +318,11 @@ namespace TiendaUcnApi.src.Application.Services.Implements
 
             Log.Information(
                 "CartService: Cantidad de item actualizada. BuyerId: {BuyerId}, UserId: {UserId}, ProductId: {ProductId}, CantidadAnterior: {CantidadAnterior}, CantidadNueva: {CantidadNueva}",
-                buyerId, userId, productId, oldQuantity, quantity
+                buyerId,
+                userId,
+                productId,
+                oldQuantity,
+                quantity
             );
 
             return cart.Adapt<CartDTO>();
@@ -228,17 +350,30 @@ namespace TiendaUcnApi.src.Application.Services.Implements
         {
             Cart? cart = await _cartRepository.FindAsync(buyerId, userId);
             if (cart == null)
-                throw new KeyNotFoundException("El carrito no existe para el comprador especificado.");
+                throw new KeyNotFoundException(
+                    "El carrito no existe para el comprador especificado."
+                );
 
             if (!cart.CartItems.Any())
                 throw new InvalidOperationException("El carrito está vacío.");
 
             var itemsToRemove = new List<CartItem>();
+            var itemsToRemoveUnavailable = new List<CartItem>();
             var itemsToUpdate = new List<(CartItem item, int newQuantity)>();
             bool hasChanges = false;
 
             foreach (var item in cart.CartItems.ToList())
             {
+                var product = await _productRepository.GetByIdAsync(item.ProductId);
+
+                // Remove if product doesn't exist or is not available
+                if (product == null || !product.IsAvailable)
+                {
+                    itemsToRemoveUnavailable.Add(item);
+                    hasChanges = true;
+                    continue;
+                }
+
                 int productStock = await _productRepository.GetRealStockAsync(item.ProductId);
 
                 if (productStock == 0)
@@ -255,13 +390,29 @@ namespace TiendaUcnApi.src.Application.Services.Implements
 
             if (hasChanges)
             {
+                // Remove unavailable products first
+                foreach (var item in itemsToRemoveUnavailable)
+                {
+                    cart.CartItems.Remove(item);
+                    await _cartRepository.RemoveItemAsync(item);
+                    Log.Information(
+                        "CartService: Item eliminado durante checkout por producto inactivo o no disponible. BuyerId: {BuyerId}, UserId: {UserId}, ProductId: {ProductId}",
+                        buyerId,
+                        userId,
+                        item.ProductId
+                    );
+                }
+
+                // Remove out of stock products
                 foreach (var item in itemsToRemove)
                 {
                     cart.CartItems.Remove(item);
                     await _cartRepository.RemoveItemAsync(item);
                     Log.Information(
                         "CartService: Item eliminado durante checkout por falta de stock. BuyerId: {BuyerId}, UserId: {UserId}, ProductId: {ProductId}",
-                        buyerId, userId, item.ProductId
+                        buyerId,
+                        userId,
+                        item.ProductId
                     );
                 }
 
@@ -271,7 +422,11 @@ namespace TiendaUcnApi.src.Application.Services.Implements
                     item.Quantity = newQuantity;
                     Log.Information(
                         "CartService: Cantidad de item ajustada durante checkout por stock limitado. BuyerId: {BuyerId}, UserId: {UserId}, ProductId: {ProductId}, CantidadAnterior: {CantidadAnterior}, CantidadNueva: {CantidadNueva}",
-                        buyerId, userId, item.ProductId, oldQuantity, newQuantity
+                        buyerId,
+                        userId,
+                        item.ProductId,
+                        oldQuantity,
+                        newQuantity
                     );
                 }
 

@@ -7,5 +7,11 @@ namespace TiendaUcnApi.src.Application.DTO.CartDTO
         public required List<CartItemDTO> Items { get; set; } = new List<CartItemDTO>();
         public required string SubTotalPrice { get; set; }
         public required string TotalPrice { get; set; }
+
+        /// <summary>
+        /// List of product IDs that were removed because they became unavailable.
+        /// Implements R49 rubric requirement to report excluded products.
+        /// </summary>
+        public List<int>? RemovedUnavailableProducts { get; set; }
     }
 }
