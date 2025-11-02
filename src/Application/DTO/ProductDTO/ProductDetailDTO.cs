@@ -36,6 +36,12 @@ public class ProductDetailDTO
     public required int Discount { get; set; }
 
     /// <summary>
+    /// Precio final con descuento aplicado (calculado en servidor).
+    /// Implements R76-R77 rubric requirement: finalPrice calculated server-side.
+    /// </summary>
+    public required string FinalPrice { get; set; }
+
+    /// <summary>
     /// Stock disponible.
     /// </summary>
     public required int Stock { get; set; }

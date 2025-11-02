@@ -72,7 +72,11 @@ public class ProductMapper
                         : new List<string> { _defaultImageURL! }
             )
             .Map(dest => dest.Price, src => src.Price.ToString("C"))
-            .Map(dest => dest.Discount, src => src.Discount)
+            .Map(dest => dest.Discount, src => (int)src.Discount)
+            .Map(
+                dest => dest.FinalPrice,
+                src => CalculateFinalPrice(src.Price, src.Discount).ToString("C")
+            )
             .Map(dest => dest.Stock, src => src.Stock)
             .Map(dest => dest.StockIndicator, src => GetStockIndicator(src.Stock))
             .Map(dest => dest.CategoryName, src => src.Category.Name)
