@@ -165,6 +165,40 @@ public class OrderService : IOrderService
         return new GenericResponse<List<OrderDTO>>("Órdenes obtenidas exitosamente", ordersDto);
     }
 
+    public async Task<GenericResponse<OrderListDTO>> GetAllByUserPaginated(
+        int userId,
+        UserOrderFilterDTO filter
+    )
+    {
+        var (orders, totalCount) = await _orderRepository.GetAllByUserPaginated(
+            userId,
+            filter.Page,
+            filter.PageSize
+        );
+
+        var ordersDto = orders.Adapt<List<OrderDTO>>();
+        var totalPages = (int)Math.Ceiling(totalCount / (double)filter.PageSize);
+
+        var result = new OrderListDTO
+        {
+            Orders = ordersDto,
+            TotalCount = totalCount,
+            CurrentPage = filter.Page,
+            PageSize = filter.PageSize,
+            TotalPages = totalPages,
+        };
+
+        Log.Information(
+            "Órdenes paginadas obtenidas para el usuario {UserId}. Total: {TotalCount}, Página: {Page}, Tamaño: {PageSize}",
+            userId,
+            totalCount,
+            filter.Page,
+            filter.PageSize
+        );
+
+        return new GenericResponse<OrderListDTO>("Órdenes obtenidas exitosamente", result);
+    }
+
     public async Task<GenericResponse<OrderDTO>> GetOrderDetailByIdAsync(int orderId, int userId)
     {
         var order = await _orderRepository.GetByIdAsync(orderId);
@@ -183,7 +217,9 @@ public class OrderService : IOrderService
                 userId,
                 orderId
             );
-            throw new UnauthorizedAccessException("You do not have permission to access this order.");
+            throw new UnauthorizedAccessException(
+                "You do not have permission to access this order."
+            );
         }
 
         var orderDto = order.Adapt<OrderDTO>();
@@ -209,7 +245,7 @@ public class OrderService : IOrderService
             TotalCount = totalCount,
             CurrentPage = filter.Page,
             PageSize = filter.PageSize,
-            TotalPages = totalPages
+            TotalPages = totalPages,
         };
 
         Log.Information(

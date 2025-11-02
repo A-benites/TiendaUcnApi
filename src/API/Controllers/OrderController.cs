@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TiendaUcnApi.src.Application.DTO;
+using TiendaUcnApi.src.Application.DTO.OrderDTO;
 using TiendaUcnApi.src.Application.Services.Interfaces;
 
 namespace TiendaUcnApi.src.API.Controllers;
@@ -41,11 +42,13 @@ public class OrderController : BaseController
     }
 
     /// <summary>
-    /// Obtiene todas las órdenes del usuario autenticado.
+    /// Obtiene todas las órdenes del usuario autenticado con paginación.
     /// </summary>
-    /// <returns>Lista de órdenes.</returns>
+    /// <param name="page">Número de página (por defecto 1).</param>
+    /// <param name="pageSize">Tamaño de página (por defecto 10).</param>
+    /// <returns>Lista paginada de órdenes.</returns>
     [HttpGet]
-    public async Task<IActionResult> GetOrders()
+    public async Task<IActionResult> GetOrders([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
@@ -54,7 +57,13 @@ public class OrderController : BaseController
             return Unauthorized(new GenericResponse<object>("Usuario no autenticado", null));
         }
 
-        var response = await _orderService.GetAllByUser(userId);
+        var filter = new UserOrderFilterDTO
+        {
+            Page = page,
+            PageSize = pageSize
+        };
+
+        var response = await _orderService.GetAllByUserPaginated(userId, filter);
         return Ok(response);
     }
 

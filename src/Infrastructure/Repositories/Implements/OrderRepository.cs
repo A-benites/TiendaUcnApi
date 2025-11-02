@@ -32,6 +32,25 @@ public class OrderRepository : IOrderRepository
             .ToListAsync();
     }
 
+    public async Task<(IEnumerable<Order> Orders, int TotalCount)> GetAllByUserPaginated(int userId, int page, int pageSize)
+    {
+        var query = _context.Orders
+            .Include(o => o.OrderItems)
+            .Where(o => o.UserId == userId);
+
+        // Get total count
+        var totalCount = await query.CountAsync();
+
+        // Apply pagination and ordering
+        var orders = await query
+            .OrderByDescending(o => o.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return (orders, totalCount);
+    }
+
     public async Task<Order?> GetByIdAsync(int id)
     {
         return await _context.Orders

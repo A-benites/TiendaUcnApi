@@ -21,6 +21,14 @@ public interface IOrderService
     Task<GenericResponse<List<OrderDTO>>> GetAllByUser(int userId);
 
     /// <summary>
+    /// Obtiene todas las órdenes de un usuario con paginación.
+    /// </summary>
+    /// <param name="userId">Identificador del usuario.</param>
+    /// <param name="filter">Filtros de paginación.</param>
+    /// <returns>Lista paginada de órdenes del usuario.</returns>
+    Task<GenericResponse<OrderListDTO>> GetAllByUserPaginated(int userId, UserOrderFilterDTO filter);
+
+    /// <summary>
     /// Obtiene el detalle de una orden por su ID (solo si pertenece al usuario).
     /// </summary>
     /// <param name="orderId">Identificador de la orden.</param>
