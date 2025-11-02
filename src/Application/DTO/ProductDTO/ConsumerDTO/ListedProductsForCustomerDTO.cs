@@ -26,7 +26,7 @@ public class ListedProductsForCustomerDTO
     public string? MainImageURL { get; set; }
 
     /// <summary>
-    /// Precio del producto.
+    /// Precio original del producto.
     /// </summary>
     public decimal Price { get; set; }
 
@@ -34,6 +34,12 @@ public class ListedProductsForCustomerDTO
     /// Porcentaje de descuento aplicado.
     /// </summary>
     public int Discount { get; set; }
+
+    /// <summary>
+    /// Precio final con descuento aplicado (calculado en servidor).
+    /// Implements R71-R72 rubric requirement: finalPrice calculated server-side.
+    /// </summary>
+    public decimal FinalPrice { get; set; }
 
     /// <summary>
     /// Stock disponible del producto.

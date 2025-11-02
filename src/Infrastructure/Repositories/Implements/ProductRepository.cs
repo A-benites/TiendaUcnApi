@@ -172,6 +172,7 @@ public class ProductRepository : IProductRepository
             .Include(p => p.Images.OrderBy(i => i.CreatedAt).Take(1))
             .AsNoTracking();
 
+        // Search term filter
         if (!string.IsNullOrWhiteSpace(searchParams.SearchTerm))
         {
             var searchTerm = searchParams.SearchTerm.Trim().ToLower();
@@ -186,9 +187,51 @@ public class ProductRepository : IProductRepository
                 || p.Stock.ToString().ToLower().Contains(searchTerm)
             );
         }
+
+        // R68: Category filter
+        if (searchParams.CategoryId.HasValue)
+        {
+            query = query.Where(p => p.CategoryId == searchParams.CategoryId.Value);
+        }
+
+        // R68: Brand filter
+        if (searchParams.BrandId.HasValue)
+        {
+            query = query.Where(p => p.BrandId == searchParams.BrandId.Value);
+        }
+
+        // R68: Price range filter
+        if (searchParams.MinPrice.HasValue)
+        {
+            query = query.Where(p => p.Price >= searchParams.MinPrice.Value);
+        }
+
+        if (searchParams.MaxPrice.HasValue)
+        {
+            query = query.Where(p => p.Price <= searchParams.MaxPrice.Value);
+        }
+
+        // R68: Status filter
+        if (searchParams.Status.HasValue)
+        {
+            query = query.Where(p => p.Status == searchParams.Status.Value);
+        }
+
+        // Get total count before pagination
         int totalCount = await query.CountAsync();
+
+        // R70: Apply sorting based on SortBy parameter
+        query = searchParams.SortBy switch
+        {
+            ProductSortOption.PriceAsc => query.OrderBy(p => p.Price),
+            ProductSortOption.PriceDesc => query.OrderByDescending(p => p.Price),
+            ProductSortOption.NameAsc => query.OrderBy(p => p.Title),
+            ProductSortOption.NameDesc => query.OrderByDescending(p => p.Title),
+            ProductSortOption.Newest or _ => query.OrderByDescending(p => p.CreatedAt),
+        };
+
+        // Apply pagination
         var products = await query
-            .OrderByDescending(p => p.CreatedAt)
             .Skip((searchParams.PageNumber - 1) * searchParams.PageSize ?? _defaultPageSize)
             .Take(searchParams.PageSize ?? _defaultPageSize)
             .ToArrayAsync();

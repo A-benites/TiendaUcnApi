@@ -1,6 +1,7 @@
 using Mapster;
 using TiendaUcnApi.src.Application.DTO.ProductDTO;
 using TiendaUcnApi.src.Application.DTO.ProductDTO.AdminDTO;
+using TiendaUcnApi.src.Application.DTO.ProductDTO.ConsumerDTO;
 using TiendaUcnApi.Src.Application.DTO.ProductDTO.CustomerDTO;
 using TiendaUcnApi.src.Domain.Models;
 
@@ -120,6 +121,38 @@ public class ProductMapper
             .Map(dest => dest.Price, src => src.Price)
             .Map(dest => dest.Stock, src => src.Stock)
             .Map(dest => dest.Status, src => src.Status);
+
+        // Mapping for customer product list with FinalPrice calculation
+        // Implements R71-R72 rubric requirement
+        TypeAdapterConfig<Product, ListedProductsForCustomerDTO>
+            .NewConfig()
+            .Map(dest => dest.Id, src => src.Id)
+            .Map(dest => dest.Title, src => src.Title)
+            .Map(dest => dest.Description, src => src.Description)
+            .Map(
+                dest => dest.MainImageURL,
+                src =>
+                    src.Images.FirstOrDefault() != null
+                        ? src.Images.First().ImageUrl
+                        : _defaultImageURL
+            )
+            .Map(dest => dest.Price, src => src.Price)
+            .Map(dest => dest.Discount, src => (int)src.Discount)
+            .Map(dest => dest.FinalPrice, src => CalculateFinalPrice(src.Price, src.Discount))
+            .Map(dest => dest.Stock, src => src.Stock)
+            .Map(dest => dest.CategoryName, src => src.Category.Name)
+            .Map(dest => dest.BrandName, src => src.Brand.Name);
+    }
+
+    /// <summary>
+    /// Calcula el precio final aplicando el descuento.
+    /// </summary>
+    /// <param name="price">Precio original.</param>
+    /// <param name="discount">Porcentaje de descuento.</param>
+    /// <returns>Precio final con descuento aplicado.</returns>
+    private static decimal CalculateFinalPrice(decimal price, decimal discount)
+    {
+        return price * (1 - discount / 100);
     }
 
     /// <summary>

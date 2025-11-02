@@ -145,10 +145,20 @@ public class ProductService : IProductService
         );
         var productsDto = products.Adapt<List<ListedProductsForCustomerDTO>>();
 
-        return new GenericResponse<object>(
-            "Productos encontrados",
-            new { Products = productsDto, TotalCount = totalCount }
-        );
+        // R67: Include complete pagination metadata
+        var pageSize = searchParams.PageSize ?? 10; // Default page size
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+        var response = new ProductListResponseDTO
+        {
+            Products = productsDto,
+            TotalCount = totalCount,
+            Page = searchParams.PageNumber,
+            PageSize = pageSize,
+            TotalPages = totalPages,
+        };
+
+        return new GenericResponse<object>("Productos encontrados", response);
     }
 
     public async Task ToggleActiveAsync(int id)
