@@ -1,12 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TiendaUcnApi.src.Application.DTO.CategoryDTO;
-using TiendaUcnApi.src.Application.Services.Interfaces;
-using TiendaUcnApi.src.Application.DTO.BaseResponse;
-using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using TiendaUcnApi.src.Application.DTO;
 using TiendaUcnApi.src.Application.DTO.AuthDTO;
+using TiendaUcnApi.src.Application.DTO.BaseResponse;
+using TiendaUcnApi.src.Application.DTO.CategoryDTO;
 using TiendaUcnApi.src.Application.Services.Interfaces;
 
 namespace TiendaUcnApi.src.API.Controllers
@@ -23,9 +21,7 @@ namespace TiendaUcnApi.src.API.Controllers
             _categoryService = categoryService;
         }
 
-        
         [HttpGet]
-        [AllowAnonymous]
         public async Task<IActionResult> GetAll([FromQuery] string? search)
         {
             var categories = await _categoryService.GetAllAsync(search, 1, 100); 
