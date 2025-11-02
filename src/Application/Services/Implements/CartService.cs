@@ -37,7 +37,13 @@ namespace TiendaUcnApi.src.Application.Services.Implements
 
             var existingProduct = cart.CartItems.FirstOrDefault(ci => ci.ProductId == productId);
             if (existingProduct != null)
+            {
+                Log.Information(
+                    "CartService: Actualizando cantidad de producto existente. BuyerId: {BuyerId}, UserId: {UserId}, ProductId: {ProductId}, CantidadAnterior: {CantidadAnterior}, CantidadNueva: {CantidadNueva}",
+                    buyerId, userId, productId, existingProduct.Quantity, existingProduct.Quantity + quantity
+                );
                 existingProduct.Quantity += quantity;
+            }
             else
             {
                 var newCartItem = new CartItem
@@ -48,6 +54,10 @@ namespace TiendaUcnApi.src.Application.Services.Implements
                     Quantity = quantity,
                 };
                 await _cartRepository.AddItemAsync(cart, newCartItem);
+                Log.Information(
+                    "CartService: Item agregado al carrito. BuyerId: {BuyerId}, UserId: {UserId}, ProductId: {ProductId}, Cantidad: {Cantidad}, ProductTitle: {ProductTitle}",
+                    buyerId, userId, productId, quantity, product.Title
+                );
             }
 
             RecalculateCartTotals(cart);
@@ -63,9 +73,15 @@ namespace TiendaUcnApi.src.Application.Services.Implements
             if (cart == null)
                 throw new KeyNotFoundException("El carrito no existe para el comprador especificado.");
 
+            var itemCount = cart.CartItems.Count;
             cart.CartItems.Clear();
             RecalculateCartTotals(cart);
             await _cartRepository.UpdateAsync(cart);
+
+            Log.Information(
+                "CartService: Carrito vaciado. BuyerId: {BuyerId}, UserId: {UserId}, ItemsEliminados: {ItemsEliminados}",
+                buyerId, userId, itemCount
+            );
 
             return cart.Adapt<CartDTO>();
         }
@@ -103,6 +119,11 @@ namespace TiendaUcnApi.src.Application.Services.Implements
             RecalculateCartTotals(cart);
             await _cartRepository.UpdateAsync(cart);
 
+            Log.Information(
+                "CartService: Item eliminado del carrito. BuyerId: {BuyerId}, UserId: {UserId}, ProductId: {ProductId}, CantidadEliminada: {CantidadEliminada}",
+                buyerId, userId, productId, itemToRemove.Quantity
+            );
+
             return cart.Adapt<CartDTO>();
         }
 
@@ -115,26 +136,43 @@ namespace TiendaUcnApi.src.Application.Services.Implements
 
             if (existingUserCart != null)
             {
+                var itemsMerged = 0;
+                var itemsAdded = 0;
+
                 foreach (var anonymousItem in cart.CartItems)
                 {
                     var existingItem = existingUserCart.CartItems.FirstOrDefault(i => i.ProductId == anonymousItem.ProductId);
                     if (existingItem != null)
+                    {
                         existingItem.Quantity += anonymousItem.Quantity;
+                        itemsMerged++;
+                    }
                     else
                     {
                         anonymousItem.CartId = existingUserCart.Id;
                         existingUserCart.CartItems.Add(anonymousItem);
+                        itemsAdded++;
                     }
                 }
 
                 RecalculateCartTotals(existingUserCart);
                 await _cartRepository.UpdateAsync(existingUserCart);
                 await _cartRepository.DeleteAsync(cart);
+
+                Log.Information(
+                    "CartService: Carrito anónimo fusionado con carrito de usuario. BuyerId: {BuyerId}, UserId: {UserId}, ItemsFusionados: {ItemsMerged}, ItemsAgregados: {ItemsAdded}",
+                    buyerId, userId, itemsMerged, itemsAdded
+                );
             }
             else
             {
                 cart.UserId = userId;
                 await _cartRepository.UpdateAsync(cart);
+
+                Log.Information(
+                    "CartService: Carrito anónimo asociado a usuario. BuyerId: {BuyerId}, UserId: {UserId}, ItemsCount: {ItemsCount}",
+                    buyerId, userId, cart.CartItems.Count
+                );
             }
         }
 
@@ -155,9 +193,15 @@ namespace TiendaUcnApi.src.Application.Services.Implements
             if (product.Stock < quantity)
                 throw new ArgumentException("Stock insuficiente");
 
+            var oldQuantity = itemToUpdate.Quantity;
             itemToUpdate.Quantity = quantity;
             RecalculateCartTotals(cart);
             await _cartRepository.UpdateAsync(cart);
+
+            Log.Information(
+                "CartService: Cantidad de item actualizada. BuyerId: {BuyerId}, UserId: {UserId}, ProductId: {ProductId}, CantidadAnterior: {CantidadAnterior}, CantidadNueva: {CantidadNueva}",
+                buyerId, userId, productId, oldQuantity, quantity
+            );
 
             return cart.Adapt<CartDTO>();
         }
@@ -215,10 +259,21 @@ namespace TiendaUcnApi.src.Application.Services.Implements
                 {
                     cart.CartItems.Remove(item);
                     await _cartRepository.RemoveItemAsync(item);
+                    Log.Information(
+                        "CartService: Item eliminado durante checkout por falta de stock. BuyerId: {BuyerId}, UserId: {UserId}, ProductId: {ProductId}",
+                        buyerId, userId, item.ProductId
+                    );
                 }
 
                 foreach (var (item, newQuantity) in itemsToUpdate)
+                {
+                    var oldQuantity = item.Quantity;
                     item.Quantity = newQuantity;
+                    Log.Information(
+                        "CartService: Cantidad de item ajustada durante checkout por stock limitado. BuyerId: {BuyerId}, UserId: {UserId}, ProductId: {ProductId}, CantidadAnterior: {CantidadAnterior}, CantidadNueva: {CantidadNueva}",
+                        buyerId, userId, item.ProductId, oldQuantity, newQuantity
+                    );
+                }
 
                 RecalculateCartTotals(cart);
                 await _cartRepository.UpdateAsync(cart);
