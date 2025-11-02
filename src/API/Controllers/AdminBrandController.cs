@@ -6,7 +6,6 @@ using TiendaUcnApi.src.Application.Services.Interfaces;
 
 namespace TiendaUcnApi.src.API.Controllers.Admin
 {
-    
     [Authorize(Roles = "Administrador")]
     [Route("api/admin/brands")]
     public class BrandController : BaseController
@@ -26,15 +25,9 @@ namespace TiendaUcnApi.src.API.Controllers.Admin
         )
         {
             if (page <= 0)
-                throw new ArgumentOutOfRangeException(
-                    nameof(page),
-                    "Page must be greater than 0."
-                );
+                throw new ArgumentOutOfRangeException(nameof(page), "Page must be greater than 0.");
             if (size <= 0)
-                throw new ArgumentOutOfRangeException(
-                    nameof(size),
-                    "Size must be greater than 0."
-                );
+                throw new ArgumentOutOfRangeException(nameof(size), "Size must be greater than 0.");
 
             // Fixed R111: Call _brandService instead of _categoryService
             var result = await _brandService.GetAllAsync(search, page, size);
@@ -42,45 +35,51 @@ namespace TiendaUcnApi.src.API.Controllers.Admin
             return Ok(new GenericResponse<object>("Brands retrieved successfully", result));
         }
 
-        
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var result = await _brandService.GetByIdAsync(id)
+            var result =
+                await _brandService.GetByIdAsync(id)
                 ?? throw new KeyNotFoundException("Brand not found.");
 
             return Ok(new GenericResponse<object>("Brand retrieved successfully", result));
         }
 
-       
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] BrandCreateDTO dto)
         {
-            var result = await _brandService.CreateAsync(dto)
-                ?? throw new InvalidOperationException("A brand with the same name already exists.");
+            var result =
+                await _brandService.CreateAsync(dto)
+                ?? throw new InvalidOperationException(
+                    "A brand with the same name already exists."
+                );
 
-            return CreatedAtAction(nameof(GetById), new { id = result.Id },
-                new GenericResponse<object>("Brand created successfully", result));
+            return CreatedAtAction(
+                nameof(GetById),
+                new { id = result.Id },
+                new GenericResponse<object>("Brand created successfully", result)
+            );
         }
 
-        
         [HttpPut("{id:int}")]
         public async Task<IActionResult> Update(int id, [FromBody] BrandUpdateDTO dto)
         {
-            var result = await _brandService.UpdateAsync(id, dto)
+            var result =
+                await _brandService.UpdateAsync(id, dto)
                 ?? throw new InvalidOperationException("Brand name already in use or not found.");
 
             return Ok(new GenericResponse<object>("Brand updated successfully", result));
         }
 
-        
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {
             var success = await _brandService.DeleteAsync(id);
 
             if (!success)
-                throw new InvalidOperationException("Cannot delete brand because it has associated products or was not found.");
+                throw new InvalidOperationException(
+                    "Cannot delete brand because it has associated products or was not found."
+                );
 
             return Ok(new GenericResponse<object>("Brand deleted successfully", null));
         }

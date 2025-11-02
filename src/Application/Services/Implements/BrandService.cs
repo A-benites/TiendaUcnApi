@@ -23,7 +23,7 @@ namespace TiendaUcnApi.src.Application.Services.Implements
             {
                 Id = b.Id,
                 Name = b.Name,
-                CreatedAt = b.CreatedAt
+                CreatedAt = b.CreatedAt,
             });
         }
 
@@ -37,7 +37,7 @@ namespace TiendaUcnApi.src.Application.Services.Implements
             {
                 Id = brand.Id,
                 Name = brand.Name,
-                CreatedAt = brand.CreatedAt
+                CreatedAt = brand.CreatedAt,
             };
         }
 
@@ -48,11 +48,7 @@ namespace TiendaUcnApi.src.Application.Services.Implements
             if (existing != null)
                 return null;
 
-            var brand = new Brand
-            {
-                Name = dto.Name.Trim(),
-                CreatedAt = DateTime.UtcNow
-            };
+            var brand = new Brand { Name = dto.Name.Trim(), CreatedAt = DateTime.UtcNow };
 
             await _repository.CreateAsync(brand);
 
@@ -60,7 +56,7 @@ namespace TiendaUcnApi.src.Application.Services.Implements
             {
                 Id = brand.Id,
                 Name = brand.Name,
-                CreatedAt = brand.CreatedAt
+                CreatedAt = brand.CreatedAt,
             };
         }
 
@@ -82,7 +78,7 @@ namespace TiendaUcnApi.src.Application.Services.Implements
             {
                 Id = brand.Id,
                 Name = brand.Name,
-                CreatedAt = brand.CreatedAt
+                CreatedAt = brand.CreatedAt,
             };
         }
 

@@ -11,27 +11,26 @@ public static class OrderStatusTransitionValidator
     /// <summary>
     /// Define las transiciones válidas de estado.
     /// </summary>
-    private static readonly Dictionary<OrderStatus, HashSet<OrderStatus>> ValidTransitions =
-        new()
+    private static readonly Dictionary<OrderStatus, HashSet<OrderStatus>> ValidTransitions = new()
+    {
+        // Desde Pending se puede ir a Processing o Cancelled
+        [OrderStatus.Pending] = new HashSet<OrderStatus>
         {
-            // Desde Pending se puede ir a Processing o Cancelled
-            [OrderStatus.Pending] = new HashSet<OrderStatus>
-            {
-                OrderStatus.Processing,
-                OrderStatus.Cancelled,
-            },
-            // Desde Processing se puede ir a Shipped o Cancelled
-            [OrderStatus.Processing] = new HashSet<OrderStatus>
-            {
-                OrderStatus.Shipped,
-                OrderStatus.Cancelled,
-            },
-            // Desde Shipped solo se puede ir a Delivered
-            [OrderStatus.Shipped] = new HashSet<OrderStatus> { OrderStatus.Delivered, },
-            // Delivered y Cancelled son estados finales (no permiten transiciones)
-            [OrderStatus.Delivered] = new HashSet<OrderStatus>(),
-            [OrderStatus.Cancelled] = new HashSet<OrderStatus>(),
-        };
+            OrderStatus.Processing,
+            OrderStatus.Cancelled,
+        },
+        // Desde Processing se puede ir a Shipped o Cancelled
+        [OrderStatus.Processing] = new HashSet<OrderStatus>
+        {
+            OrderStatus.Shipped,
+            OrderStatus.Cancelled,
+        },
+        // Desde Shipped solo se puede ir a Delivered
+        [OrderStatus.Shipped] = new HashSet<OrderStatus> { OrderStatus.Delivered },
+        // Delivered y Cancelled son estados finales (no permiten transiciones)
+        [OrderStatus.Delivered] = new HashSet<OrderStatus>(),
+        [OrderStatus.Cancelled] = new HashSet<OrderStatus>(),
+    };
 
     /// <summary>
     /// Valida si una transición de estado es válida.
@@ -56,10 +55,7 @@ public static class OrderStatusTransitionValidator
     /// <param name="currentStatus">Estado actual de la orden.</param>
     /// <param name="newStatus">Nuevo estado deseado.</param>
     /// <returns>Mensaje de error descriptivo.</returns>
-    public static string GetTransitionErrorMessage(
-        OrderStatus currentStatus,
-        OrderStatus newStatus
-    )
+    public static string GetTransitionErrorMessage(OrderStatus currentStatus, OrderStatus newStatus)
     {
         if (ValidTransitions[currentStatus].Count == 0)
         {

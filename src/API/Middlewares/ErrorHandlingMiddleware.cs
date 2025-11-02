@@ -1,6 +1,6 @@
-using Serilog;
 using System.Security;
 using System.Text.Json;
+using Serilog;
 using TiendaUcnApi.src.Application.DTO.BaseResponse;
 using TiendaUcnApi.src.Application.Exceptions;
 

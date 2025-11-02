@@ -148,10 +148,10 @@ namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements
         // ✅ Todos los carritos (para depuración o mantenimiento)
         public async Task<List<Cart>> GetAllAsync()
         {
-            return await _context.Carts
-                .Include(c => c.User)
+            return await _context
+                .Carts.Include(c => c.User)
                 .Include(c => c.CartItems)
-                    .ThenInclude(i => i.Product)
+                .ThenInclude(i => i.Product)
                 .ThenInclude(p => p.Images)
                 .ToListAsync();
         }
@@ -163,17 +163,17 @@ namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements
             var abandonedDays = _configuration.GetValue<int>("Cart:AbandonedCartDays", 3);
             DateTime threshold = DateTime.UtcNow.AddDays(-abandonedDays);
 
-            return await _context.Carts
-                .Include(c => c.User)
+            return await _context
+                .Carts.Include(c => c.User)
                 .Include(c => c.CartItems)
-                    .ThenInclude(i => i.Product)
+                .ThenInclude(i => i.Product)
                 .ThenInclude(p => p.Images)
                 .Where(c =>
-                    c.UpdatedAt < threshold &&
-                    c.CartItems.Any() &&
-                    c.User != null &&
-                    c.User.Email != null &&
-                    c.User.IsSeed == false // ✅ Filtrar usuarios semilla
+                    c.UpdatedAt < threshold
+                    && c.CartItems.Any()
+                    && c.User != null
+                    && c.User.Email != null
+                    && c.User.IsSeed == false // ✅ Filtrar usuarios semilla
                 )
                 .ToListAsync();
         }

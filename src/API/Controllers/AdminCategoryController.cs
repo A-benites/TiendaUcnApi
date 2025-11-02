@@ -24,21 +24,13 @@ namespace TiendaUcnApi.src.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll([FromQuery] string? search)
         {
-            var categories = await _categoryService.GetAllAsync(search, 1, 100); 
-            
+            var categories = await _categoryService.GetAllAsync(search, 1, 100);
 
-            var data = new
-            {
-                categories = categories
-            };
+            var data = new { categories = categories };
 
-            return Ok(new GenericResponse<object>(
-                "Categories retrieved successfully",
-                data
-            ));
+            return Ok(new GenericResponse<object>("Categories retrieved successfully", data));
         }
 
-        
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -46,52 +38,50 @@ namespace TiendaUcnApi.src.API.Controllers
             if (category == null)
                 throw new KeyNotFoundException($"Category with ID {id} not found.");
 
-            return Ok(new GenericResponse<CategoryDTO>(
-                "Category retrieved successfully",
-                category
-            ));
+            return Ok(
+                new GenericResponse<CategoryDTO>("Category retrieved successfully", category)
+            );
         }
 
-       
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CategoryCreateDTO dto)
         {
             var created = await _categoryService.CreateAsync(dto);
             if (created == null)
-                throw new InvalidOperationException($"A category named '{dto.Name}' already exists.");
+                throw new InvalidOperationException(
+                    $"A category named '{dto.Name}' already exists."
+                );
 
-            return Ok(new GenericResponse<CategoryDTO>(
-                "Category created successfully",
-                created
-            ));
+            return Ok(new GenericResponse<CategoryDTO>("Category created successfully", created));
         }
 
-        
         [HttpPut("{id:int}")]
         public async Task<IActionResult> Update(int id, [FromBody] CategoryUpdateDTO dto)
         {
             var updated = await _categoryService.UpdateAsync(id, dto);
             if (updated == null)
-                throw new KeyNotFoundException($"Category with ID {id} not found or name already in use.");
+                throw new KeyNotFoundException(
+                    $"Category with ID {id} not found or name already in use."
+                );
 
-            return Ok(new GenericResponse<CategoryDTO>(
-                "Category updated successfully",
-                updated
-            ));
+            return Ok(new GenericResponse<CategoryDTO>("Category updated successfully", updated));
         }
 
-        
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {
             var deleted = await _categoryService.DeleteAsync(id);
             if (!deleted)
-                throw new InvalidOperationException("Cannot delete this category because it either does not exist or has associated products.");
+                throw new InvalidOperationException(
+                    "Cannot delete this category because it either does not exist or has associated products."
+                );
 
-            return Ok(new GenericResponse<string>(
-                "Category deleted successfully",
-                $"Category ID {id} removed."
-            ));
+            return Ok(
+                new GenericResponse<string>(
+                    "Category deleted successfully",
+                    $"Category ID {id} removed."
+                )
+            );
         }
     }
 }

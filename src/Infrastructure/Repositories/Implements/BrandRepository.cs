@@ -35,8 +35,9 @@ namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements
 
         public async Task<Brand?> GetByNameAsync(string name)
         {
-            return await _context.Brands
-                .FirstOrDefaultAsync(b => b.Name.ToLower() == name.ToLower());
+            return await _context.Brands.FirstOrDefaultAsync(b =>
+                b.Name.ToLower() == name.ToLower()
+            );
         }
 
         public async Task CreateAsync(Brand brand)
