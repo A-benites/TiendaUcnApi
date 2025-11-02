@@ -1,58 +1,58 @@
 namespace TiendaUcnApi.src.Application.DTO.ProductDTO.ConsumerDTO;
 
 /// <summary>
-/// DTO para mostrar información resumida de productos al cliente en listas.
+/// DTO for displaying summarized product information to customers in lists.
 /// </summary>
 public class ListedProductsForCustomerDTO
 {
     /// <summary>
-    /// Identificador único del producto.
+    /// Unique product identifier.
     /// </summary>
     public int Id { get; set; }
 
     /// <summary>
-    /// Título del producto.
+    /// Product title.
     /// </summary>
     public required string Title { get; set; }
 
     /// <summary>
-    /// Descripción del producto.
+    /// Product description.
     /// </summary>
     public required string Description { get; set; }
 
     /// <summary>
-    /// URL de la imagen principal del producto.
+    /// Main product image URL.
     /// </summary>
     public string? MainImageURL { get; set; }
 
     /// <summary>
-    /// Precio original del producto.
+    /// Original product price.
     /// </summary>
     public decimal Price { get; set; }
 
     /// <summary>
-    /// Porcentaje de descuento aplicado.
+    /// Discount percentage applied.
     /// </summary>
     public int Discount { get; set; }
 
     /// <summary>
-    /// Precio final con descuento aplicado (calculado en servidor).
+    /// Final price with discount applied (calculated server-side).
     /// Implements R71-R72 rubric requirement: finalPrice calculated server-side.
     /// </summary>
     public decimal FinalPrice { get; set; }
 
     /// <summary>
-    /// Stock disponible del producto.
+    /// Available product stock.
     /// </summary>
     public int Stock { get; set; }
 
     /// <summary>
-    /// Nombre de la categoría del producto.
+    /// Product category name.
     /// </summary>
     public string? CategoryName { get; set; }
 
     /// <summary>
-    /// Nombre de la marca del producto.
+    /// Product brand name.
     /// </summary>
     public string? BrandName { get; set; }
 }

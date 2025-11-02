@@ -1,62 +1,62 @@
 namespace TiendaUcnApi.src.Application.DTO.ProductDTO.AdminDTO;
 
 /// <summary>
-/// DTO para mostrar información de producto en administración.
+/// DTO for displaying product information in administration.
 /// </summary>
 public class ProductForAdminDTO
 {
     /// <summary>
-    /// Identificador único del producto.
+    /// Unique product identifier.
     /// </summary>
     public required int Id { get; set; }
 
     /// <summary>
-    /// Título del producto.
+    /// Product title.
     /// </summary>
     public required string Title { get; set; }
 
     /// <summary>
-    /// URL de la imagen principal del producto.
+    /// Main product image URL.
     /// </summary>
     public string? MainImageURL { get; set; }
 
     /// <summary>
-    /// Precio del producto.
+    /// Product price.
     /// </summary>
     public required string Price { get; set; }
 
     /// <summary>
-    /// Stock disponible del producto.
+    /// Available product stock.
     /// </summary>
     public required int Stock { get; set; }
 
     /// <summary>
-    /// Indicador de stock (por ejemplo, "Bajo", "Alto").
+    /// Stock indicator (e.g., "Low", "High").
     /// </summary>
     public required string StockIndicator { get; set; }
 
     /// <summary>
-    /// Nombre de la categoría del producto.
+    /// Product category name.
     /// </summary>
     public required string CategoryName { get; set; }
 
     /// <summary>
-    /// Nombre de la marca del producto.
+    /// Product brand name.
     /// </summary>
     public required string BrandName { get; set; }
 
     /// <summary>
-    /// Estado del producto en texto.
+    /// Product status text.
     /// </summary>
     public required string StatusName { get; set; }
 
     /// <summary>
-    /// Indica si el producto está disponible para la venta.
+    /// Indicates whether the product is available for sale.
     /// </summary>
     public required bool IsAvailable { get; set; }
 
     /// <summary>
-    /// Fecha de última actualización del producto.
+    /// Product last update date.
     /// </summary>
     public required DateTime UpdatedAt { get; set; }
 }

@@ -6,57 +6,74 @@ using TiendaUcnApi.src.Application.DTO.ProductDTO.ConsumerDTO;
 
 namespace TiendaUcnApi.src.Application.Services.Interfaces;
 
+/// <summary>
+/// Service interface for product management operations.
+/// </summary>
 public interface IProductService
 {
     /// <summary>
-    /// Retorna todos los productos para el administrador según los parámetros de búsqueda.
+    /// Retrieves all products for admin view with filtering and pagination.
     /// </summary>
-    /// <param name="searchParams">Parámetros de búsqueda para filtrar los productos.</param>
-    /// <returns>Una lista de productos filtrados para el administrador.</returns>
+    /// <param name="searchParams">Search parameters for filtering products.</param>
+    /// <returns>A list of filtered products for admin with full details.</returns>
     Task<ListedProductsForAdminDTO> GetFilteredForAdminAsync(SearchParamsDTO searchParams);
 
     /// <summary>
-    /// Retorna todos los productos para el cliente según los parámetros de búsqueda.
+    /// Retrieves all products for customer view with filtering and pagination.
+    /// Only returns available products.
     /// </summary>
-    /// <param name="searchParams">Parámetros de búsqueda para filtrar los productos.</param>
-    /// <returns>Una lista de productos filtrados para el cliente.</returns>
+    /// <param name="searchParams">Search parameters for filtering products.</param>
+    /// <returns>A list of filtered products for customers.</returns>
     Task<GenericResponse<object>> GetFilteredForCustomerAsync(SearchParamsDTO searchParams);
 
     /// <summary>
-    /// Retorna un producto específico por su ID.
+    /// Retrieves a specific product by its ID (internal use).
     /// </summary>
-    /// <param name="id">El ID del producto a buscar.</param>
-    /// <returns>Una tarea que representa la operación asíncrona, con el producto encontrado o null si no se encuentra.</returns>
+    /// <param name="id">The product ID to search for.</param>
+    /// <returns>Product details or null if not found.</returns>
     Task<ProductDetailDTO> GetByIdAsync(int id);
 
     /// <summary>
-    /// Retorna un producto específico por su ID desde el punto de vista de un admin.
+    /// Retrieves a specific product by its ID for admin view.
+    /// Includes all product details regardless of availability status.
     /// </summary>
-    /// <param name="id">El ID del producto a buscar.</param>
-    /// <returns>Una tarea que representa la operación asíncrona, con el producto encontrado o null si no se encuentra.</returns>
+    /// <param name="id">The product ID to search for.</param>
+    /// <returns>Product details including admin-specific information.</returns>
     Task<ProductDetailDTO> GetByIdForAdminAsync(int id);
 
     /// <summary>
-    /// Retorna un producto específico por su ID para el cliente.
+    /// Retrieves a specific product by its ID for customer view.
+    /// Only returns the product if it's available.
     /// </summary>
-    /// <param name="id">El ID del producto a buscar.</param>
-    /// <returns>Respuesta con el producto encontrado.</returns>
+    /// <param name="id">The product ID to search for.</param>
+    /// <returns>Response with product details if available.</returns>
     Task<GenericResponse<ProductDetailDTO>> GetByIdForCustomerAsync(int id);
 
     /// <summary>
-    /// Crea un nuevo producto en el sistema.
+    /// Creates a new product in the system with images.
     /// </summary>
-    /// <param name="createProductDTO">Los datos del producto a crear.</param>
-    /// <returns>Una tarea que representa la operación asíncrona, con el id del producto creado.</returns>
+    /// <param name="createProductDTO">Product data including images to create.</param>
+    /// <returns>Success message with the created product ID.</returns>
     Task<string> CreateAsync(ProductCreateDTO createProductDTO);
 
     /// <summary>
-    /// Cambia el estado activo de un producto por su ID.
+    /// Toggles the availability status of a product (soft delete).
     /// </summary>
-    /// <param name="id">El ID del producto cuyo estado se cambiará.</param>
+    /// <param name="id">The product ID whose status will be toggled.</param>
     Task ToggleActiveAsync(int id);
 
+    /// <summary>
+    /// Updates an existing product's information.
+    /// </summary>
+    /// <param name="id">The product ID to update.</param>
+    /// <param name="producUpdateDTO">DTO containing updated product data.</param>
+    /// <returns>Updated product details.</returns>
     Task<ProductDetailDTO> UpdateAsync(int id, ProducUpdateDTO producUpdateDTO);
 
+    /// <summary>
+    /// Updates the discount percentage of a product.
+    /// </summary>
+    /// <param name="id">The product ID to update.</param>
+    /// <param name="dto">DTO containing the new discount percentage.</param>
     Task UpdateDiscountAsync(int id, UpdateProductDiscountDTO dto);
 }

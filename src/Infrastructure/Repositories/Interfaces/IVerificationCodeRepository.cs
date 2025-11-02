@@ -3,52 +3,55 @@ using TiendaUcnApi.src.Domain.Models;
 namespace TiendaUcnApi.src.Infrastructure.Repositories.Interfaces;
 
 /// <summary>
-/// Interfaz para el repositorio de códigos de verificación.
+/// Repository interface for verification code data access operations.
+/// Manages verification codes for email verification and password reset.
 /// </summary>
 public interface IVerificationCodeRepository
 {
     /// <summary>
-    /// Crea un nuevo código de verificación.
+    /// Creates a new verification code in the database.
     /// </summary>
-    /// <param name="verificationCode">El código de verificación a crear.</param>
-    /// <returns>El código de verificación creado.</returns>
+    /// <param name="verificationCode">The verification code entity to create.</param>
+    /// <returns>The created verification code entity.</returns>
     Task<VerificationCode> CreateAsync(VerificationCode verificationCode);
 
     /// <summary>
-    /// Obtiene el último código de verificación por ID de usuario y tipo de código.
+    /// Retrieves the most recent verification code for a user by code type.
     /// </summary>
-    /// <param name="userId">El ID del usuario.</param>
-    /// <param name="codeType">El tipo de código de verificación.</param>
-    /// <returns>El último código de verificación encontrado, o null si no existe.</returns>
+    /// <param name="userId">The user identifier.</param>
+    /// <param name="codeType">The type of verification code (EmailVerification or PasswordReset).</param>
+    /// <returns>The latest verification code or null if not found.</returns>
     Task<VerificationCode?> GetLatestByUserIdAsync(int userId, CodeType codeType);
 
     /// <summary>
-    /// Aumenta el contador de intentos de un código de verificación.
+    /// Increments the attempt counter for a verification code.
+    /// Used to track failed verification attempts.
     /// </summary>
-    /// <param name="userId">El ID del usuario.</param>
-    /// <param name="codeType">El tipo de código de verificación.</param>
-    /// <returns>El número de intentos incrementados.</returns>
+    /// <param name="userId">The user identifier.</param>
+    /// <param name="codeType">The type of verification code.</param>
+    /// <returns>The updated attempt count.</returns>
     Task<int> IncreaseAttemptsAsync(int userId, CodeType codeType);
 
     /// <summary>
-    /// Elimina un código de verificación por ID de usuario y tipo de código.
+    /// Deletes a specific verification code by user ID and code type.
     /// </summary>
-    /// <param name="id">El ID del usuario.</param>
-    /// <param name="codeType">El tipo de código de verificación.</param>
-    /// <returns>True si se eliminó correctamente, false si no existía.</returns
+    /// <param name="id">The user identifier.</param>
+    /// <param name="codeType">The type of verification code to delete.</param>
+    /// <returns>True if deletion was successful, false if code didn't exist.</returns>
     Task<bool> DeleteByUserIdAsync(int id, CodeType codeType);
 
     /// <summary>
-    /// Actualiza un código de verificación existente.
+    /// Updates an existing verification code in the database.
     /// </summary>
-    /// <param name="verificationCode">El código de verificación a actualizar.</param>
-    /// <returns>El código de verificación actualizado o null.</returns>
+    /// <param name="verificationCode">The verification code entity with updated data.</param>
+    /// <returns>The updated verification code or null if not found.</returns>
     Task<VerificationCode?> UpdateAsync(VerificationCode verificationCode);
 
     /// <summary>
-    /// Elimina todos los códigos de verificación asociados a un usuario.
+    /// Deletes all verification codes associated with a user.
+    /// Used when deleting a user account.
     /// </summary>
-    /// <param name="userId">El ID del usuario.</param>
-    /// <returns>El número de códigos de verificación eliminados.</returns>
+    /// <param name="userId">The user identifier.</param>
+    /// <returns>Number of verification codes deleted.</returns>
     Task<int> DeleteByUserIdAsync(int userId);
 }

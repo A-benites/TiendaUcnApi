@@ -7,46 +7,45 @@ using TiendaUcnApi.src.Infrastructure.Repositories.Interfaces;
 namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements;
 
 /// <summary>
-/// Implementación del repositorio de productos que interactúa con la base de datos.
+/// Implementation of the product repository that interacts with the database.
+/// Handles product CRUD operations, filtering, search, and availability management.
 /// </summary>
 public class ProductRepository : IProductRepository
 {
     /// <summary>
-    /// Contexto de base de datos de la aplicación.
+    /// Application database context.
     /// </summary>
     private readonly AppDbContext _context;
 
     /// <summary>
-    /// Configuración de la aplicación.
+    /// Application configuration.
     /// </summary>
     private readonly IConfiguration _configuration;
 
     /// <summary>
-    /// Tamaño de página por defecto.
+    /// Default page size for pagination.
     /// </summary>
     private readonly int _defaultPageSize;
 
     /// <summary>
-    /// Constructor que inyecta dependencias necesarias.
+    /// Initializes a new instance of the <see cref="ProductRepository"/> class.
     /// </summary>
-    /// <param name="context">Contexto de base de datos.</param>
-    /// <param name="configuration">Configuración de la aplicación.</param>
+    /// <param name="context">Database context.</param>
+    /// <param name="configuration">Application configuration.</param>
     public ProductRepository(AppDbContext context, IConfiguration configuration)
     {
         _context = context;
         _configuration = configuration;
         _defaultPageSize =
             _configuration.GetValue<int?>("Products:DefaultPageSize")
-            ?? throw new ArgumentNullException(
-                "El tamaño de página por defecto no puede ser nulo."
-            );
+            ?? throw new ArgumentNullException("The default page size cannot be null.");
     }
 
     /// <summary>
-    /// Crea un nuevo producto en el repositorio.
+    /// Creates a new product in the repository.
     /// </summary>
-    /// <param name="product">El producto a crear.</param>
-    /// <returns>Id del producto creado.</returns>
+    /// <param name="product">The product to create.</param>
+    /// <returns>ID of the created product.</returns>
     public async Task<int> CreateAsync(Product product)
     {
         await _context.Products.AddAsync(product);
@@ -55,30 +54,30 @@ public class ProductRepository : IProductRepository
     }
 
     /// <summary>
-    /// Obtiene una marca por su Id.
+    /// Retrieves a brand by its ID.
     /// </summary>
-    /// <param name="id">Id de la marca.</param>
-    /// <returns>Marca encontrada.</returns>
+    /// <param name="id">Brand ID.</param>
+    /// <returns>The found brand or null.</returns>
     public async Task<Brand?> GetBrandByIdAsync(int id)
     {
         return await _context.Brands.AsNoTracking().FirstOrDefaultAsync(b => b.Id == id);
     }
 
     /// <summary>
-    /// Obtiene una categoría por su Id.
+    /// Retrieves a category by its ID.
     /// </summary>
-    /// <param name="id">Id de la categoría.</param>
-    /// <returns>Categoría encontrada.</returns>
+    /// <param name="id">Category ID.</param>
+    /// <returns>The found category or null.</returns>
     public async Task<Category?> GetCategoryByIdAsync(int id)
     {
         return await _context.Categories.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
     }
 
     /// <summary>
-    /// Retorna un producto específico por su ID.
+    /// Retrieves a specific product by its ID.
     /// </summary>
-    /// <param name="id">ID del producto a buscar.</param>
-    /// <returns>Producto encontrado o null si no existe.</returns>
+    /// <param name="id">Product ID to search for.</param>
+    /// <returns>The found product or null if it doesn't exist.</returns>
     public async Task<Product?> GetByIdAsync(int id)
     {
         return await _context
@@ -91,10 +90,11 @@ public class ProductRepository : IProductRepository
     }
 
     /// <summary>
-    /// Retorna un producto específico por su ID desde el punto de vista de un admin.
+    /// Retrieves a specific product by ID from an administrator's perspective.
+    /// Includes all product details regardless of availability status.
     /// </summary>
-    /// <param name="id">ID del producto a buscar.</param>
-    /// <returns>Producto encontrado o null si no existe.</returns>
+    /// <param name="id">Product ID to search for.</param>
+    /// <returns>Product found or null if it doesn't exist.</returns>
     public async Task<Product?> GetByIdForAdminAsync(int id)
     {
         return await _context
@@ -106,6 +106,12 @@ public class ProductRepository : IProductRepository
             .FirstOrDefaultAsync();
     }
 
+    /// <summary>
+    /// Retrieves a specific product by ID from a customer's perspective.
+    /// Only returns products that are available for purchase (IsAvailable = true).
+    /// </summary>
+    /// <param name="id">Product ID to search for.</param>
+    /// <returns>Product found or null if it doesn't exist or is not available.</returns>
     public async Task<Product?> GetByIdForCustomerAsync(int id)
     {
         return await _context
@@ -118,10 +124,11 @@ public class ProductRepository : IProductRepository
     }
 
     /// <summary>
-    /// Retorna una lista de productos para el administrador con los parámetros de búsqueda especificados.
+    /// Retrieves a filtered list of products for administrators with specified search parameters.
+    /// Includes all products regardless of availability status with full search capabilities.
     /// </summary>
-    /// <param name="searchParams">Parámetros de búsqueda para filtrar los productos.</param>
-    /// <returns>Lista de productos y el conteo total.</returns>
+    /// <param name="searchParams">Search parameters for filtering products (term, pagination).</param>
+    /// <returns>Tuple containing the list of products and the total count.</returns>
     public async Task<(IEnumerable<Product> products, int totalCount)> GetFilteredForAdminAsync(
         SearchParamsDTO searchParams
     )
@@ -157,10 +164,12 @@ public class ProductRepository : IProductRepository
     }
 
     /// <summary>
-    /// Retorna una lista de productos para el cliente con los parámetros de búsqueda especificados.
+    /// Retrieves a filtered list of products for customers with specified search parameters.
+    /// Only includes available products. Supports filtering by category, brand, price range, status, and sorting.
+    /// Implements requirements R68 (filtering) and R70 (sorting).
     /// </summary>
-    /// <param name="searchParams">Parámetros de búsqueda para filtrar los productos.</param>
-    /// <returns>Lista de productos y el conteo total.</returns>
+    /// <param name="searchParams">Search parameters including filters, sorting, and pagination.</param>
+    /// <returns>Tuple containing the list of available products and the total count.</returns>
     public async Task<(IEnumerable<Product> products, int totalCount)> GetFilteredForCustomerAsync(
         SearchParamsDTO searchParams
     )
@@ -240,10 +249,11 @@ public class ProductRepository : IProductRepository
     }
 
     /// <summary>
-    /// Obtiene el stock real de un producto por su ID.
+    /// Retrieves the real stock of a product by its ID.
+    /// Used for stock verification during cart and order operations.
     /// </summary>
-    /// <param name="productId">ID del producto.</param>
-    /// <returns>Stock real del producto.</returns>
+    /// <param name="productId">Product ID.</param>
+    /// <returns>Product's current stock quantity.</returns>
     public async Task<int> GetRealStockAsync(int productId)
     {
         return await _context
@@ -254,9 +264,10 @@ public class ProductRepository : IProductRepository
     }
 
     /// <summary>
-    /// Cambia el estado activo de un producto por su ID.
+    /// Toggles the active status of a product by its ID.
+    /// Switches IsAvailable between true and false.
     /// </summary>
-    /// <param name="id">ID del producto.</param>
+    /// <param name="id">Product ID.</param>
     public async Task ToggleActiveAsync(int id)
     {
         await _context
@@ -265,24 +276,27 @@ public class ProductRepository : IProductRepository
     }
 
     /// <summary>
-    /// Actualiza el stock de un producto por su ID.
+    /// Updates the stock of a product by its ID.
+    /// Throws KeyNotFoundException if the product is not found.
     /// </summary>
-    /// <param name="productId">ID del producto.</param>
-    /// <param name="stock">Nuevo stock.</param>
+    /// <param name="productId">Product ID.</param>
+    /// <param name="stock">New stock quantity.</param>
+    /// <exception cref="KeyNotFoundException">Thrown when the product is not found.</exception>
     public async Task UpdateStockAsync(int productId, int stock)
     {
         Product? product =
             await _context.Products.FindAsync(productId)
-            ?? throw new KeyNotFoundException("Producto no encontrado");
+            ?? throw new KeyNotFoundException("Product not found");
         product.Stock = stock;
         await _context.SaveChangesAsync();
     }
 
     /// <summary>
-    /// Actualiza los datos de un producto.
+    /// Updates product data.
+    /// Automatically sets UpdatedAt to the current UTC time.
     /// </summary>
-    /// <param name="product">Producto con los datos actualizados.</param>
-    /// <returns>Producto actualizado.</returns>
+    /// <param name="product">Product entity with updated data.</param>
+    /// <returns>Updated product.</returns>
     public async Task<Product> UpdateAsync(Product product)
     {
         product.UpdatedAt = DateTime.UtcNow;
@@ -291,10 +305,11 @@ public class ProductRepository : IProductRepository
     }
 
     /// <summary>
-    /// Actualiza el descuento de un producto.
+    /// Updates the discount of a product.
+    /// Uses ExecuteUpdate for efficient bulk update without loading the entity.
     /// </summary>
-    /// <param name="productId">ID del producto.</param>
-    /// <param name="discount">Nuevo descuento.</param>
+    /// <param name="productId">Product ID.</param>
+    /// <param name="discount">New discount percentage.</param>
     public async Task UpdateDiscountAsync(int productId, int discount)
     {
         await _context
@@ -303,10 +318,11 @@ public class ProductRepository : IProductRepository
     }
 
     /// <summary>
-    /// Obtiene un producto con seguimiento de cambios por su ID para administración.
+    /// Retrieves a product with change tracking enabled by its ID for administration.
+    /// Used when modifications to the product entity are required.
     /// </summary>
-    /// <param name="id">ID del producto.</param>
-    /// <returns>Producto encontrado o null si no existe.</returns>
+    /// <param name="id">Product ID.</param>
+    /// <returns>Tracked product entity or null if it doesn't exist.</returns>
     public async Task<Product?> GetTrackedByIdForAdminAsync(int id)
     {
         return await _context

@@ -1,17 +1,17 @@
 namespace TiendaUcnApi.src.Application.DTO.OrderDTO;
 
 /// <summary>
-/// DTO para filtros y paginación de órdenes del usuario.
+/// Data Transfer Object for filtering and paginating user orders.
 /// </summary>
 public class UserOrderFilterDTO
 {
     /// <summary>
-    /// Número de página (inicia en 1).
+    /// Page number (starts at 1).
     /// </summary>
     public int Page { get; set; } = 1;
 
     /// <summary>
-    /// Tamaño de página (cantidad de órdenes por página).
+    /// Page size (number of orders per page).
     /// </summary>
     public int PageSize { get; set; } = 10;
 }

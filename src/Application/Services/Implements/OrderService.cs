@@ -9,13 +9,39 @@ using TiendaUcnApi.src.Infrastructure.Repositories.Interfaces;
 
 namespace TiendaUcnApi.src.Application.Services.Implements;
 
+/// <summary>
+/// Service for managing customer orders.
+/// Handles order creation with stock validation, transaction management, and order retrieval with filtering.
+/// </summary>
 public class OrderService : IOrderService
 {
+    /// <summary>
+    /// Order repository for data access.
+    /// </summary>
     private readonly IOrderRepository _orderRepository;
+
+    /// <summary>
+    /// Cart repository for accessing shopping cart data.
+    /// </summary>
     private readonly ICartRepository _cartRepository;
+
+    /// <summary>
+    /// Product repository for stock management.
+    /// </summary>
     private readonly IProductRepository _productRepository;
+
+    /// <summary>
+    /// Database context for transaction management.
+    /// </summary>
     private readonly AppDbContext _dbContext;
 
+    /// <summary>
+    /// Initializes a new instance of the OrderService class.
+    /// </summary>
+    /// <param name="orderRepository">Order repository.</param>
+    /// <param name="cartRepository">Cart repository.</param>
+    /// <param name="productRepository">Product repository.</param>
+    /// <param name="dbContext">Database context.</param>
     public OrderService(
         IOrderRepository orderRepository,
         ICartRepository cartRepository,
@@ -29,38 +55,44 @@ public class OrderService : IOrderService
         _dbContext = dbContext;
     }
 
+    /// <summary>
+    /// Creates a new order from the user's cart.
+    /// Implements R57: Uses database transactions to ensure atomicity (order creation, stock updates, cart deletion).
+    /// Validates stock availability before creating the order.
+    /// </summary>
+    /// <param name="buyerId">Buyer identifier (can be anonymous or authenticated user ID).</param>
+    /// <param name="userId">Authenticated user ID.</param>
+    /// <returns>Generic response containing the created order DTO.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when cart is empty or stock is insufficient.</exception>
     public async Task<GenericResponse<OrderDTO>> CreateAsync(string buyerId, int userId)
     {
         var cart = await _cartRepository.GetByBuyerIdAsync(buyerId);
 
         if (cart == null || cart.CartItems.Count == 0)
         {
-            Log.Information(
-                "Intento de crear orden con carrito vacío. BuyerId: {BuyerId}",
-                buyerId
-            );
-            throw new InvalidOperationException("El carrito está vacío");
+            Log.Information("Attempt to create order with empty cart. BuyerId: {BuyerId}", buyerId);
+            throw new InvalidOperationException("The cart is empty");
         }
 
-        // Validar stock de todos los productos antes de crear la orden
+        // Validate stock for all products before creating the order
         foreach (var item in cart.CartItems)
         {
             var currentStock = await _productRepository.GetRealStockAsync(item.ProductId);
             if (currentStock < item.Quantity)
             {
                 Log.Warning(
-                    "Stock insuficiente para el producto {ProductId}. Stock disponible: {Stock}, Cantidad solicitada: {Quantity}",
+                    "Insufficient stock for product {ProductId}. Available stock: {Stock}, Requested quantity: {Quantity}",
                     item.ProductId,
                     currentStock,
                     item.Quantity
                 );
                 throw new InvalidOperationException(
-                    $"Stock insuficiente para el producto '{item.Product.Title}'. Disponible: {currentStock}"
+                    $"Insufficient stock for product '{item.Product.Title}'. Available: {currentStock}"
                 );
             }
         }
 
-        // Calcular totales
+        // Calculate totals
         decimal subTotal = cart.CartItems.Sum(i => i.Product.Price * i.Quantity);
         decimal total = cart.CartItems.Sum(i =>
         {
@@ -69,7 +101,7 @@ public class OrderService : IOrderService
             return itemTotal * (1 - (decimal)discount / 100);
         });
 
-        // Crear la orden
+        // Create the order
         var order = new Order
         {
             Code = $"ORD-{Guid.NewGuid().ToString("N").Substring(0, 10).ToUpper()}",
@@ -97,7 +129,7 @@ public class OrderService : IOrderService
             // 1. Create the order
             var createdOrder = await _orderRepository.CreateAsync(order);
             Log.Information(
-                "Orden creada exitosamente. OrderId: {OrderId}, Code: {Code}",
+                "Order created successfully. OrderId: {OrderId}, Code: {Code}",
                 createdOrder.Id,
                 createdOrder.Code
             );
@@ -111,7 +143,7 @@ public class OrderService : IOrderService
                     currentStock - item.Quantity
                 );
                 Log.Information(
-                    "Stock actualizado para producto {ProductId}. Stock anterior: {OldStock}, Nuevo stock: {NewStock}",
+                    "Stock updated for product {ProductId}. Previous stock: {OldStock}, New stock: {NewStock}",
                     item.ProductId,
                     currentStock,
                     currentStock - item.Quantity
@@ -120,20 +152,17 @@ public class OrderService : IOrderService
 
             // 3. Clear the cart
             await _cartRepository.DeleteAsync(cart);
-            Log.Information(
-                "Carrito eliminado después de crear la orden. CartId: {CartId}",
-                cart.Id
-            );
+            Log.Information("Cart deleted after creating order. CartId: {CartId}", cart.Id);
 
             // COMMIT TRANSACTION - All operations succeeded
             await transaction.CommitAsync();
             Log.Information(
-                "Transacción completada exitosamente para orden {OrderCode}",
+                "Transaction completed successfully for order {OrderCode}",
                 createdOrder.Code
             );
 
             return new GenericResponse<OrderDTO>(
-                "Orden creada exitosamente",
+                "Order created successfully",
                 createdOrder.Adapt<OrderDTO>()
             );
         }
@@ -143,7 +172,7 @@ public class OrderService : IOrderService
             await transaction.RollbackAsync();
             Log.Error(
                 ex,
-                "Error al crear orden. Transacción revertida. BuyerId: {BuyerId}, UserId: {UserId}",
+                "Error creating order. Transaction rolled back. BuyerId: {BuyerId}, UserId: {UserId}",
                 buyerId,
                 userId
             );
@@ -151,20 +180,31 @@ public class OrderService : IOrderService
         }
     }
 
+    /// <summary>
+    /// Retrieves all orders for a specific user.
+    /// </summary>
+    /// <param name="userId">User ID.</param>
+    /// <returns>Generic response containing list of order DTOs.</returns>
     public async Task<GenericResponse<List<OrderDTO>>> GetAllByUser(int userId)
     {
         var orders = await _orderRepository.GetAllByUser(userId);
         var ordersDto = orders.Adapt<List<OrderDTO>>();
 
         Log.Information(
-            "Órdenes obtenidas para el usuario {UserId}. Total: {Count}",
+            "Orders retrieved for user {UserId}. Total: {Count}",
             userId,
             ordersDto.Count
         );
 
-        return new GenericResponse<List<OrderDTO>>("Órdenes obtenidas exitosamente", ordersDto);
+        return new GenericResponse<List<OrderDTO>>("Orders retrieved successfully", ordersDto);
     }
 
+    /// <summary>
+    /// Retrieves paginated orders for a specific user with filtering.
+    /// </summary>
+    /// <param name="userId">User ID.</param>
+    /// <param name="filter">Filter parameters including page and page size.</param>
+    /// <returns>Generic response containing paginated order list DTO.</returns>
     public async Task<GenericResponse<OrderListDTO>> GetAllByUserPaginated(
         int userId,
         UserOrderFilterDTO filter
@@ -189,16 +229,25 @@ public class OrderService : IOrderService
         };
 
         Log.Information(
-            "Órdenes paginadas obtenidas para el usuario {UserId}. Total: {TotalCount}, Página: {Page}, Tamaño: {PageSize}",
+            "Paginated orders retrieved for user {UserId}. Total: {TotalCount}, Page: {Page}, Size: {PageSize}",
             userId,
             totalCount,
             filter.Page,
             filter.PageSize
         );
 
-        return new GenericResponse<OrderListDTO>("Órdenes obtenidas exitosamente", result);
+        return new GenericResponse<OrderListDTO>("Orders retrieved successfully", result);
     }
 
+    /// <summary>
+    /// Retrieves detailed information for a specific order.
+    /// Validates that the order belongs to the requesting user.
+    /// </summary>
+    /// <param name="orderId">Order ID.</param>
+    /// <param name="userId">Requesting user ID.</param>
+    /// <returns>Generic response containing order detail DTO.</returns>
+    /// <exception cref="KeyNotFoundException">Thrown when order is not found.</exception>
+    /// <exception cref="UnauthorizedAccessException">Thrown when user doesn't own the order.</exception>
     public async Task<GenericResponse<OrderDTO>> GetOrderDetailByIdAsync(int orderId, int userId)
     {
         var order = await _orderRepository.GetByIdAsync(orderId);
@@ -232,6 +281,11 @@ public class OrderService : IOrderService
         return new GenericResponse<OrderDTO>("Order detail obtained successfully", orderDto);
     }
 
+    /// <summary>
+    /// Retrieves all orders with filtering and pagination for administrators.
+    /// </summary>
+    /// <param name="filter">Filter parameters including status, user, dates, sorting, and pagination.</param>
+    /// <returns>Generic response containing paginated order list DTO.</returns>
     public async Task<GenericResponse<OrderListDTO>> GetAllOrdersAsync(OrderFilterDTO filter)
     {
         var (orders, totalCount) = await _orderRepository.GetAllAsync(filter);
@@ -257,6 +311,12 @@ public class OrderService : IOrderService
         return new GenericResponse<OrderListDTO>("Orders obtained successfully", result);
     }
 
+    /// <summary>
+    /// Retrieves detailed information for a specific order (admin access).
+    /// </summary>
+    /// <param name="orderId">Order ID.</param>
+    /// <returns>Generic response containing order detail DTO.</returns>
+    /// <exception cref="KeyNotFoundException">Thrown when order is not found.</exception>
     public async Task<GenericResponse<OrderDTO>> GetOrderByIdAsync(int orderId)
     {
         var order = await _orderRepository.GetByIdAsync(orderId);
@@ -273,6 +333,15 @@ public class OrderService : IOrderService
         return new GenericResponse<OrderDTO>("Order detail obtained successfully", orderDto);
     }
 
+    /// <summary>
+    /// Updates the status of an order.
+    /// Validates status transitions using OrderStatusTransitionValidator (R123).
+    /// Creates an audit record of the status change.
+    /// </summary>
+    /// <param name="orderId">Order ID.</param>
+    /// <param name="dto">DTO containing the new status.</param>
+    /// <param name="adminId">ID of the administrator performing the update.</param>
+    /// <returns>Generic response containing updated order DTO.</returns>
     public async Task<GenericResponse<OrderDTO>> UpdateOrderStatusAsync(
         int orderId,
         UpdateOrderStatusDTO dto,

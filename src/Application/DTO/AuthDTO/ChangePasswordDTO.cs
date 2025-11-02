@@ -3,19 +3,19 @@ using System.ComponentModel.DataAnnotations;
 namespace TiendaUcnApi.src.Application.DTO;
 
 /// <summary>
-/// DTO para el cambio de contraseña de usuario.
+/// Data Transfer Object for user password change.
 /// </summary>
 public class ChangePasswordDTO
 {
     /// <summary>
-    /// Contraseña actual del usuario.
+    /// User's current password.
     /// </summary>
     [Required(ErrorMessage = "La contraseña antigua es requerida.")]
     public required string OldPassword { get; set; } = string.Empty;
 
     /// <summary>
-    /// Nueva contraseña que el usuario desea establecer.
-    /// Debe tener al menos 8 caracteres, incluir mayúsculas, minúsculas, números y caracteres especiales.
+    /// New password the user wants to set.
+    /// Must be at least 8 characters long and include uppercase, lowercase, numbers, and special characters.
     /// </summary>
     [Required(ErrorMessage = "La nueva contraseña es requerida.")]
     [MinLength(8, ErrorMessage = "La nueva contraseña debe tener al menos 8 caracteres.")]
@@ -26,8 +26,7 @@ public class ChangePasswordDTO
     public required string NewPassword { get; set; } = string.Empty;
 
     /// <summary>
-    /// Confirmación de la nueva contraseña.
-    /// Debe coincidir exactamente con NewPassword.
+    /// Confirmation of the new password. Must match the NewPassword field exactly.
     /// </summary>
     [Required(ErrorMessage = "La confirmación de contraseña es requerida.")]
     [Compare(

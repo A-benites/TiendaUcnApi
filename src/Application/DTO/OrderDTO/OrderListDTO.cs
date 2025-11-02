@@ -1,32 +1,32 @@
 namespace TiendaUcnApi.src.Application.DTO.OrderDTO;
 
 /// <summary>
-/// DTO para representar una lista paginada de órdenes.
+/// Data Transfer Object representing a paginated list of orders.
 /// </summary>
 public class OrderListDTO
 {
     /// <summary>
-    /// Lista de órdenes.
+    /// List of orders in the current page.
     /// </summary>
     public List<OrderDTO> Orders { get; set; } = new List<OrderDTO>();
 
     /// <summary>
-    /// Total de órdenes.
+    /// Total count of orders matching the filter criteria.
     /// </summary>
     public int TotalCount { get; set; }
 
     /// <summary>
-    /// Página actual.
+    /// Current page number.
     /// </summary>
     public int CurrentPage { get; set; }
 
     /// <summary>
-    /// Tamaño de página.
+    /// Number of items per page.
     /// </summary>
     public int PageSize { get; set; }
 
     /// <summary>
-    /// Total de páginas.
+    /// Total number of pages available.
     /// </summary>
     public int TotalPages { get; set; }
 }

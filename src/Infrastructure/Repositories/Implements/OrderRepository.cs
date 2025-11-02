@@ -8,15 +8,28 @@ using TiendaUcnApi.src.Infrastructure.Repositories.Interfaces;
 
 namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements;
 
+/// <summary>
+/// Implementation of the order repository.
+/// Handles database operations for orders including creation, retrieval, filtering, and status updates.
+/// </summary>
 public class OrderRepository : IOrderRepository
 {
     private readonly AppDbContext _context;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="OrderRepository"/> class.
+    /// </summary>
+    /// <param name="context">Database context.</param>
     public OrderRepository(AppDbContext context)
     {
         _context = context;
     }
 
+    /// <summary>
+    /// Creates a new order.
+    /// </summary>
+    /// <param name="order">The order to create.</param>
+    /// <returns>The created order.</returns>
     public async Task<Order> CreateAsync(Order order)
     {
         _context.Orders.Add(order);
@@ -24,6 +37,11 @@ public class OrderRepository : IOrderRepository
         return order;
     }
 
+    /// <summary>
+    /// Retrieves all orders for a specific user.
+    /// </summary>
+    /// <param name="userId">The user ID.</param>
+    /// <returns>Collection of orders ordered by creation date descending.</returns>
     public async Task<IEnumerable<Order>> GetAllByUser(int userId)
     {
         return await _context
@@ -33,6 +51,13 @@ public class OrderRepository : IOrderRepository
             .ToListAsync();
     }
 
+    /// <summary>
+    /// Retrieves paginated orders for a specific user.
+    /// </summary>
+    /// <param name="userId">The user ID.</param>
+    /// <param name="page">Page number.</param>
+    /// <param name="pageSize">Items per page.</param>
+    /// <returns>Tuple containing the orders and total count.</returns>
     public async Task<(IEnumerable<Order> Orders, int TotalCount)> GetAllByUserPaginated(
         int userId,
         int page,
@@ -54,6 +79,11 @@ public class OrderRepository : IOrderRepository
         return (orders, totalCount);
     }
 
+    /// <summary>
+    /// Retrieves an order by its ID with all related data.
+    /// </summary>
+    /// <param name="id">Order ID.</param>
+    /// <returns>The order with items and user data, or null if not found.</returns>
     public async Task<Order?> GetByIdAsync(int id)
     {
         return await _context
@@ -62,6 +92,11 @@ public class OrderRepository : IOrderRepository
             .FirstOrDefaultAsync(o => o.Id == id);
     }
 
+    /// <summary>
+    /// Retrieves all orders with filtering, sorting, and pagination.
+    /// </summary>
+    /// <param name="filter">Filter parameters including status, user, date range, code, sorting, and pagination.</param>
+    /// <returns>Tuple containing filtered orders and total count.</returns>
     public async Task<(IEnumerable<Order> Orders, int TotalCount)> GetAllAsync(
         OrderFilterDTO filter
     )
@@ -115,6 +150,16 @@ public class OrderRepository : IOrderRepository
         return (orders, totalCount);
     }
 
+    /// <summary>
+    /// Updates the status of an order with validation and audit logging.
+    /// Validates state transitions using a state machine and creates audit records.
+    /// </summary>
+    /// <param name="id">Order ID.</param>
+    /// <param name="status">New order status.</param>
+    /// <param name="adminId">ID of the administrator performing the status change.</param>
+    /// <returns>The updated order.</returns>
+    /// <exception cref="KeyNotFoundException">Thrown when the order is not found.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when the status transition is invalid.</exception>
     public async Task<Order> UpdateStatusAsync(int id, OrderStatus status, int adminId)
     {
         var order = await _context.Orders.FindAsync(id);

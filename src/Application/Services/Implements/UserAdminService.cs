@@ -1,9 +1,13 @@
 // Application/Services/Implements/UserAdminService.cs
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using TiendaUcnApi.src.Infrastructure.Data;
 using TiendaUcnApi.src.Domain.Models; // User, Role
+using TiendaUcnApi.src.Infrastructure.Data;
 
+/// <summary>
+/// Service for administrator operations on user accounts.
+/// Handles user listing, status changes, role management, and audit logging.
+/// </summary>
 public class UserAdminService : IUserAdminService
 {
     private readonly UserManager<User> _userManager;
@@ -11,17 +15,29 @@ public class UserAdminService : IUserAdminService
     private readonly AppDbContext _db;
     private readonly ILogger<UserAdminService> _logger;
 
-    // whitelist for ordering
+    /// <summary>
+    /// Whitelist of allowed ordering fields to prevent SQL injection.
+    /// </summary>
     private static readonly HashSet<string> OrderWhitelist = new(StringComparer.OrdinalIgnoreCase)
     {
-        "createdAt", "lastLogin", "email"
+        "createdAt",
+        "lastLogin",
+        "email",
     };
 
+    /// <summary>
+    /// Initializes a new instance of the UserAdminService class.
+    /// </summary>
+    /// <param name="userManager">Identity user manager.</param>
+    /// <param name="roleManager">Identity role manager.</param>
+    /// <param name="db">Database context.</param>
+    /// <param name="logger">Logger instance.</param>
     public UserAdminService(
         UserManager<User> userManager,
         RoleManager<Role> roleManager,
         AppDbContext db,
-        ILogger<UserAdminService> logger)
+        ILogger<UserAdminService> logger
+    )
     {
         _userManager = userManager;
         _roleManager = roleManager;
@@ -29,12 +45,38 @@ public class UserAdminService : IUserAdminService
         _logger = logger;
     }
 
-    public async Task<PagedResult<UserListItemDto>> GetUsersAsync(int page, int pageSize,
-        string? role, string? status, string? email, DateTime? createdFrom, DateTime? createdTo,
-        string? orderBy, string? orderDir, CancellationToken ct = default)
+    /// <summary>
+    /// Retrieves paginated and filtered list of users.
+    /// Supports filtering by role, status, email, creation date and custom ordering.
+    /// </summary>
+    /// <param name="page">Page number (1-based).</param>
+    /// <param name="pageSize">Number of items per page (1-100).</param>
+    /// <param name="role">Optional role filter.</param>
+    /// <param name="status">Optional status filter (Active/Blocked).</param>
+    /// <param name="email">Optional email search term.</param>
+    /// <param name="createdFrom">Optional creation date range start.</param>
+    /// <param name="createdTo">Optional creation date range end.</param>
+    /// <param name="orderBy">Field to order by (must be in whitelist).</param>
+    /// <param name="orderDir">Order direction (asc/desc).</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>Paged result with user list items.</returns>
+    public async Task<PagedResult<UserListItemDto>> GetUsersAsync(
+        int page,
+        int pageSize,
+        string? role,
+        string? status,
+        string? email,
+        DateTime? createdFrom,
+        DateTime? createdTo,
+        string? orderBy,
+        string? orderDir,
+        CancellationToken ct = default
+    )
     {
-        if (page <= 0) page = 1;
-        if (pageSize <= 0 || pageSize > 100) pageSize = 20;
+        if (page <= 0)
+            page = 1;
+        if (pageSize <= 0 || pageSize > 100)
+            pageSize = 20;
 
         var query = _userManager.Users.AsQueryable();
 
@@ -43,7 +85,12 @@ public class UserAdminService : IUserAdminService
         {
             var roleEntity = await _roleManager.FindByNameAsync(role);
             if (roleEntity == null)
-                return new PagedResult<UserListItemDto> { Page = page, PageSize = pageSize, TotalCount = 0 };
+                return new PagedResult<UserListItemDto>
+                {
+                    Page = page,
+                    PageSize = pageSize,
+                    TotalCount = 0,
+                };
             var roleUsers = _db.Set<IdentityUserRole<int>>()
                 .Where(ur => ur.RoleId == roleEntity.Id)
                 .Select(ur => ur.UserId);
@@ -55,9 +102,13 @@ public class UserAdminService : IUserAdminService
             if (Enum.TryParse<UserStatusDto>(status, true, out var st))
             {
                 if (st == UserStatusDto.Blocked)
-                    query = query.Where(u => u.LockoutEnd != null && u.LockoutEnd > DateTimeOffset.UtcNow);
+                    query = query.Where(u =>
+                        u.LockoutEnd != null && u.LockoutEnd > DateTimeOffset.UtcNow
+                    );
                 else
-                    query = query.Where(u => u.LockoutEnd == null || u.LockoutEnd <= DateTimeOffset.UtcNow);
+                    query = query.Where(u =>
+                        u.LockoutEnd == null || u.LockoutEnd <= DateTimeOffset.UtcNow
+                    );
             }
             else
             {
@@ -80,10 +131,16 @@ public class UserAdminService : IUserAdminService
             bool asc = string.Equals(orderDir, "asc", StringComparison.OrdinalIgnoreCase);
             query = orderBy.ToLower() switch
             {
-                "createdat" => asc ? query.OrderBy(u => u.RegisteredAt) : query.OrderByDescending(u => u.RegisteredAt),
-                "lastlogin" => asc ? query.OrderBy(u => u.LockoutEnd) /*as placeholder*/ : query.OrderByDescending(u => u.LockoutEnd),
-                "email" => asc ? query.OrderBy(u => u.Email) : query.OrderByDescending(u => u.Email),
-                _ => query.OrderByDescending(u => u.RegisteredAt)
+                "createdat" => asc
+                    ? query.OrderBy(u => u.RegisteredAt)
+                    : query.OrderByDescending(u => u.RegisteredAt),
+                "lastlogin" => asc
+                    ? query.OrderBy(u => u.LockoutEnd) /*as placeholder*/
+                    : query.OrderByDescending(u => u.LockoutEnd),
+                "email" => asc
+                    ? query.OrderBy(u => u.Email)
+                    : query.OrderByDescending(u => u.Email),
+                _ => query.OrderByDescending(u => u.RegisteredAt),
             };
         }
         else
@@ -101,13 +158,18 @@ public class UserAdminService : IUserAdminService
                 FirstName = u.FirstName,
                 LastName = u.LastName,
                 Email = u.Email,
-                Role = _db.Set<IdentityUserRole<int>>()
-                          .Where(ur => ur.UserId == u.Id)
-                          .Join(_db.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => r.Name)
-                          .FirstOrDefault() ?? string.Empty,
-                Status = (u.LockoutEnd != null && u.LockoutEnd > DateTimeOffset.UtcNow) ? UserStatusDto.Blocked : UserStatusDto.Active,
+                Role =
+                    _db.Set<IdentityUserRole<int>>()
+                        .Where(ur => ur.UserId == u.Id)
+                        .Join(_db.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => r.Name)
+                        .FirstOrDefault()
+                    ?? string.Empty,
+                Status =
+                    (u.LockoutEnd != null && u.LockoutEnd > DateTimeOffset.UtcNow)
+                        ? UserStatusDto.Blocked
+                        : UserStatusDto.Active,
                 CreatedAt = u.RegisteredAt,
-                LastLogin = u.LockoutEnd.HasValue ? u.LockoutEnd.Value.DateTime : null // example: if you store last login elsewhere adapt accordingly
+                LastLogin = u.LockoutEnd.HasValue ? u.LockoutEnd.Value.DateTime : null, // example: if you store last login elsewhere adapt accordingly
             })
             .ToListAsync(ct);
 
@@ -116,19 +178,28 @@ public class UserAdminService : IUserAdminService
             Page = page,
             PageSize = pageSize,
             TotalCount = total,
-            Items = items
+            Items = items,
         };
     }
 
+    /// <summary>
+    /// Retrieves detailed information for a specific user.
+    /// </summary>
+    /// <param name="id">User ID.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>User details or null if not found.</returns>
     public async Task<UserDetailDto?> GetUserByIdAsync(int id, CancellationToken ct = default)
     {
         var u = await _userManager.Users.FirstOrDefaultAsync(x => x.Id == id, ct);
-        if (u == null) return null;
+        if (u == null)
+            return null;
 
-        var role = await (from ur in _db.Set<IdentityUserRole<int>>()
-                          where ur.UserId == u.Id
-                          join r in _db.Roles on ur.RoleId equals r.Id
-                          select r.Name).FirstOrDefaultAsync(ct);
+        var role = await (
+            from ur in _db.Set<IdentityUserRole<int>>()
+            where ur.UserId == u.Id
+            join r in _db.Roles on ur.RoleId equals r.Id
+            select r.Name
+        ).FirstOrDefaultAsync(ct);
 
         return new UserDetailDto
         {
@@ -137,21 +208,44 @@ public class UserAdminService : IUserAdminService
             LastName = u.LastName,
             Email = u.Email,
             Role = role ?? string.Empty,
-            Status = (u.LockoutEnd != null && u.LockoutEnd > DateTimeOffset.UtcNow) ? UserStatusDto.Blocked : UserStatusDto.Active,
+            Status =
+                (u.LockoutEnd != null && u.LockoutEnd > DateTimeOffset.UtcNow)
+                    ? UserStatusDto.Blocked
+                    : UserStatusDto.Active,
             CreatedAt = u.RegisteredAt,
             LastLogin = u.LockoutEnd?.DateTime,
-            UpdatedAt = u.UpdatedAt
+            UpdatedAt = u.UpdatedAt,
         };
     }
 
-    public async Task ChangeUserStatusAsync(int adminId, int targetUserId, UpdateUserStatusDto dto, CancellationToken ct = default)
+    /// <summary>
+    /// Changes a user's status (Active/Blocked).
+    /// Implements R113 rubric requirement: prevents admin from blocking themselves.
+    /// Implements R114 rubric requirement: prevents blocking the last admin.
+    /// Implements R115 rubric requirement: invalidates user sessions when blocking by updating security stamp.
+    /// Logs all changes in audit table.
+    /// </summary>
+    /// <param name="adminId">ID of administrator performing the action.</param>
+    /// <param name="targetUserId">ID of user whose status is being changed.</param>
+    /// <param name="dto">Status change data including new status and reason.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <exception cref="ArgumentException">Thrown when status is invalid.</exception>
+    /// <exception cref="KeyNotFoundException">Thrown when target user not found.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when admin tries to block themselves or the last admin.</exception>
+    public async Task ChangeUserStatusAsync(
+        int adminId,
+        int targetUserId,
+        UpdateUserStatusDto dto,
+        CancellationToken ct = default
+    )
     {
         if (!Enum.TryParse<UserStatusDto>(dto.Status, true, out var newStatus))
             throw new ArgumentException("Invalid status");
 
         var admin = await _userManager.FindByIdAsync(adminId.ToString());
         var target = await _userManager.FindByIdAsync(targetUserId.ToString());
-        if (target == null) throw new KeyNotFoundException("User not found");
+        if (target == null)
+            throw new KeyNotFoundException("User not found");
 
         // business rule: admin cannot block themselves
         if (adminId == targetUserId && newStatus == UserStatusDto.Blocked)
@@ -165,11 +259,16 @@ public class UserAdminService : IUserAdminService
             {
                 // count admins
                 var adminRole = await _roleManager.FindByNameAsync("Administrador");
-                if (adminRole == null) throw new InvalidOperationException("Role 'Administrador' missing");
+                if (adminRole == null)
+                    throw new InvalidOperationException("Role 'Administrador' missing");
 
-                var adminsCount = await (from ur in _db.Set<IdentityUserRole<int>>()
-                                         where ur.RoleId == adminRole.Id
-                                         select ur.UserId).Distinct().CountAsync();
+                var adminsCount = await (
+                    from ur in _db.Set<IdentityUserRole<int>>()
+                    where ur.RoleId == adminRole.Id
+                    select ur.UserId
+                )
+                    .Distinct()
+                    .CountAsync();
 
                 if (adminsCount <= 1)
                     throw new InvalidOperationException("Cannot block the last admin");
@@ -177,7 +276,8 @@ public class UserAdminService : IUserAdminService
         }
 
         // effect: set LockoutEnd accordingly
-        bool isCurrentlyBlocked = target.LockoutEnd != null && target.LockoutEnd > DateTimeOffset.UtcNow;
+        bool isCurrentlyBlocked =
+            target.LockoutEnd != null && target.LockoutEnd > DateTimeOffset.UtcNow;
         if (newStatus == UserStatusDto.Blocked && !isCurrentlyBlocked)
         {
             target.LockoutEnd = DateTimeOffset.UtcNow.AddYears(100);
@@ -210,15 +310,39 @@ public class UserAdminService : IUserAdminService
             PreviousValue = prev,
             NewValue = next,
             Reason = dto.Reason,
-            ChangedAt = DateTime.UtcNow
+            ChangedAt = DateTime.UtcNow,
         };
         _db.AuditRecords.Add(audit);
         await _db.SaveChangesAsync(ct);
 
-        _logger.LogInformation("User status changed by admin {AdminId}: target {Target} {Prev} -> {New}", adminId, targetUserId, prev, next);
+        _logger.LogInformation(
+            "User status changed by admin {AdminId}: target {Target} {Prev} -> {New}",
+            adminId,
+            targetUserId,
+            prev,
+            next
+        );
     }
 
-    public async Task ChangeUserRoleAsync(int adminId, int targetUserId, UpdateUserRoleDto dto, CancellationToken ct = default)
+    /// <summary>
+    /// Changes a user's role.
+    /// Implements R116 rubric requirement: prevents removal of the last admin.
+    /// Implements R117 rubric requirement: invalidates sessions when role changes reduce privileges.
+    /// Logs all changes in audit table.
+    /// </summary>
+    /// <param name="adminId">ID of administrator performing the action.</param>
+    /// <param name="targetUserId">ID of user whose role is being changed.</param>
+    /// <param name="dto">Role change data including new role name.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <exception cref="ArgumentException">Thrown when role is invalid or not allowed.</exception>
+    /// <exception cref="KeyNotFoundException">Thrown when target user not found.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when trying to remove the last admin.</exception>
+    public async Task ChangeUserRoleAsync(
+        int adminId,
+        int targetUserId,
+        UpdateUserRoleDto dto,
+        CancellationToken ct = default
+    )
     {
         // validate role exists and allowed
         var roleName = dto.Role;
@@ -231,10 +355,12 @@ public class UserAdminService : IUserAdminService
             throw new ArgumentException("Role not allowed");
 
         var target = await _userManager.FindByIdAsync(targetUserId.ToString());
-        if (target == null) throw new KeyNotFoundException("User not found");
+        if (target == null)
+            throw new KeyNotFoundException("User not found");
 
         var roleExists = await _roleManager.RoleExistsAsync(roleName);
-        if (!roleExists) throw new ArgumentException("Role does not exist");
+        if (!roleExists)
+            throw new ArgumentException("Role does not exist");
 
         var currentRoles = await _userManager.GetRolesAsync(target);
         var previousRole = currentRoles.FirstOrDefault() ?? string.Empty;
@@ -243,9 +369,13 @@ public class UserAdminService : IUserAdminService
         if (previousRole == "Administrador" && roleName != "Administrador")
         {
             var adminRole = await _roleManager.FindByNameAsync("Administrador");
-            var adminsCount = await (from ur in _db.Set<IdentityUserRole<int>>()
-                                     where ur.RoleId == adminRole.Id
-                                     select ur.UserId).Distinct().CountAsync();
+            var adminsCount = await (
+                from ur in _db.Set<IdentityUserRole<int>>()
+                where ur.RoleId == adminRole.Id
+                select ur.UserId
+            )
+                .Distinct()
+                .CountAsync();
             if (adminsCount <= 1 && currentRoles.Contains("Administrador"))
                 throw new InvalidOperationException("Cannot remove the last admin");
         }
@@ -262,7 +392,7 @@ public class UserAdminService : IUserAdminService
             Action = "ChangeRole",
             PreviousValue = previousRole,
             NewValue = roleName,
-            ChangedAt = DateTime.UtcNow
+            ChangedAt = DateTime.UtcNow,
         };
         _db.AuditRecords.Add(audit);
 
@@ -273,6 +403,12 @@ public class UserAdminService : IUserAdminService
         }
 
         await _db.SaveChangesAsync(ct);
-        _logger.LogInformation("User role changed by admin {AdminId}: target {Target} {Prev} -> {New}", adminId, targetUserId, previousRole, roleName);
+        _logger.LogInformation(
+            "User role changed by admin {AdminId}: target {Target} {Prev} -> {New}",
+            adminId,
+            targetUserId,
+            previousRole,
+            roleName
+        );
     }
 }

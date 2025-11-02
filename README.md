@@ -1,57 +1,200 @@
 
-# Tienda UCN - API Rest
+# Tienda UCN - REST API
 
 ![.NET](https://img.shields.io/badge/.NET-9.0-blueviolet) ![C#](https://img.shields.io/badge/C%23-12-blue) ![SQLite](https://img.shields.io/badge/SQLite-3-blue) ![Swagger](https://img.shields.io/badge/Swagger-API-green)
 
-**TiendaUCN API** es el componente backend para una moderna plataforma de e-commerce. Construida con ASP.NET Core 9, esta API Restful proporciona toda la funcionalidad necesaria para gestionar usuarios, productos, y autenticación, sirviendo como la columna vertebral para una aplicación cliente (web o móvil).
+**TiendaUCN API** is the backend component for a modern e-commerce platform. Built with ASP.NET Core 9, this RESTful API provides all the necessary functionality to manage users, products, shopping carts, orders, and authentication, serving as the backbone for client applications (web or mobile).
 
-API Rest para el proyecto Tienda UCN, una plataforma de comercio electrónico. Esta API gestiona la lógica de negocio, el acceso a datos y la seguridad para la aplicación cliente.
+A REST API for the Tienda UCN project, an e-commerce platform. This API handles business logic, data access, and security for the client application.
 
 ## ✨ Features
 
--   **Autenticación y Autorización**: Sistema completo de registro, inicio de sesión y gestión de usuarios basado en JWT, con recuperación de contraseña y verificación de correo.
--   **Gestión de Perfiles**: Los usuarios pueden ver y actualizar la información de su perfil, así como cambiar su contraseña y verificar cambios de email.
--   **Gestión de Productos (Admin)**: Operaciones CRUD completas para productos, incluyendo carga de imágenes, gestión de descuentos y activación/desactivación de productos.
--   **Notificaciones por Email**: Envío de correos transaccionales para diversas acciones.
--   **Base de Datos**: Persistencia de datos robusta utilizando Entity Framework Core con SQLite.
+### Authentication & Authorization
+- Complete registration and login system based on JWT tokens
+- Email verification with time-limited verification codes
+- Password recovery and reset functionality
+- Role-based access control (Customer and Administrator roles)
+- Secure password hashing with ASP.NET Core Identity
 
-## 🛠️ Tecnologías Utilizadas
+### User Profile Management
+- View and update personal profile information
+- Password change functionality
+- Email change with verification
+- RUT (Chilean national ID) validation
+- Birth date validation (minimum age 18 years)
 
--   **Framework**: ASP.NET Core 9
--   **Lenguaje**: C# 12
--   **Base de Datos**: SQLite con Entity Framework Core
--   **Autenticación**: JWT (JSON Web Tokens)
--   **Documentación API**: Swagger (OpenAPI)
--   **Logging**: Serilog
--   **Mapeo de Objetos**: Mapster
--   **Servicio de Email**: Resend
+### Product Management (Admin)
+- Full CRUD operations for products
+- Image upload and management via Cloudinary
+- Discount management
+- Product activation/deactivation (soft delete)
+- Advanced filtering and sorting capabilities
+- Category and brand management
+
+### Shopping Cart
+- Anonymous and authenticated user cart support
+- Cart persistence across sessions
+- Automatic cart association when user logs in
+- Real-time price calculations with discounts
+- Abandoned cart detection and email reminders
+
+### Order Management
+- Order creation from shopping cart
+- Order status tracking (Pending, Processing, Shipped, Delivered, Cancelled)
+- Order status transition validation
+- Paginated order listing with filters
+- Order history for users
+- Admin order management dashboard
+
+### Email Notifications
+- Welcome emails for new users
+- Email verification codes
+- Password reset codes
+- Abandoned cart reminders
+- Transactional email support via Resend
+
+### Background Jobs
+- Automated cleanup of unverified users (Hangfire)
+- Scheduled abandoned cart reminder emails
+- Configurable job scheduling
+
+## 🏗️ Project Architecture
+
+This project follows a **Clean Architecture** approach with clear separation of concerns:
+
+```
+TiendaUcnApi/
+├── src/
+│   ├── API/                          # Presentation Layer
+│   │   ├── Controllers/              # API endpoints
+│   │   ├── Middlewares/             # Custom middleware (error handling, buyer ID)
+│   │   └── Extensions/              # Service configuration and data seeding
+│   │
+│   ├── Application/                  # Application Layer
+│   │   ├── DTO/                     # Data Transfer Objects
+│   │   │   ├── AuthDTO/            # Authentication DTOs
+│   │   │   ├── ProductDTO/         # Product DTOs
+│   │   │   ├── CartDTO/            # Shopping cart DTOs
+│   │   │   ├── OrderDTO/           # Order DTOs
+│   │   │   ├── UserDTO/            # User management DTOs
+│   │   │   └── BaseResponse/       # Generic response DTOs
+│   │   ├── Services/
+│   │   │   ├── Interfaces/         # Service contracts
+│   │   │   └── Implements/         # Service implementations
+│   │   ├── Mappers/                # Object mapping logic
+│   │   ├── Validators/             # Custom validation attributes
+│   │   ├── Exceptions/             # Custom exception types
+│   │   └── Jobs/                   # Background job definitions
+│   │
+│   ├── Domain/                      # Domain Layer
+│   │   └── Models/                 # Entity models
+│   │       ├── User.cs
+│   │       ├── Product.cs
+│   │       ├── Category.cs
+│   │       ├── Brand.cs
+│   │       ├── Cart.cs
+│   │       ├── Order.cs
+│   │       └── ...
+│   │
+│   └── Infrastructure/              # Infrastructure Layer
+│       ├── Data/                   # Database context and configurations
+│       │   ├── AppDbContext.cs
+│       │   ├── DataSeeder.cs
+│       │   └── Migrations/
+│       └── Repositories/
+│           ├── Interfaces/         # Repository contracts
+│           └── Implements/         # Repository implementations
+│
+├── appsettings.json                # Configuration
+├── Program.cs                       # Application entry point
+└── README.md                        # Project documentation
+```
+
+### Layer Responsibilities
+
+#### 1. **API Layer (Presentation)**
+- **Controllers**: Handle HTTP requests and responses
+- **Middlewares**: 
+  - `ErrorHandlingMiddleware`: Global exception handling
+  - `BuyerIdMiddleware`: Anonymous user identification
+- **Extensions**: Dependency injection configuration and data seeding
+
+#### 2. **Application Layer**
+- **Services**: Business logic implementation
+  - `IUserService`: User authentication and registration
+  - `IProductService`: Product management
+  - `ICartService`: Shopping cart operations
+  - `IOrderService`: Order processing
+  - `IEmailService`: Email notifications
+  - `IFileService`: Image upload/deletion
+- **DTOs**: Data transfer between layers
+- **Validators**: Custom validation logic (RUT, birth date)
+- **Mappers**: Object mapping utilities
+
+#### 3. **Domain Layer**
+- **Models**: Core business entities
+- Enumerations: `OrderStatus`, `Gender`, `Status`, `CodeType`
+- Business rules and domain logic
+
+#### 4. **Infrastructure Layer**
+- **DbContext**: Entity Framework Core database context
+- **Repositories**: Data access abstraction
+- **Migrations**: Database schema versioning
+
+## 🛠️ Technologies & Libraries
+
+### Core Framework
+- **ASP.NET Core 9**: Modern web framework
+- **C# 12**: Latest language features
+- **Entity Framework Core 9**: ORM for database access
+
+### Database
+- **SQLite**: Lightweight relational database
+- **Entity Framework Core**: Code-first migrations
+
+### Authentication & Security
+- **ASP.NET Core Identity**: User management
+- **JWT Bearer Tokens**: Stateless authentication
+- **BCrypt**: Password hashing
+
+### External Services
+- **Cloudinary**: Image storage and CDN
+- **Resend**: Transactional email service
+- **Hangfire**: Background job scheduling
+
+### Developer Tools
+- **Swagger/OpenAPI**: API documentation
+- **Serilog**: Structured logging
+- **Mapster**: Object mapping
 
 ---
 
-## 🚀 Cómo Empezar
+## 🚀 Getting Started
 
-Sigue estas instrucciones para clonar y ejecutar el proyecto en tu máquina local para desarrollo y pruebas.
+Follow these instructions to clone and run the project on your local machine for development and testing.
 
-### Requisitos Previos
+### Prerequisites
 
 -   [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
 -   [Git](https://git-scm.com/)
--   Un editor de código como [Visual Studio Code](https://code.visualstudio.com/) o [Visual Studio 2022](https://visualstudio.microsoft.com/).
+-   A code editor such as [Visual Studio Code](https://code.visualstudio.com/) or [Visual Studio 2022](https://visualstudio.microsoft.com/)
+-   Cloudinary account (for image uploads)
+-   Resend account (for email notifications)
 
-### ⚙️ Instalación y Configuración
+### ⚙️ Installation & Setup
 
-1.  **Clona el repositorio:**
+1.  **Clone the repository:**
     ```sh
-    git clone <https://github.com/A-benites/TiendaUcnApi.git>
+    git clone https://github.com/A-benites/TiendaUcnApi.git
     ```
 
-2.  **Navega al directorio del proyecto:**
+2.  **Navigate to the project directory:**
     ```sh
     cd TiendaUcnApi
     ```
 
-3.  **Configura tus variables de entorno:**
-    Crea un archivo `appsettings.Development.json` en la raíz del proyecto con el siguiente contenido, reemplazando los placeholders con tus claves reales.
+3.  **Configure environment variables:**
+    Create an `appsettings.Development.json` file in the project root with the following content, replacing placeholders with your actual keys.
 
     ```json
     {
@@ -64,330 +207,254 @@ Sigue estas instrucciones para clonar y ejecutar el proyecto en tu máquina loca
         "ConnectionStrings": {
             "DefaultConnection": "Data Source=tienda_ucn.db"
         },
-        "JWTSecret": "TU_CLAVE_SECRETA_PARA_JWT_DEBE_SER_LARGA_Y_COMPLEJA",
-        "ResendAPIKey": "TU_API_KEY_DE_RESEND",
+        "JWTSecret": "YOUR_SECRET_KEY_FOR_JWT_MUST_BE_LONG_AND_COMPLEX",
+        "ResendAPIKey": "YOUR_RESEND_API_KEY",
+        "Cloudinary": {
+            "CloudName": "YOUR_CLOUDINARY_CLOUD_NAME",
+            "ApiKey": "YOUR_CLOUDINARY_API_KEY",
+            "ApiSecret": "YOUR_CLOUDINARY_API_SECRET"
+        },
         "AdminUser": {
             "Email": "admin@example.com",
             "Password": "Admin123!",
             "FirstName": "Admin",
             "LastName": "User",
-            "Rut": "1-9"
+            "Rut": "1-9",
+            "Gender": "Masculino",
+            "BirthDate": "1990-01-01",
+            "PhoneNumber": "+56912345678"
         }
     }
     ```
 
-    > **Nota sobre el Administrador**: El sistema creará automáticamente el usuario administrador definido en la sección `AdminUser` de este archivo durante el primer arranque. Puedes modificar estos valores según necesites.
+    > **Note about Administrator**: The system will automatically create the administrator user defined in the `AdminUser` section during the first startup. You can modify these values as needed.
 
-4.  **Restaura las dependencias de .NET:**
+4.  **Restore .NET dependencies:**
     ```sh
     dotnet restore
     ```
 
-5.  **Aplica las migraciones de la Base de Datos:**
-    El seeder creará un usuario administrador (`admin@example.com` / `Admin123!`) y datos iniciales.
+5.  **Apply database migrations:**
+    The seeder will create an admin user and initial data (categories, brands, sample products).
     ```sh
     dotnet ef database update
     ```
 
-6.  **Ejecuta la aplicación:**
+6.  **Run the application:**
     ```sh
     dotnet run
     ```
-    La API estará corriendo en `http://localhost:5177`.
+    The API will be running at `https://localhost:5177` or `http://localhost:5177`.
+
+7.  **Access Swagger UI:**
+    Open your browser and navigate to `https://localhost:5177/swagger` to explore the API documentation.
 
 ---
 
-## 🧪 Guía Completa de Endpoints
+## 📚 API Documentation
 
-Esta sección documenta todos los endpoints disponibles. Puedes usar **Swagger** (`http://localhost:5177`) o un cliente REST con los siguientes ejemplos.
-
-### Variables
-
-```http
-@baseUrl = http://localhost:5177
-@user_token =
-@admin_token =
+### Base URL
 ```
-> **Instrucción**: Después de iniciar sesión, copia el token JWT en la variable `@user_token` o `@admin_token` para usar en las solicitudes protegidas.
-
-### 1. Controlador de Autenticación (`/api/Auth`)
-
-#### `POST /login`
-Inicia sesión y devuelve un token JWT.
-```http
-###
-POST {{baseUrl}}/api/Auth/login
-Content-Type: application/json
-
-{
-  "email": "admin@example.com",
-  "password": "Admin123!"
-}
+https://localhost:5177/api
 ```
 
-#### `POST /register`
-Registra un nuevo usuario.
-```http
-###
-POST {{baseUrl}}/api/Auth/register
-Content-Type: application/json
+### Authentication
 
-{
-  "email": "test.user2@example.com",
-  "password": "password123",
-  "firstName": "Usuario",
-  "lastName": "DePrueba",
-  "rut": "22333444-5",
-  "birthDate": "1998-08-10"
-}
+Most endpoints require authentication via JWT Bearer token. Include the token in the Authorization header:
+```
+Authorization: Bearer <your_jwt_token>
 ```
 
-#### `POST /verify`
-Verifica el email de un usuario usando el código recibido.
-```http
-###
-POST {{baseUrl}}/api/Auth/verify
-Content-Type: application/json
+### Roles
+- **Customer**: Regular users who can browse products, manage cart, and place orders
+- **Administrator**: Full access to all endpoints, including user and product management
 
-{
-  "email": "test.user2@example.com",
-  "code": "CODIGO_DE_VERIFICACION"
-}
-```
+### Key Endpoints
 
-#### `POST /resend-email-verification-code`
-Reenvía el código de verificación de email.
-```http
-###
-POST {{baseUrl}}/api/Auth/resend-email-verification-code
-Content-Type: application/json
+#### Authentication (`/api/Auth`)
+- `POST /login` - User login
+- `POST /register` - User registration
+- `POST /verify` - Email verification
+- `POST /resend-email-verification-code` - Resend verification code
+- `POST /recover-password` - Request password reset
+- `PATCH /reset-password` - Reset password with code
 
-{
-  "email": "test.user2@example.com"
-}
-```
+#### Profile (`/api/user`)
+- `GET /profile` - Get user profile
+- `PUT /profile` - Update profile
+- `PATCH /change-password` - Change password
+- `POST /verify-email-change` - Verify email change
 
-#### `POST /recover-password`
-Inicia el flujo de recuperación de contraseña enviando un código al email.
-```http
-###
-POST {{baseUrl}}/api/Auth/recover-password
-Content-Type: application/json
+#### Products (Public) (`/api/products`)
+- `GET /` - Get all products (with filters and pagination)
+- `GET /{id}` - Get product details
 
-{
-  "email": "test.user2@example.com"
-}
-```
+#### Products (Admin) (`/api/admin/products`)
+- `GET /` - Get all products for admin
+- `GET /{id}` - Get product details for admin
+- `POST /` - Create product
+- `PUT /{id}` - Update product
+- `DELETE /{id}` - Toggle product availability
+- `POST /{id}/images` - Upload product images
+- `DELETE /{id}/images/{imageId}` - Delete product image
+- `PATCH /{id}/discount` - Update product discount
 
-#### `PATCH /reset-password`
-Establece una nueva contraseña usando el código de recuperación.
-```http
-###
-PATCH {{baseUrl}}/api/Auth/reset-password
-Content-Type: application/json
+#### Cart (`/api/cart`)
+- `GET /` - Get user's cart
+- `POST /items` - Add item to cart
+- `DELETE /items/{productId}` - Remove item from cart
+- `PUT /items/{productId}` - Update item quantity
+- `DELETE /` - Clear cart
 
-{
-  "email": "test.user2@example.com",
-  "code": "CODIGO_DE_RECUPERACION",
-  "newPassword": "nuevaPassword456"
-}
-```
+#### Orders (`/api/orders`)
+- `POST /` - Create order from cart
+- `GET /` - Get user's orders (paginated)
+- `GET /{id}` - Get order details
 
-### 2. Controlador de Perfil (`/api/user`)
+#### Orders (Admin) (`/api/admin/orders`)
+- `GET /` - Get all orders (with filters)
+- `GET /{id}` - Get order details
+- `PATCH /{id}/status` - Update order status
 
-**Nota**: Requiere token de autenticación de usuario (`@user_token`).
+#### Categories (Admin) (`/api/admin/categories`)
+- `GET /` - Get all categories
+- `GET /{id}` - Get category by ID
+- `POST /` - Create category
+- `PUT /{id}` - Update category
+- `DELETE /{id}` - Delete category
 
-#### `GET /profile`
-Obtiene los datos del perfil del usuario autenticado.
-```http
-###
-GET {{baseUrl}}/api/user/profile
-Authorization: Bearer {{user_token}}
-```
+#### Brands (Admin) (`/api/admin/brands`)
+- `GET /` - Get all brands
+- `GET /{id}` - Get brand by ID
+- `POST /` - Create brand
+- `PUT /{id}` - Update brand
+- `DELETE /{id}` - Delete brand
 
-#### `PUT /profile`
-Actualiza los datos del perfil del usuario.
-```http
-###
-PUT {{baseUrl}}/api/user/profile
-Content-Type: application/json
-Authorization: Bearer {{user_token}}
+#### Users (Admin) (`/api/admin/users`)
+- `GET /` - Get all users (paginated)
+- `GET /{id}` - Get user details
+- `PATCH /{id}/status` - Update user status (active/blocked)
+- `PATCH /{id}/role` - Update user role
 
-{
-  "firstName": "NombreActualizado",
-  "lastName": "ApellidoActualizado",
-  "rut": "22333444-5",
-  "birthDate": "1998-08-11"
-}
-```
-
-#### `PATCH /change-password`
-Cambia la contraseña del usuario.
-```http
-###
-PATCH {{baseUrl}}/api/user/change-password
-Content-Type: application/json
-Authorization: Bearer {{user_token}}
-
-{
-  "currentPassword": "password123",
-  "newPassword": "nuevaPassword456"
-}
-```
-
-#### `POST /verify-email-change`
-Verifica un cambio de correo electrónico.
-```http
-###
-POST {{baseUrl}}/api/user/verify-email-change
-Content-Type: application/json
-Authorization: Bearer {{user_token}}
-
-{
-  "code": "CODIGO_DE_VERIFICACION_DE_EMAIL"
-}
-```
-
-### 3. Controlador de Productos (Admin) (`/api/admin/products`)
-
-**Nota**: Requiere token de autenticación de administrador (`@admin_token`).
-
-#### `GET /`
-Obtiene una lista de todos los productos con filtros opcionales.
-```http
-###
-GET {{baseUrl}}/api/admin/products?PageNumber=1&PageSize=10
-Authorization: Bearer {{admin_token}}
-```
-
-#### `GET /{id}`
-Obtiene el detalle de un producto específico por su ID.
-```http
-###
-GET {{baseUrl}}/api/admin/products/1
-Authorization: Bearer {{admin_token}}
-```
-
-#### `POST /`
-Crea un nuevo producto. Usa `multipart/form-data`.
-```http
-###
-POST {{baseUrl}}/api/admin/products
-Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
-Authorization: Bearer {{admin_token}}
-
-------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="Name"
-
-Producto de Prueba
-------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="Description"
-
-Descripción del producto.
-------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="Price"
-
-99990
-------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="Stock"
-
-50
-------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="CategoryId"
-
-1
-------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="BrandId"
-
-1
-------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="Images"; filename="image.jpg"
-Content-Type: image/jpeg
-
-< /path/to/your/image.jpg
-------WebKitFormBoundary7MA4YWxkTrZu0gW--
-```
-
-#### `PUT /{id}`
-Actualiza un producto existente.
-```http
-###
-PUT {{baseUrl}}/api/admin/products/1
-Content-Type: application/json
-Authorization: Bearer {{admin_token}}
-
-{
-  "name": "Producto Actualizado",
-  "description": "Nueva descripción.",
-  "price": 109990,
-  "stock": 45,
-  "categoryId": 1,
-  "brandId": 1
-}
-```
-
-#### `DELETE /{id}`
-Desactiva (eliminado lógico) un producto.
-```http
-###
-DELETE {{baseUrl}}/api/admin/products/1
-Authorization: Bearer {{admin_token}}
-```
-
-#### `POST /{id}/images`
-Sube una o más imágenes para un producto.
-```http
-###
-POST {{baseUrl}}/api/admin/products/1/images
-Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
-Authorization: Bearer {{admin_token}}
-
-------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="images"; filename="image1.jpg"
-Content-Type: image/jpeg
-
-< /path/to/your/image1.jpg
-------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="images"; filename="image2.png"
-Content-Type: image/png
-
-< /path/to/your/image2.png
-------WebKitFormBoundary7MA4YWxkTrZu0gW--
-```
-
-#### `DELETE /{id}/images/{imageId}`
-Elimina una imagen específica de un producto.
-```http
-###
-DELETE {{baseUrl}}/api/admin/products/1/images/1
-Authorization: Bearer {{admin_token}}
-```
-
-#### `PATCH /{id}/discount`
-Actualiza el descuento de un producto.
-```http
-###
-PATCH {{baseUrl}}/api/admin/products/1/discount
-Content-Type: application/json
-Authorization: Bearer {{admin_token}}
-
-{
-  "discount": 15
-}
-```
-
-#### `PATCH /{id}/status`
-Cambia el estado de un producto (activo/inactivo).
-```http
-###
-PATCH {{baseUrl}}/api/admin/products/1/status
-Authorization: Bearer {{admin_token}}
-```
+For detailed request/response examples, refer to the `TiendaUcnApi.http` file or explore the Swagger UI.
 
 ---
 
-## 👥 Colaboradores
+## 🔒 Security Features
 
--   **Amir Benites**
--   **Álvaro Zapana**
+- **Password Hashing**: Uses ASP.NET Core Identity with BCrypt
+- **JWT Tokens**: Stateless authentication with configurable expiration
+- **Email Verification**: Required for account activation
+- **Role-Based Authorization**: Separate permissions for customers and administrators
+- **Input Validation**: Comprehensive DTO validation
+- **CORS Configuration**: Configurable cross-origin resource sharing
+- **Error Handling**: Global exception middleware with sanitized error messages
+- **Rate Limiting**: Configurable request throttling (can be added)
 
+---
+
+## 📊 Database Schema
+
+### Core Entities
+
+#### User
+- Identity-based user with roles (Customer, Administrator)
+- RUT validation (Chilean national ID)
+- Email verification required
+- Age validation (18+)
+
+#### Product
+- Title, description, price, discount, stock
+- Category and brand relationships
+- Multiple images support
+- Soft delete (IsAvailable flag)
+- New/Used status
+
+#### Cart
+- Anonymous and authenticated support
+- BuyerId for session tracking
+- Automatic price calculations
+
+#### Order
+- Order status workflow
+- Immutable order items (snapshot at purchase time)
+- User relationship
+
+#### Category & Brand
+- Simple lookup entities
+- Product count tracking
+
+### Relationships
+- User ↔ Orders (One-to-Many)
+- User ↔ Verification Codes (One-to-Many)
+- Product ↔ Category (Many-to-One)
+- Product ↔ Brand (Many-to-One)
+- Product ↔ Images (One-to-Many)
+- Cart ↔ Cart Items (One-to-Many)
+- Order ↔ Order Items (One-to-Many)
+
+---
+
+## 🧪 Testing
+
+### Manual Testing
+Use the `TiendaUcnApi.http` file with REST Client extension in VS Code or Swagger UI for interactive testing.
+
+### Test Data
+The DataSeeder automatically creates:
+- 1 Administrator user
+- 2 Sample categories (Electronics, Clothing)
+- 2 Sample brands (TechCorp, FashionCo)
+- Sample products with images
+
+---
+
+## 📝 Development Notes
+
+### Adding a New Entity
+
+1. Create the model in `src/Domain/Models/`
+2. Add DbSet to `AppDbContext.cs`
+3. Create migration: `dotnet ef migrations add AddYourEntity`
+4. Update database: `dotnet ef database update`
+5. Create DTOs in `src/Application/DTO/`
+6. Create repository interface and implementation
+7. Create service interface and implementation
+8. Register services in `Program.cs`
+9. Create controller in `src/API/Controllers/`
+
+### Code Style
+- Use XML documentation comments for all public classes and methods
+- Follow C# naming conventions
+- Use async/await for all I/O operations
+- Implement proper error handling
+- Validate all user inputs
+
+---
+
+## 👥 Contributors
+
+-   **Amir Benites** - Backend Developer
+-   **Álvaro Zapana** - Backend Developer
+
+---
+
+## 📄 License
+
+This project is developed as part of an academic project at Universidad Católica del Norte.
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+---
+
+## 📞 Support
+
+For questions or issues, please open an issue on GitHub or contact the development team.

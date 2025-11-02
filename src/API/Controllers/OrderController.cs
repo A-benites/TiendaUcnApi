@@ -8,24 +8,33 @@ using TiendaUcnApi.src.Application.Services.Interfaces;
 namespace TiendaUcnApi.src.API.Controllers;
 
 /// <summary>
-/// Controlador para gestionar órdenes de compra.
+/// Controller for managing customer purchase orders.
+/// Handles order creation and retrieval for authenticated users.
 /// </summary>
 [Route("api/orders")]
 [ApiController]
-[Authorize] // Permitir cualquier usuario autenticado
+[Authorize] // Allow any authenticated user
 public class OrderController : BaseController
 {
     private readonly IOrderService _orderService;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="OrderController"/> class.
+    /// </summary>
+    /// <param name="orderService">The order service for business logic.</param>
     public OrderController(IOrderService orderService)
     {
         _orderService = orderService;
     }
 
     /// <summary>
-    /// Crea una nueva orden a partir del carrito del usuario.
+    /// Creates a new order from the user's shopping cart.
+    /// Converts cart items into an order and clears the cart.
     /// </summary>
-    /// <returns>Orden creada.</returns>
+    /// <returns>The created order with order items and totals.</returns>
+    /// <response code="200">Order created successfully.</response>
+    /// <response code="400">Cart is empty or contains invalid items.</response>
+    /// <response code="401">User not authenticated.</response>
     [HttpPost]
     public async Task<IActionResult> CreateOrder()
     {
@@ -34,7 +43,7 @@ public class OrderController : BaseController
 
         if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
         {
-            return Unauthorized(new GenericResponse<object>("Usuario no autenticado", null));
+            return Unauthorized(new GenericResponse<object>("User not authenticated", null));
         }
 
         var response = await _orderService.CreateAsync(buyerId, userId);
@@ -42,11 +51,13 @@ public class OrderController : BaseController
     }
 
     /// <summary>
-    /// Obtiene todas las órdenes del usuario autenticado con paginación.
+    /// Retrieves all orders for the authenticated user with pagination.
     /// </summary>
-    /// <param name="page">Número de página (por defecto 1).</param>
-    /// <param name="pageSize">Tamaño de página (por defecto 10).</param>
-    /// <returns>Lista paginada de órdenes.</returns>
+    /// <param name="page">Page number (default 1).</param>
+    /// <param name="pageSize">Page size (default 10).</param>
+    /// <returns>Paginated list of user orders.</returns>
+    /// <response code="200">Returns the paginated order list.</response>
+    /// <response code="401">User not authenticated.</response>
     [HttpGet]
     public async Task<IActionResult> GetOrders(
         [FromQuery] int page = 1,
@@ -57,7 +68,7 @@ public class OrderController : BaseController
 
         if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
         {
-            return Unauthorized(new GenericResponse<object>("Usuario no autenticado", null));
+            return Unauthorized(new GenericResponse<object>("User not authenticated", null));
         }
 
         var filter = new UserOrderFilterDTO { Page = page, PageSize = pageSize };
@@ -67,10 +78,13 @@ public class OrderController : BaseController
     }
 
     /// <summary>
-    /// Obtiene el detalle de una orden específica del usuario autenticado.
+    /// Retrieves detailed information for a specific order belonging to the authenticated user.
     /// </summary>
-    /// <param name="id">ID de la orden.</param>
-    /// <returns>Detalle de la orden.</returns>
+    /// <param name="id">The order identifier.</param>
+    /// <returns>Order details including all items and pricing.</returns>
+    /// <response code="200">Returns the order details.</response>
+    /// <response code="401">User not authenticated.</response>
+    /// <response code="404">Order not found or doesn't belong to user.</response>
     [HttpGet("{id}")]
     public async Task<IActionResult> GetOrderById(int id)
     {
@@ -78,13 +92,18 @@ public class OrderController : BaseController
 
         if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
         {
-            return Unauthorized(new GenericResponse<object>("Usuario no autenticado", null));
+            return Unauthorized(new GenericResponse<object>("User not authenticated", null));
         }
 
         var response = await _orderService.GetOrderDetailByIdAsync(id, userId);
         return Ok(response);
     }
 
+    /// <summary>
+    /// Retrieves the buyer identifier from HTTP context.
+    /// </summary>
+    /// <returns>Buyer identifier string.</returns>
+    /// <exception cref="Exception">Thrown when buyer ID is not found.</exception>
     private string GetBuyerId()
     {
         var buyerId = HttpContext.Items["BuyerId"]?.ToString();

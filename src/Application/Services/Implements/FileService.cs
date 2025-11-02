@@ -9,152 +9,151 @@ using TiendaUcnApi.src.Infrastructure.Repositories.Interfaces;
 namespace TiendaUcnApi.src.Application.Services.Implements;
 
 /// <summary>
-/// Servicio para manejar archivos en Cloudinary.
+/// Service for handling file operations with Cloudinary.
+/// Manages image uploads, deletions, and transformations for product images.
 /// </summary>
 public class FileService : IFileService
 {
     /// <summary>
-    /// Configuración de la aplicación.
+    /// Application configuration.
     /// </summary>
     private readonly IConfiguration _configuration;
 
     /// <summary>
-    /// Instancia de Cloudinary para operaciones en la nube.
+    /// Cloudinary instance for cloud operations.
     /// </summary>
     private readonly Cloudinary _cloudinary;
 
     /// <summary>
-    /// Extensiones permitidas para archivos de imagen.
+    /// Allowed file extensions for images.
     /// </summary>
     private readonly string[] _allowedExtensions;
 
     /// <summary>
-    /// Tamaño máximo permitido para archivos de imagen (en bytes).
+    /// Maximum allowed file size for images (in bytes).
     /// </summary>
     private readonly int _maxFileSizeInBytes;
 
     /// <summary>
-    /// Repositorio de archivos.
+    /// File repository.
     /// </summary>
     private readonly IFileRepository _fileRepository;
 
     /// <summary>
-    /// Nombre de la nube en Cloudinary.
+    /// Cloudinary cloud name.
     /// </summary>
     private readonly string _cloudName;
 
     /// <summary>
-    /// API Key de Cloudinary.
+    /// Cloudinary API Key.
     /// </summary>
     private readonly string _cloudApiKey;
 
     /// <summary>
-    /// API Secret de Cloudinary.
+    /// Cloudinary API Secret.
     /// </summary>
     private readonly string _cloudApiSecret;
 
     /// <summary>
-    /// Ancho de la transformación de imagen.
+    /// Image transformation width.
     /// </summary>
     private readonly int _transformationWidth;
 
     /// <summary>
-    /// Tipo de recorte para la transformación de imagen.
+    /// Crop type for image transformation.
     /// </summary>
     private readonly string _transformationCrop;
 
     /// <summary>
-    /// Calidad de la transformación de imagen.
+    /// Quality for image transformation.
     /// </summary>
     private readonly string _transformationQuality;
 
     /// <summary>
-    /// Formato de imagen para la transformación.
+    /// Image format for transformation.
     /// </summary>
     private readonly string _transformationFetchFormat;
 
     /// <summary>
-    /// Constructor con todas las dependencias necesarias.
+    /// Initializes a new instance of the FileService class with all necessary dependencies.
+    /// Configures Cloudinary client and image transformation settings from configuration.
     /// </summary>
-    /// <param name="configuration">Configuración de la aplicación.</param>
-    /// <param name="fileRepository">Repositorio de archivos.</param>
+    /// <param name="configuration">Application configuration.</param>
+    /// <param name="fileRepository">File repository.</param>
+    /// <exception cref="InvalidOperationException">Thrown when required configuration values are missing.</exception>
     public FileService(IConfiguration configuration, IFileRepository fileRepository)
     {
         _configuration = configuration;
         _fileRepository = fileRepository;
         _cloudName =
             _configuration["Cloudinary:CloudName"]
-            ?? throw new InvalidOperationException("La configuración de CloudName es obligatoria");
+            ?? throw new InvalidOperationException("CloudName configuration is required");
         _cloudApiKey =
             _configuration["Cloudinary:ApiKey"]
-            ?? throw new InvalidOperationException("La configuración de ApiKey es obligatoria");
+            ?? throw new InvalidOperationException("ApiKey configuration is required");
         _cloudApiSecret =
             _configuration["Cloudinary:ApiSecret"]
-            ?? throw new InvalidOperationException("La configuración de ApiSecret es obligatoria");
+            ?? throw new InvalidOperationException("ApiSecret configuration is required");
         Account account = new Account(_cloudName, _cloudApiKey, _cloudApiSecret);
         _cloudinary = new Cloudinary(account);
         _cloudinary.Api.Secure = true;
         _allowedExtensions =
             _configuration.GetSection("Products:ImageAllowedExtensions").Get<string[]>()
-            ?? throw new InvalidOperationException(
-                "La configuración de las extensiones de las imágenes es obligatoria"
-            );
+            ?? throw new InvalidOperationException("Image extensions configuration is required");
         _transformationQuality =
             _configuration["Products:TransformationQuality"]
             ?? throw new InvalidOperationException(
-                "La configuración de la calidad de la transformación es obligatoria"
+                "Transformation quality configuration is required"
             );
         _transformationCrop =
             _configuration["Products:TransformationCrop"]
-            ?? throw new InvalidOperationException(
-                "La configuración del recorte de la transformación es obligatoria"
-            );
+            ?? throw new InvalidOperationException("Transformation crop configuration is required");
         _transformationFetchFormat =
             _configuration["Products:TransformationFetchFormat"]
             ?? throw new InvalidOperationException(
-                "La configuración del formato de la transformación es obligatoria"
+                "Transformation format configuration is required"
             );
         if (!int.TryParse(_configuration["Products:ImageMaxSizeInBytes"], out _maxFileSizeInBytes))
         {
-            throw new InvalidOperationException(
-                "La configuración del tamaño de la imagen es obligatoria"
-            );
+            throw new InvalidOperationException("Image size configuration is required");
         }
         if (!int.TryParse(_configuration["Products:TransformationWidth"], out _transformationWidth))
         {
-            throw new InvalidOperationException(
-                "La configuración del ancho de la transformación es obligatoria"
-            );
+            throw new InvalidOperationException("Transformation width configuration is required");
         }
     }
 
     /// <summary>
-    /// Sube un archivo a Cloudinary.
+    /// Uploads a file to Cloudinary.
+    /// Validates file size, extension, and image format before uploading.
+    /// Applies transformation (resize, crop, quality, format) during upload for optimization.
     /// </summary>
-    /// <param name="file">El archivo a subir.</param>
-    /// <param name="productId">El ID del producto al que pertenece la imagen.</param>
-    /// <returns>True si la carga fue exitosa, de lo contrario False.</returns>
+    /// <param name="file">The file to upload.</param>
+    /// <param name="productId">The ID of the product to which the image belongs.</param>
+    /// <returns>True if upload was successful, false if image already exists.</returns>
+    /// <exception cref="ArgumentException">Thrown when productId is invalid, file is invalid, exceeds size limit, has invalid extension, or is not a valid image.</exception>
+    /// <exception cref="Exception">Thrown when upload fails or database operation fails.</exception>
     public async Task<bool> UploadAsync(IFormFile file, int productId)
     {
         if (productId <= 0)
         {
-            Log.Error($"ProductId inválido: {productId}");
-            throw new ArgumentException("ProductId debe ser mayor a 0");
+            Log.Error($"Invalid ProductId: {productId}");
+            throw new ArgumentException("ProductId must be greater than 0");
         }
 
         if (file == null || file.Length == 0)
         {
-            Log.Error("Intento de subir un archivo nulo o vacío");
-            throw new ArgumentException("Archivo inválido");
+            Log.Error("Attempt to upload a null or empty file");
+            throw new ArgumentException("Invalid file");
         }
 
         if (file.Length > _maxFileSizeInBytes)
         {
             Log.Error(
-                $"El archivo {file.FileName} excede el tamaño máximo permitido de {_maxFileSizeInBytes / 1024 / 1024} MB"
+                $"File {file.FileName} exceeds the maximum allowed size of {_maxFileSizeInBytes / 1024 / 1024} MB"
             );
             throw new ArgumentException(
-                $"El archivo excede el tamaño máximo permitido de {_maxFileSizeInBytes / 1024 / 1024} MB"
+                $"File exceeds the maximum allowed size of {_maxFileSizeInBytes / 1024 / 1024} MB"
             );
         }
 
@@ -162,16 +161,16 @@ public class FileService : IFileService
 
         if (!_allowedExtensions.Contains(fileExtension))
         {
-            Log.Error($"Extensión de archivo no permitida: {fileExtension}");
+            Log.Error($"File extension not allowed: {fileExtension}");
             throw new ArgumentException(
-                $"Extensión de archivo no permitida. Permitir: {string.Join(", ", _allowedExtensions)}"
+                $"File extension not allowed. Allowed: {string.Join(", ", _allowedExtensions)}"
             );
         }
 
         if (!IsValidImageFile(file))
         {
-            Log.Error($"El archivo {file.FileName} no es una imagen válida");
-            throw new ArgumentException("El archivo no es una imagen válida");
+            Log.Error($"File {file.FileName} is not a valid image");
+            throw new ArgumentException("File is not a valid image");
         }
         var folder = $"product/{productId}/images";
         using var stream = file.OpenReadStream();
@@ -184,7 +183,7 @@ public class FileService : IFileService
             UniqueFilename = true,
         };
 
-        Log.Information($"Optimizando imagen: {file.FileName} antes de subir a la nube");
+        Log.Information($"Optimizing image: {file.FileName} before uploading to cloud");
         uploadParams.Transformation = new Transformation()
             .Width(_transformationWidth)
             .Crop(_transformationCrop)
@@ -193,13 +192,13 @@ public class FileService : IFileService
             .Chain()
             .FetchFormat(_transformationFetchFormat);
 
-        Log.Information($"Subiendo imagen: {file.FileName} a Cloudinary");
+        Log.Information($"Uploading image: {file.FileName} to Cloudinary");
         var uploadResult = await _cloudinary.UploadAsync(uploadParams);
 
         if (uploadResult.Error != null)
         {
-            Log.Error($"Hubo un error al subir la imagen: {uploadResult.Error.Message}");
-            throw new Exception($"Error al subir la imagen: {uploadResult.Error.Message}");
+            Log.Error($"Error uploading image: {uploadResult.Error.Message}");
+            throw new Exception($"Error uploading image: {uploadResult.Error.Message}");
         }
 
         var image = new Image()
@@ -212,90 +211,91 @@ public class FileService : IFileService
         var result = await _fileRepository.CreateAsync(image);
         if (result is bool && !result.Value!)
         {
-            Log.Error($"Error al guardar la imagen en la base de datos: {file.FileName}");
+            Log.Error($"Error saving image to database: {file.FileName}");
             var deleteResult = await DeleteInCloudinaryAsync(uploadResult.PublicId);
             if (!deleteResult)
             {
                 Log.Error(
-                    $"Error al eliminar la imagen de Cloudinary después de fallar la creación en la base de datos: {uploadResult.PublicId}"
+                    $"Error deleting image from Cloudinary after database creation failed: {uploadResult.PublicId}"
                 );
                 throw new Exception(
-                    "Error al eliminar la imagen de Cloudinary después de fallar la creación en la base de datos"
+                    "Error deleting image from Cloudinary after database creation failed"
                 );
             }
-            throw new Exception("Error al guardar la imagen en la base de datos");
+            throw new Exception("Error saving image to database");
         }
         else if (result is null)
         {
-            Log.Warning($"La imagen ya existe en la base de datos: {file.FileName}");
+            Log.Warning($"Image already exists in database: {file.FileName}");
             return false;
         }
 
-        Log.Information($"Imagen subida exitosamente: {uploadResult.SecureUrl}");
+        Log.Information($"Image uploaded successfully: {uploadResult.SecureUrl}");
         return true;
     }
 
     /// <summary>
-    /// Elimina un archivo de Cloudinary.
+    /// Deletes a file from Cloudinary and the database.
     /// </summary>
-    /// <param name="publicId">El ID público del archivo a eliminar.</param>
-    /// <returns>True si la eliminación fue exitosa, de lo contrario false.</returns>
+    /// <param name="publicId">The public ID of the file to delete.</param>
+    /// <returns>True if deletion was successful, false if image doesn't exist in database.</returns>
+    /// <exception cref="Exception">Thrown when deletion from Cloudinary or database fails.</exception>
     public async Task<bool> DeleteAsync(string publicId)
     {
         var deletionParams = new DeletionParams(publicId);
-        Log.Information($"Eliminando imagen con PublicId: {publicId} de Cloudinary");
+        Log.Information($"Deleting image with PublicId: {publicId} from Cloudinary");
         var deleteResult = await _cloudinary.DestroyAsync(deletionParams);
         if (deleteResult.Error != null)
         {
             Log.Error(
-                $"Error al eliminar la imagen con PublicId: {publicId} de Cloudinary: {deleteResult.Error.Message}"
+                $"Error deleting image with PublicId: {publicId} from Cloudinary: {deleteResult.Error.Message}"
             );
-            throw new Exception($"Error al eliminar la imagen: {deleteResult.Error.Message}");
+            throw new Exception($"Error deleting image: {deleteResult.Error.Message}");
         }
-        Log.Information($"Imagen con PublicId: {publicId} eliminada exitosamente de Cloudinary");
+        Log.Information($"Image with PublicId: {publicId} successfully deleted from Cloudinary");
         var result = await _fileRepository.DeleteAsync(publicId);
         if (result is bool && !result.Value!)
         {
-            Log.Error($"Error al eliminar la imagen de la base de datos con PublicId: {publicId}");
-            throw new Exception("Error al eliminar la imagen de la base de datos");
+            Log.Error($"Error deleting image from database with PublicId: {publicId}");
+            throw new Exception("Error deleting image from database");
         }
         else if (result is null)
         {
-            Log.Warning($"La imagen no existe en la base de datos con PublicId: {publicId}");
+            Log.Warning($"Image does not exist in database with PublicId: {publicId}");
             return false;
         }
-        Log.Information(
-            $"Imagen con PublicId: {publicId} eliminada exitosamente de la base de datos"
-        );
+        Log.Information($"Image with PublicId: {publicId} successfully deleted from database");
         return true;
     }
 
     /// <summary>
-    /// Elimina una imagen de Cloudinary de forma asíncrona.
+    /// Deletes an image from Cloudinary asynchronously.
+    /// Internal helper method used for rollback operations.
     /// </summary>
-    /// <param name="publicId">El ID público de la imagen a eliminar.</param>
-    /// <returns>True si la eliminación fue exitosa, de lo contrario false.</returns>
+    /// <param name="publicId">The public ID of the image to delete.</param>
+    /// <returns>True if deletion was successful, false otherwise.</returns>
     private async Task<bool> DeleteInCloudinaryAsync(string publicId)
     {
         var deletionParams = new DeletionParams(publicId);
-        Log.Information($"Eliminando imagen con PublicId: {publicId} de Cloudinary");
+        Log.Information($"Deleting image with PublicId: {publicId} from Cloudinary");
         var deleteResult = await _cloudinary.DestroyAsync(deletionParams);
         if (deleteResult.Error != null)
         {
             Log.Error(
-                $"Error al eliminar la imagen con PublicId: {publicId} de Cloudinary: {deleteResult.Error.Message}"
+                $"Error deleting image with PublicId: {publicId} from Cloudinary: {deleteResult.Error.Message}"
             );
             return false;
         }
-        Log.Information($"Imagen con PublicId: {publicId} eliminada exitosamente de Cloudinary");
+        Log.Information($"Image with PublicId: {publicId} successfully deleted from Cloudinary");
         return true;
     }
 
     /// <summary>
-    /// Valida si el archivo es una imagen válida.
+    /// Validates if the file is a valid image.
+    /// Uses SkiaSharp to decode and verify image format.
     /// </summary>
-    /// <param name="file">El archivo a validar.</param>
-    /// <returns>True si el archivo es una imagen válida, de lo contrario false.</returns>
+    /// <param name="file">The file to validate.</param>
+    /// <returns>True if the file is a valid image, false otherwise.</returns>
     private bool IsValidImageFile(IFormFile file)
     {
         try
@@ -308,21 +308,22 @@ public class FileService : IFileService
         }
         catch (Exception ex)
         {
-            Log.Warning($"Error validando imagen {file.FileName}: {ex.Message}");
+            Log.Warning($"Error validating image {file.FileName}: {ex.Message}");
             return false;
         }
     }
 
     /// <summary>
-    /// Elimina una imagen por su ID.
+    /// Deletes an image by its ID.
     /// </summary>
-    /// <param name="imageId">ID de la imagen.</param>
-    /// <returns>True si la eliminación fue exitosa, de lo contrario false.</returns>
+    /// <param name="imageId">Image ID.</param>
+    /// <returns>True if deletion was successful, false if image doesn't exist.</returns>
+    /// <exception cref="KeyNotFoundException">Thrown when image doesn't exist.</exception>
     public async Task<bool> DeleteAsync(int imageId)
     {
         var image =
             await _fileRepository.GetImageByIdAsync(imageId)
-            ?? throw new KeyNotFoundException("La imagen no existe.");
+            ?? throw new KeyNotFoundException("The image does not exist.");
 
         return await DeleteAsync(image.PublicId);
     }

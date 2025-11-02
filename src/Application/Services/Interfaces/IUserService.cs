@@ -4,49 +4,59 @@ using TiendaUcnApi.src.Application.DTO.AuthDTO;
 namespace TiendaUcnApi.src.Application.Services.Interfaces;
 
 /// <summary>
-/// Interfaz para el servicio de usuarios.
+/// Service interface for user authentication and management operations.
 /// </summary>
 public interface IUserService
 {
     /// <summary>
-    /// Inicia sesión con el usuario proporcionado.
+    /// Authenticates a user and generates a JWT token.
     /// </summary>
-    /// <param name="loginDTO">DTO que contiene las credenciales del usuario.</param>
-    /// <param name="httpContext">El contexto HTTP actual.</param>
-    /// <returns>Un string que representa el token JWT generadon y la id del usuario.</returns>
+    /// <param name="loginDTO">DTO containing user credentials.</param>
+    /// <param name="httpContext">The current HTTP context.</param>
+    /// <returns>A tuple containing the generated JWT token and the user ID.</returns>
     Task<(string token, int userId)> LoginAsync(LoginDTO loginDTO, HttpContext httpContext);
 
     /// <summary>
-    /// Registra un nuevo usuario.
+    /// Registers a new user in the system and sends email verification code.
     /// </summary>
-    /// <param name="registerDTO">DTO que contiene la información del nuevo usuario.</param>
-    /// <param name="httpContext">El contexto HTTP actual.</param>
-    /// <returns>Un string que representa el mensaje de éxito del registro.</returns>
+    /// <param name="registerDTO">DTO containing new user information.</param>
+    /// <param name="httpContext">The current HTTP context.</param>
+    /// <returns>A success message indicating registration status.</returns>
     Task<string> RegisterAsync(RegisterDTO registerDTO, HttpContext httpContext);
 
     /// <summary>
-    /// Verifica el correo electrónico del usuario.
+    /// Verifies a user's email address using the provided verification code.
     /// </summary>
-    /// <param name="verifyEmailDTO">DTO que contiene el correo electrónico y el código de verificación.</param>
-    /// <returns>Un string que representa el mensaje de éxito de la verificación.</returns>
+    /// <param name="verifyEmailDTO">DTO containing the email and verification code.</param>
+    /// <returns>A success message indicating verification status.</returns>
     Task<string> VerifyEmailAsync(VerifyEmailDTO verifyEmailDTO);
 
     /// <summary>
-    /// Reenvía el código de verificación al correo electrónico del usuario.
+    /// Resends the email verification code to the user.
     /// </summary>
-    /// <param name="resendEmailVerificationCodeDTO">DTO que contiene el correo electrónico del usuario.</param>
-    /// <returns>Un string que representa el mensaje de éxito del reenvío.</returns>
+    /// <param name="resendEmailVerificationCodeDTO">DTO containing the user's email address.</param>
+    /// <returns>A success message indicating the code was resent.</returns>
     Task<string> ResendEmailVerificationCodeAsync(
         ResendEmailVerificationCodeDTO resendEmailVerificationCodeDTO
     );
 
     /// <summary>
-    /// Elimina usuarios no confirmados.
+    /// Deletes unconfirmed user accounts that have not verified their email.
     /// </summary>
-    /// <returns>Número de usuarios eliminados</returns>
+    /// <returns>The number of deleted user accounts.</returns>
     Task<int> DeleteUnconfirmedAsync();
 
+    /// <summary>
+    /// Initiates the password recovery process by sending a reset code to the user's email.
+    /// </summary>
+    /// <param name="forgotPasswordDTO">DTO containing the user's email address.</param>
+    /// <returns>A success message indicating the reset code was sent.</returns>
     Task<string> ForgotPasswordAsync(ForgotPasswordDTO forgotPasswordDTO);
 
+    /// <summary>
+    /// Resets a user's password using the provided verification code.
+    /// </summary>
+    /// <param name="resetPasswordDTO">DTO containing the email, code, and new password.</param>
+    /// <returns>A success message indicating the password was reset.</returns>
     Task<string> ResetPasswordAsync(ResetPasswordDTO resetPasswordDTO);
 }

@@ -7,17 +7,33 @@ using TiendaUcnApi.src.Infrastructure.Repositories.Interfaces;
 
 namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements
 {
+    /// <summary>
+    /// Implementation of the shopping cart repository.
+    /// Handles database operations for shopping carts, supporting both authenticated and anonymous users.
+    /// </summary>
     public class CartRepository : ICartRepository
     {
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CartRepository"/> class.
+        /// </summary>
+        /// <param name="dataContext">Database context.</param>
+        /// <param name="configuration">Application configuration.</param>
         public CartRepository(AppDbContext dataContext, IConfiguration configuration)
         {
             _context = dataContext;
             _configuration = configuration;
         }
 
+        /// <summary>
+        /// Finds a cart by buyer ID and optionally associates it with a user.
+        /// Handles cart migration from anonymous to authenticated users.
+        /// </summary>
+        /// <param name="buyerId">The buyer identifier (cookie-based).</param>
+        /// <param name="userId">Optional user ID for authenticated users.</param>
+        /// <returns>The found or migrated cart, or null if not found.</returns>
         public async Task<Cart?> FindAsync(string buyerId, int? userId)
         {
             Cart? cart = null;
@@ -58,6 +74,11 @@ namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements
             return cart;
         }
 
+        /// <summary>
+        /// Retrieves a cart by user ID.
+        /// </summary>
+        /// <param name="userId">The user ID.</param>
+        /// <returns>The user's cart, or null if not found.</returns>
         public async Task<Cart?> GetByUserIdAsync(int userId)
         {
             return await _context
@@ -66,6 +87,11 @@ namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements
                 .FirstOrDefaultAsync(c => c.UserId == userId);
         }
 
+        /// <summary>
+        /// Retrieves an anonymous cart by buyer ID.
+        /// </summary>
+        /// <param name="buyerId">The buyer identifier (cookie-based).</param>
+        /// <returns>The anonymous cart, or null if not found.</returns>
         public async Task<Cart?> GetAnonymousAsync(string buyerId)
         {
             return await _context
@@ -75,6 +101,12 @@ namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements
                 .FirstOrDefaultAsync(c => c.BuyerId == buyerId && c.UserId == null);
         }
 
+        /// <summary>
+        /// Creates a new cart for a buyer.
+        /// </summary>
+        /// <param name="buyerId">The buyer identifier.</param>
+        /// <param name="userId">Optional user ID for authenticated users.</param>
+        /// <returns>The created cart with all related data.</returns>
         public async Task<Cart> CreateAsync(string buyerId, int? userId = null)
         {
             var cart = new Cart
@@ -97,6 +129,10 @@ namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements
                 .FirstAsync(c => c.Id == cart.Id);
         }
 
+        /// <summary>
+        /// Updates an existing cart.
+        /// </summary>
+        /// <param name="cart">The cart to update.</param>
         public async Task UpdateAsync(Cart cart)
         {
             cart.UpdatedAt = DateTime.UtcNow;
@@ -104,12 +140,21 @@ namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements
             await _context.SaveChangesAsync();
         }
 
+        /// <summary>
+        /// Deletes a cart.
+        /// </summary>
+        /// <param name="cart">The cart to delete.</param>
         public async Task DeleteAsync(Cart cart)
         {
             _context.Carts.Remove(cart);
             await _context.SaveChangesAsync();
         }
 
+        /// <summary>
+        /// Adds an item to a cart.
+        /// </summary>
+        /// <param name="cart">The cart to add the item to.</param>
+        /// <param name="cartItem">The item to add.</param>
         public async Task AddItemAsync(Cart cart, CartItem cartItem)
         {
             _context.Attach(cartItem.Product);
@@ -124,12 +169,21 @@ namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements
             await _context.SaveChangesAsync();
         }
 
+        /// <summary>
+        /// Removes an item from a cart.
+        /// </summary>
+        /// <param name="cartItem">The cart item to remove.</param>
         public async Task RemoveItemAsync(CartItem cartItem)
         {
             _context.CartItems.Remove(cartItem);
             await _context.SaveChangesAsync();
         }
 
+        /// <summary>
+        /// Retrieves a cart by buyer ID with all related entities.
+        /// </summary>
+        /// <param name="buyerId">The buyer identifier.</param>
+        /// <returns>The cart with all items, products, brands, categories, and images.</returns>
         public async Task<Cart?> GetByBuyerIdAsync(string buyerId)
         {
             return await _context
@@ -145,7 +199,10 @@ namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements
                 .FirstOrDefaultAsync(c => c.BuyerId == buyerId);
         }
 
-        // ✅ Todos los carritos (para depuración o mantenimiento)
+        /// <summary>
+        /// Retrieves all carts (for debugging or maintenance purposes).
+        /// </summary>
+        /// <returns>List of all carts with related data.</returns>
         public async Task<List<Cart>> GetAllAsync()
         {
             return await _context
@@ -156,10 +213,14 @@ namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements
                 .ToListAsync();
         }
 
-        // ✅ Carritos abandonados (configurable en appsettings.json y filtra usuarios semilla)
+        /// <summary>
+        /// Retrieves abandoned carts based on configuration threshold.
+        /// Configurable in appsettings.json and excludes seed users.
+        /// </summary>
+        /// <returns>List of abandoned carts eligible for reminder emails.</returns>
         public async Task<List<Cart>> GetAbandonedCartsAsync()
         {
-            // Leer días de abandono desde appsettings.json (default: 3)
+            // Read abandoned days from appsettings.json (default: 3)
             var abandonedDays = _configuration.GetValue<int>("Cart:AbandonedCartDays", 3);
             DateTime threshold = DateTime.UtcNow.AddDays(-abandonedDays);
 
@@ -173,7 +234,7 @@ namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements
                     && c.CartItems.Any()
                     && c.User != null
                     && c.User.Email != null
-                    && c.User.IsSeed == false // ✅ Filtrar usuarios semilla
+                    && c.User.IsSeed == false // Exclude seed users
                 )
                 .ToListAsync();
         }

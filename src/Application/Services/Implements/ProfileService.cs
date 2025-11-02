@@ -10,43 +10,44 @@ using TiendaUcnApi.src.Infrastructure.Repositories.Interfaces;
 namespace TiendaUcnApi.src.Application.Services.Implements;
 
 /// <summary>
-/// Servicio para la gestión del perfil de usuario.
+/// Service for user profile management.
+/// Handles profile retrieval, updates, email changes, and password changes.
 /// </summary>
 public class ProfileService : IProfileService
 {
     /// <summary>
-    /// Repositorio de usuarios.
+    /// User repository.
     /// </summary>
     private readonly IUserRepository _userRepository;
 
     /// <summary>
-    /// Administrador de usuarios de Identity.
+    /// ASP.NET Core Identity user manager.
     /// </summary>
     private readonly UserManager<User> _userManager;
 
     /// <summary>
-    /// Servicio para envío de correos electrónicos.
+    /// Email service for sending notifications.
     /// </summary>
     private readonly IEmailService _emailService;
 
     /// <summary>
-    /// Repositorio de códigos de verificación.
+    /// Verification code repository.
     /// </summary>
     private readonly IVerificationCodeRepository _verificationCodeRepository;
 
     /// <summary>
-    /// Configuración de la aplicación.
+    /// Application configuration.
     /// </summary>
     private readonly IConfiguration _configuration;
 
     /// <summary>
-    /// Constructor con todas las dependencias necesarias.
+    /// Initializes a new instance of the <see cref="ProfileService"/> class with all necessary dependencies.
     /// </summary>
-    /// <param name="userRepository">Repositorio de usuarios.</param>
-    /// <param name="userManager">Administrador de usuarios.</param>
-    /// <param name="emailService">Servicio de email.</param>
-    /// <param name="verificationCodeRepository">Repositorio de códigos de verificación.</param>
-    /// <param name="configuration">Configuración de la aplicación.</param>
+    /// <param name="userRepository">User repository.</param>
+    /// <param name="userManager">User manager.</param>
+    /// <param name="emailService">Email service.</param>
+    /// <param name="verificationCodeRepository">Verification code repository.</param>
+    /// <param name="configuration">Application configuration.</param>
     public ProfileService(
         IUserRepository userRepository,
         UserManager<User> userManager,
@@ -63,29 +64,29 @@ public class ProfileService : IProfileService
     }
 
     /// <summary>
-    /// Obtiene el perfil del usuario por su ID.
+    /// Retrieves the user's profile by user ID.
     /// </summary>
-    /// <param name="userId">ID del usuario.</param>
-    /// <returns>DTO con los datos del perfil.</returns>
+    /// <param name="userId">User ID.</param>
+    /// <returns>DTO with profile data.</returns>
     public async Task<ProfileDTO> GetProfileAsync(int userId)
     {
         var user =
             await _userRepository.GetByIdAsync(userId)
-            ?? throw new KeyNotFoundException("Usuario no encontrado.");
+            ?? throw new KeyNotFoundException("User not found.");
         return user.Adapt<ProfileDTO>();
     }
 
     /// <summary>
-    /// Actualiza los datos del perfil del usuario.
+    /// Updates the user's profile data.
     /// </summary>
-    /// <param name="userId">ID del usuario.</param>
-    /// <param name="dto">DTO con los datos a actualizar.</param>
-    /// <returns>Mensaje de confirmación.</returns>
+    /// <param name="userId">User ID.</param>
+    /// <param name="dto">DTO with data to update.</param>
+    /// <returns>Confirmation message.</returns>
     public async Task<string> UpdateProfileAsync(int userId, UpdateProfileDTO dto)
     {
         var user =
             await _userRepository.GetByIdAsync(userId)
-            ?? throw new KeyNotFoundException("Usuario no encontrado.");
+            ?? throw new KeyNotFoundException("User not found.");
         var changesMade = false;
 
         if (
@@ -95,9 +96,7 @@ public class ProfileService : IProfileService
         {
             if (await _userRepository.ExistsByEmailAsync(dto.Email))
             {
-                throw new ArgumentException(
-                    "El correo electrónico ya está en uso por otro usuario."
-                );
+                throw new ArgumentException("The email address is already in use by another user.");
             }
             var code = new Random().Next(100000, 999999).ToString();
             var verificationCode = new VerificationCode
@@ -110,7 +109,7 @@ public class ProfileService : IProfileService
             await _verificationCodeRepository.CreateAsync(verificationCode);
             await _emailService.SendVerificationCodeEmailAsync(dto.Email, code);
             Log.Information(
-                "Usuario {UserId} solicitó cambio de email a {NewEmail}. Se envió código de verificación.",
+                "User {UserId} requested email change to {NewEmail}. Verification code sent.",
                 userId,
                 dto.Email
             );
@@ -157,26 +156,27 @@ public class ProfileService : IProfileService
         {
             user.UpdatedAt = DateTime.UtcNow;
             await _userManager.UpdateAsync(user);
-            Log.Information(
-                "Perfil del usuario {UserId} actualizado (datos no relacionados al email).",
-                userId
-            );
+            Log.Information("User profile {UserId} updated (non-email related data).", userId);
         }
 
-        return "Tus datos han sido actualizados. Si solicitaste un cambio de correo, por favor verifica el código enviado a tu nueva dirección.";
+        return "Your data has been updated. If you requested an email change, please verify the code sent to your new address.";
     }
 
     /// <summary>
-    /// Verifica el cambio de correo electrónico del usuario.
+    /// Verifies the user's email change.
+    /// Validates the verification code and updates the email if valid.
     /// </summary>
-    /// <param name="userId">ID del usuario.</param>
-    /// <param name="dto">DTO con el nuevo email y código de verificación.</param>
-    /// <returns>Mensaje de confirmación.</returns>
+    /// <param name="userId">User ID.</param>
+    /// <param name="dto">DTO containing the new email and verification code.</param>
+    /// <returns>Confirmation message.</returns>
+    /// <exception cref="KeyNotFoundException">Thrown when user is not found.</exception>
+    /// <exception cref="ArgumentException">Thrown when the verification code is incorrect or expired.</exception>
+    /// <exception cref="Exception">Thrown when an error occurs during email update.</exception>
     public async Task<string> VerifyEmailChangeAsync(int userId, VerifyEmailChangeDTO dto)
     {
         var user =
             await _userRepository.GetByIdAsync(userId)
-            ?? throw new KeyNotFoundException("Usuario no encontrado.");
+            ?? throw new KeyNotFoundException("User not found.");
         var verificationCode = await _verificationCodeRepository.GetLatestByUserIdAsync(
             user.Id,
             CodeType.EmailChange
@@ -188,7 +188,7 @@ public class ProfileService : IProfileService
             || DateTime.UtcNow >= verificationCode.ExpiryDate
         )
         {
-            throw new ArgumentException("El código de verificación es incorrecto o ha expirado.");
+            throw new ArgumentException("The verification code is incorrect or has expired.");
         }
 
         user.Email = dto.NewEmail;
@@ -200,45 +200,44 @@ public class ProfileService : IProfileService
         var result = await _userManager.UpdateAsync(user);
         if (!result.Succeeded)
         {
-            throw new Exception("Ocurrió un error al actualizar tu correo electrónico.");
+            throw new Exception("An error occurred while updating your email address.");
         }
 
         await _verificationCodeRepository.DeleteByUserIdAsync(user.Id, CodeType.EmailChange);
         Log.Information(
-            "El usuario {UserId} ha confirmado exitosamente su nuevo email: {NewEmail}",
+            "User {UserId} has successfully confirmed their new email: {NewEmail}",
             userId,
             dto.NewEmail
         );
-        return "Tu correo electrónico ha sido actualizado exitosamente.";
+        return "Your email address has been successfully updated.";
     }
 
     /// <summary>
-    /// Cambia la contraseña del usuario.
+    /// Changes the user's password.
+    /// Validates the old password, updates to the new password, and invalidates all existing sessions.
     /// </summary>
-    /// <param name="userId">ID del usuario.</param>
-    /// <param name="dto">DTO con la contraseña actual y la nueva.</param>
+    /// <param name="userId">User ID.</param>
+    /// <param name="dto">DTO containing the current password and the new password.</param>
+    /// <exception cref="KeyNotFoundException">Thrown when user is not found.</exception>
+    /// <exception cref="ArgumentException">Thrown when password change fails (invalid old password, weak new password, etc.).</exception>
     public async Task ChangePasswordAsync(int userId, ChangePasswordDTO dto)
     {
         var user =
             await _userRepository.GetByIdAsync(userId)
-            ?? throw new KeyNotFoundException("Usuario no encontrado.");
+            ?? throw new KeyNotFoundException("User not found.");
         var result = await _userManager.ChangePasswordAsync(user, dto.OldPassword, dto.NewPassword);
 
         if (!result.Succeeded)
         {
             var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-            Log.Warning(
-                "Falló el cambio de contraseña para el usuario {UserId}: {Errors}",
-                userId,
-                errors
-            );
-            throw new ArgumentException($"Error al cambiar la contraseña: {errors}");
+            Log.Warning("Password change failed for user {UserId}: {Errors}", userId, errors);
+            throw new ArgumentException($"Error changing password: {errors}");
         }
 
         await _userManager.UpdateSecurityStampAsync(user);
 
         Log.Information(
-            "Contraseña del usuario {UserId} cambiada exitosamente y sesiones invalidadas.",
+            "Password for user {UserId} changed successfully and sessions invalidated.",
             userId
         );
     }

@@ -3,12 +3,12 @@ using System.ComponentModel.DataAnnotations;
 namespace TiendaUcnApi.src.Application.DTO.AuthDTO;
 
 /// <summary>
-/// DTO para solicitar el reenvío del código de verificación al correo electrónico.
+/// Data Transfer Object for requesting to resend email verification code.
 /// </summary>
 public class ResendEmailVerificationCodeDTO
 {
     /// <summary>
-    /// Correo electrónico del usuario.
+    /// User's email address where the verification code will be resent.
     /// </summary>
     [Required(ErrorMessage = "El correo electrónico es obligatorio.")]
     [EmailAddress(ErrorMessage = "El correo electrónico no tiene un formato válido.")]

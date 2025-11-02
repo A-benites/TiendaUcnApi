@@ -8,46 +8,46 @@ using TiendaUcnApi.src.Domain.Models;
 namespace TiendaUcnApi.src.Application.Mappers;
 
 /// <summary>
-/// Clase encargada de configurar los mapeos entre entidades de producto y sus DTOs.
+/// Configures mappings between Product entities and Product DTOs using Mapster.
+/// Handles transformations for different views (customer, admin) with pricing calculations and stock indicators.
 /// </summary>
 public class ProductMapper
 {
     /// <summary>
-    /// Configuración de la aplicación (usada para obtener valores de configuración).
+    /// Application configuration (used to retrieve configuration values).
     /// </summary>
     private readonly IConfiguration _configuration;
 
     /// <summary>
-    /// URL de la imagen por defecto para productos sin imágenes.
+    /// Default image URL for products without images.
     /// </summary>
     private readonly string? _defaultImageURL;
 
     /// <summary>
-    /// Cantidad mínima para considerar que hay pocas unidades disponibles.
+    /// Minimum quantity to consider as few units available.
     /// </summary>
     private readonly int _fewUnitsAvailable;
 
     /// <summary>
-    /// Inicializa una nueva instancia de <see cref="ProductMapper"/>.
+    /// Initializes a new instance of the <see cref="ProductMapper"/> class.
     /// </summary>
-    /// <param name="configuration">Configuración de la aplicación.</param>
+    /// <param name="configuration">Application configuration.</param>
+    /// <exception cref="InvalidOperationException">Thrown when required configuration values are missing.</exception>
     public ProductMapper(IConfiguration configuration)
     {
         _configuration = configuration;
         _defaultImageURL =
             _configuration.GetValue<string>("Products:DefaultImageUrl")
-            ?? throw new InvalidOperationException(
-                "La URL de la imagen por defecto no puede ser nula."
-            );
+            ?? throw new InvalidOperationException("The default image URL cannot be null.");
         _fewUnitsAvailable =
             _configuration.GetValue<int?>("Products:FewUnitsAvailable")
             ?? throw new InvalidOperationException(
-                "La configuración 'FewUnitsAvailable' no puede ser nula."
+                "The 'FewUnitsAvailable' configuration cannot be null."
             );
     }
 
     /// <summary>
-    /// Configura todos los mapeos relacionados con productos.
+    /// Configures all product-related mappings.
     /// </summary>
     public void ConfigureAllMappings()
     {
@@ -55,10 +55,12 @@ public class ProductMapper
     }
 
     /// <summary>
-    /// Configura los mapeos entre entidades <see cref="Product"/> y sus DTOs.
+    /// Configures mappings between <see cref="Product"/> entities and their DTOs.
+    /// Includes mappings for detailed view, customer view, admin view, and create operations.
     /// </summary>
     public void ConfigureProductMappings()
     {
+        // Mapping for detailed product view
         TypeAdapterConfig<Product, ProductDetailDTO>
             .NewConfig()
             .Map(dest => dest.Id, src => src.Id)
@@ -84,6 +86,7 @@ public class ProductMapper
             .Map(dest => dest.StatusName, src => src.Status)
             .Map(dest => dest.IsAvailable, src => src.IsAvailable);
 
+        // Mapping for customer product card view
         TypeAdapterConfig<Product, ProductForCustomerDTO>
             .NewConfig()
             .Map(dest => dest.Id, src => src.Id)
@@ -99,6 +102,7 @@ public class ProductMapper
             .Map(dest => dest.Price, src => src.Price.ToString("C"))
             .Map(dest => dest.Discount, src => src.Discount);
 
+        // Mapping for admin product list view
         TypeAdapterConfig<Product, ProductForAdminDTO>
             .NewConfig()
             .Map(dest => dest.Id, src => src.Id)
@@ -118,6 +122,7 @@ public class ProductMapper
             .Map(dest => dest.StatusName, src => src.Status)
             .Map(dest => dest.IsAvailable, src => src.IsAvailable);
 
+        // Mapping for product creation
         TypeAdapterConfig<ProductCreateDTO, Product>
             .NewConfig()
             .Map(dest => dest.Title, src => src.Title)
@@ -149,31 +154,31 @@ public class ProductMapper
     }
 
     /// <summary>
-    /// Calcula el precio final aplicando el descuento.
+    /// Calculates the final price by applying the discount percentage.
     /// </summary>
-    /// <param name="price">Precio original.</param>
-    /// <param name="discount">Porcentaje de descuento.</param>
-    /// <returns>Precio final con descuento aplicado.</returns>
+    /// <param name="price">Original price.</param>
+    /// <param name="discount">Discount percentage (0-100).</param>
+    /// <returns>Final price with discount applied.</returns>
     private static decimal CalculateFinalPrice(decimal price, decimal discount)
     {
         return price * (1 - discount / 100);
     }
 
     /// <summary>
-    /// Obtiene el indicador de stock basado en la cantidad disponible.
+    /// Gets the stock indicator message based on available quantity.
     /// </summary>
-    /// <param name="stock">Stock del producto.</param>
-    /// <returns>Retorna el mensaje adecuado según el stock.</returns>
+    /// <param name="stock">Product stock quantity.</param>
+    /// <returns>Stock indicator message: "Out of stock", "Few units available", or "In Stock".</returns>
     private string GetStockIndicator(int stock)
     {
         if (stock == 0)
         {
-            return "Producto sin stock";
+            return "Out of stock";
         }
         if (stock <= _fewUnitsAvailable)
         {
-            return "Pocas unidades disponibles";
+            return "Few units available";
         }
-        return "Con Stock"!;
+        return "In Stock"!;
     }
 }

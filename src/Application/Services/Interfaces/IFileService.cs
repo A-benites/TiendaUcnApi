@@ -1,24 +1,29 @@
 namespace TiendaUcnApi.src.Application.Services.Interfaces;
 
 /// <summary>
-/// Interfaz para el servicio de archivos.
+/// Service interface for file and image management using Cloudinary CDN.
 /// </summary>
 public interface IFileService
 {
     /// <summary>
-    /// Sube un archivo a Cloudinary.
+    /// Uploads an image file to Cloudinary and associates it with a product.
     /// </summary>
-    /// <param name="file">El archivo a subir.</param>
-    /// <param name="productId">El ID del producto al que pertenece la imagen.</param>
-    /// <returns>True si la carga fue exitosa, de lo contrario False.</returns>
+    /// <param name="file">The image file to upload.</param>
+    /// <param name="productId">The product identifier to associate with the image.</param>
+    /// <returns>True if upload was successful, false otherwise.</returns>
     Task<bool> UploadAsync(IFormFile file, int productId);
 
     /// <summary>
-    /// Elimina un archivo de Cloudinary.
+    /// Deletes an image from Cloudinary using its public ID.
     /// </summary>
-    /// <param name="publicId">El ID público del archivo a eliminar.</param>
-    /// <returns>True si la eliminación fue exitosa, de lo contrario false.</returns>
+    /// <param name="publicId">The Cloudinary public ID of the image to delete.</param>
+    /// <returns>True if deletion was successful, false otherwise.</returns>
     Task<bool> DeleteAsync(string publicId);
 
+    /// <summary>
+    /// Deletes an image from Cloudinary and database using the database image ID.
+    /// </summary>
+    /// <param name="imageId">The database identifier of the image to delete.</param>
+    /// <returns>True if deletion was successful, false otherwise.</returns>
     Task<bool> DeleteAsync(int imageId);
 }

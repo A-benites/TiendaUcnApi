@@ -1,73 +1,73 @@
 namespace TiendaUcnApi.src.Application.DTO.ProductDTO;
 
 /// <summary>
-/// DTO para mostrar el detalle de un producto.
+/// Data Transfer Object for displaying product details.
 /// </summary>
 public class ProductDetailDTO
 {
     /// <summary>
-    /// Identificador único del producto.
+    /// Unique identifier for the product.
     /// </summary>
     public required int Id { get; set; }
 
     /// <summary>
-    /// Título del producto.
+    /// Product title.
     /// </summary>
     public required string Title { get; set; }
 
     /// <summary>
-    /// Descripción del producto.
+    /// Product description.
     /// </summary>
     public required string Description { get; set; }
 
     /// <summary>
-    /// Lista de URLs de imágenes del producto.
+    /// List of product image URLs.
     /// </summary>
     public List<string> ImagesURL { get; set; } = new List<string>();
 
     /// <summary>
-    /// Precio del producto.
+    /// Product price (formatted as string).
     /// </summary>
     public required string Price { get; set; }
 
     /// <summary>
-    /// Porcentaje de descuento aplicado.
+    /// Discount percentage applied to the product.
     /// </summary>
     public required int Discount { get; set; }
 
     /// <summary>
-    /// Precio final con descuento aplicado (calculado en servidor).
+    /// Final price with discount applied (calculated server-side).
     /// Implements R76-R77 rubric requirement: finalPrice calculated server-side.
     /// </summary>
     public required string FinalPrice { get; set; }
 
     /// <summary>
-    /// Stock disponible.
+    /// Available stock quantity.
     /// </summary>
     public required int Stock { get; set; }
 
     /// <summary>
-    /// Indicador de stock (por ejemplo, "Bajo", "Alto").
+    /// Stock indicator (e.g., "Low", "High", "Out of Stock").
     /// </summary>
     public required string StockIndicator { get; set; }
 
     /// <summary>
-    /// Nombre de la categoría del producto.
+    /// Name of the product's category.
     /// </summary>
     public required string CategoryName { get; set; }
 
     /// <summary>
-    /// Nombre de la marca del producto.
+    /// Name of the product's brand.
     /// </summary>
     public required string BrandName { get; set; }
 
     /// <summary>
-    /// Estado del producto en texto.
+    /// Product status as text (e.g., "New", "Used").
     /// </summary>
     public required string StatusName { get; set; }
 
     /// <summary>
-    /// Indica si el producto está disponible para la venta.
+    /// Indicates whether the product is available for sale.
     /// </summary>
     public required bool IsAvailable { get; set; }
 }

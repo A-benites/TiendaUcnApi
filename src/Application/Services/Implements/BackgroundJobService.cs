@@ -15,6 +15,12 @@ namespace TiendaUcnApi.src.Application.Services.Implements
         private readonly ICartRepository _cartRepository;
         private readonly IEmailService _emailService;
 
+        /// <summary>
+        /// Initializes a new instance of the BackgroundJobService class.
+        /// </summary>
+        /// <param name="userRepository">User repository.</param>
+        /// <param name="cartRepository">Cart repository.</param>
+        /// <param name="emailService">Email service.</param>
         public BackgroundJobService(
             IUserRepository userRepository,
             ICartRepository cartRepository,
@@ -28,6 +34,7 @@ namespace TiendaUcnApi.src.Application.Services.Implements
 
         /// <summary>
         /// Deletes users who haven't confirmed their email accounts within a set number of days.
+        /// Scheduled to run daily via Hangfire.
         /// </summary>
         public async Task DeleteUnconfirmedUsersAsync()
         {
@@ -45,12 +52,13 @@ namespace TiendaUcnApi.src.Application.Services.Implements
 
         /// <summary>
         /// Sends reminder emails for abandoned carts (not updated in the last 3 days).
+        /// Scheduled to run daily via Hangfire to re-engage customers.
         /// </summary>
         public async Task SendAbandonedCartRemindersAsync()
         {
             try
             {
-                // 🔹 Trae directamente los carritos abandonados desde el repositorio
+                // Retrieve abandoned carts directly from repository
                 var abandonedCarts = await _cartRepository.GetAbandonedCartsAsync();
 
                 Log.Information("Job started: found {Count} abandoned carts", abandonedCarts.Count);
@@ -69,20 +77,20 @@ namespace TiendaUcnApi.src.Application.Services.Implements
                         continue;
                     }
 
-                    // 🔹 Genera una lista HTML de productos
+                    // Generate HTML list of products
                     var cartItemsList = new List<string>();
                     foreach (var item in cart.CartItems)
                     {
-                        var title = item.Product?.Title ?? "Producto desconocido";
-                        cartItemsList.Add($"• {title} - {item.Quantity} unidades");
+                        var title = item.Product?.Title ?? "Unknown product";
+                        cartItemsList.Add($"• {title} - {item.Quantity} units");
                     }
 
                     var cartSummary = string.Join("<br>", cartItemsList);
 
-                    // 🔹 Enviar correo recordatorio
+                    // Send reminder email
                     await _emailService.SendAbandonedCartReminderAsync(
                         cart.User.Email,
-                        cart.User.FirstName ?? "Cliente",
+                        cart.User.FirstName ?? "Customer",
                         cartSummary,
                         "https://tienda-ucn.cl/cart"
                     );

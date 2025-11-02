@@ -8,37 +8,38 @@ using TiendaUcnApi.src.Infrastructure.Repositories.Interfaces;
 namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements;
 
 /// <summary>
-/// Implementación del repositorio de usuarios.
+/// Implementation of the user repository.
+/// Handles user database operations including authentication, registration, and account management.
 /// </summary>
 public class UserRepository : IUserRepository
 {
     /// <summary>
-    /// Contexto de base de datos de la aplicación.
+    /// Application database context.
     /// </summary>
     private readonly AppDbContext _context;
 
     /// <summary>
-    /// Gestor de usuarios de Identity.
+    /// ASP.NET Core Identity user manager.
     /// </summary>
     private readonly UserManager<User> _userManager;
 
     /// <summary>
-    /// Días para eliminar usuarios no confirmados.
+    /// Days threshold for deleting unconfirmed users.
     /// </summary>
     private readonly int _daysOfDeleteUnconfirmedUsers;
 
     /// <summary>
-    /// Repositorio de códigos de verificación.
+    /// Verification code repository.
     /// </summary>
     private readonly IVerificationCodeRepository _verificationCodeRepository;
 
     /// <summary>
-    /// Constructor que inyecta todas las dependencias necesarias.
+    /// Initializes a new instance of the <see cref="UserRepository"/> class.
     /// </summary>
-    /// <param name="context">Contexto de base de datos.</param>
-    /// <param name="userManager">Gestor de usuarios.</param>
-    /// <param name="configuration">Configuración de la aplicación.</param>
-    /// <param name="verificationCodeRepository">Repositorio de códigos de verificación.</param>
+    /// <param name="context">Database context.</param>
+    /// <param name="userManager">User manager.</param>
+    /// <param name="configuration">Application configuration.</param>
+    /// <param name="verificationCodeRepository">Verification code repository.</param>
     public UserRepository(
         AppDbContext context,
         UserManager<User> userManager,
@@ -52,26 +53,26 @@ public class UserRepository : IUserRepository
         _daysOfDeleteUnconfirmedUsers =
             configuration.GetValue<int?>("Jobs:DaysOfDeleteUnconfirmedUsers")
             ?? throw new InvalidOperationException(
-                "La configuración 'Jobs:DaysOfDeleteUnconfirmedUsers' no está definida."
+                "The 'Jobs:DaysOfDeleteUnconfirmedUsers' configuration is not defined."
             );
     }
 
     /// <summary>
-    /// Verifica si la contraseña proporcionada es correcta para el usuario.
+    /// Verifies if the provided password is correct for the user.
     /// </summary>
-    /// <param name="user">Usuario a verificar.</param>
-    /// <param name="password">Contraseña a comprobar.</param>
-    /// <returns>True si la contraseña es correcta, false si no.</returns>
+    /// <param name="user">User to verify.</param>
+    /// <param name="password">Password to check.</param>
+    /// <returns>True if the password is correct, false otherwise.</returns>
     public async Task<bool> CheckPasswordAsync(User user, string password)
     {
         return await _userManager.CheckPasswordAsync(user, password);
     }
 
     /// <summary>
-    /// Confirma el correo electrónico del usuario.
+    /// Confirms the user's email address.
     /// </summary>
-    /// <param name="email">Correo electrónico del usuario.</param>
-    /// <returns>True si se confirmó correctamente, false si no.</returns>
+    /// <param name="email">User's email address.</param>
+    /// <returns>True if confirmed successfully, false otherwise.</returns>
     public async Task<bool> ConfirmEmailAsync(string email)
     {
         var result = await _context
@@ -81,11 +82,12 @@ public class UserRepository : IUserRepository
     }
 
     /// <summary>
-    /// Crea un nuevo usuario en la base de datos de forma transaccional.
+    /// Creates a new user in the database transactionally.
+    /// Automatically assigns the "Cliente" role to the new user.
     /// </summary>
-    /// <param name="user">Usuario a crear.</param>
-    /// <param name="password">Contraseña del usuario.</param>
-    /// <returns>True si se creó correctamente, false si hubo error.</returns>
+    /// <param name="user">User to create.</param>
+    /// <param name="password">User's password.</param>
+    /// <returns>True if created successfully, false if there was an error.</returns>
     public async Task<bool> CreateAsync(User user, string password)
     {
         await using var transaction = await _context.Database.BeginTransactionAsync();
@@ -111,16 +113,17 @@ public class UserRepository : IUserRepository
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            Log.Error(ex, "Ocurrió una excepción durante la transacción de creación de usuario.");
+            Log.Error(ex, "An exception occurred during user creation transaction.");
             return false;
         }
     }
 
     /// <summary>
-    /// Elimina un usuario por su ID.
+    /// Deletes a user by their ID.
+    /// Also removes all associated data: carts, cart items, verification codes, claims, logins, tokens, and roles.
     /// </summary>
-    /// <param name="userId">ID del usuario a eliminar.</param>
-    /// <returns>True si se eliminó correctamente, false si no.</returns>
+    /// <param name="userId">ID of the user to delete.</param>
+    /// <returns>True if deleted successfully, false otherwise.</returns>
     public async Task<bool> DeleteAsync(int userId)
     {
         var user = await _userManager.FindByIdAsync(userId.ToString());
@@ -168,12 +171,13 @@ public class UserRepository : IUserRepository
     }
 
     /// <summary>
-    /// Elimina usuarios no confirmados y sus códigos de verificación asociados.
+    /// Deletes unconfirmed users and their associated verification codes.
+    /// Only deletes users who registered more than the configured threshold days ago.
     /// </summary>
-    /// <returns>Cantidad de usuarios eliminados.</returns>
+    /// <returns>Number of users deleted.</returns>
     public async Task<int> DeleteUnconfirmedAsync()
     {
-        Log.Information("Iniciando eliminación de usuarios no confirmados");
+        Log.Information("Starting deletion of unconfirmed users");
 
         var cutoffDate = DateTime.UtcNow.AddDays(-_daysOfDeleteUnconfirmedUsers);
 
@@ -184,7 +188,7 @@ public class UserRepository : IUserRepository
 
         if (!unconfirmedUsers.Any())
         {
-            Log.Information("No se encontraron usuarios no confirmados para eliminar");
+            Log.Information("No unconfirmed users found to delete");
             return 0;
         }
 
@@ -199,56 +203,56 @@ public class UserRepository : IUserRepository
         _context.Users.RemoveRange(unconfirmedUsers);
         await _context.SaveChangesAsync();
 
-        Log.Information($"Eliminados {unconfirmedUsers.Count} usuarios no confirmados");
+        Log.Information($"Deleted {unconfirmedUsers.Count} unconfirmed users");
         return unconfirmedUsers.Count;
     }
 
     /// <summary>
-    /// Verifica si un usuario existe por su correo electrónico.
+    /// Checks if a user exists by their email address.
     /// </summary>
-    /// <param name="email">Correo electrónico a buscar.</param>
-    /// <returns>True si existe, false si no.</returns>
+    /// <param name="email">Email address to search for.</param>
+    /// <returns>True if exists, false otherwise.</returns>
     public async Task<bool> ExistsByEmailAsync(string email)
     {
         return await _context.Users.AnyAsync(u => u.Email == email);
     }
 
     /// <summary>
-    /// Verifica si un usuario existe por su RUT.
+    /// Checks if a user exists by their RUT (Chilean national ID).
     /// </summary>
-    /// <param name="rut">RUT a buscar.</param>
-    /// <returns>True si existe, false si no.</returns>
+    /// <param name="rut">RUT to search for.</param>
+    /// <returns>True if exists, false otherwise.</returns>
     public async Task<bool> ExistsByRutAsync(string rut)
     {
         return await _context.Users.AnyAsync(u => u.Rut == rut);
     }
 
     /// <summary>
-    /// Obtiene un usuario por su correo electrónico.
+    /// Retrieves a user by their email address.
     /// </summary>
-    /// <param name="email">Correo electrónico del usuario.</param>
-    /// <returns>Usuario encontrado o null si no existe.</returns>
+    /// <param name="email">User's email address.</param>
+    /// <returns>User found or null if doesn't exist.</returns>
     public async Task<User?> GetByEmailAsync(string email)
     {
         return await _userManager.FindByEmailAsync(email);
     }
 
     /// <summary>
-    /// Obtiene un usuario por su ID.
+    /// Retrieves a user by their ID.
     /// </summary>
-    /// <param name="id">ID del usuario.</param>
-    /// <returns>Usuario encontrado o null si no existe.</returns>
+    /// <param name="id">User ID.</param>
+    /// <returns>User found or null if doesn't exist.</returns>
     public async Task<User?> GetByIdAsync(int id)
     {
         return await _userManager.FindByIdAsync(id.ToString());
     }
 
     /// <summary>
-    /// Obtiene un usuario por su RUT.
+    /// Retrieves a user by their RUT (Chilean national ID).
     /// </summary>
-    /// <param name="rut">RUT del usuario.</param>
-    /// <param name="trackChanges">Indica si se debe rastrear cambios.</param>
-    /// <returns>Usuario encontrado o null si no existe.</returns>
+    /// <param name="rut">User's RUT.</param>
+    /// <param name="trackChanges">Indicates whether to track changes for updates.</param>
+    /// <returns>User found or null if doesn't exist.</returns>
     public async Task<User?> GetByRutAsync(string rut, bool trackChanges = false)
     {
         if (trackChanges)
@@ -260,25 +264,30 @@ public class UserRepository : IUserRepository
     }
 
     /// <summary>
-    /// Obtiene el rol del usuario.
+    /// Retrieves the user's role.
+    /// Returns the first role if the user has multiple roles.
     /// </summary>
-    /// <param name="user">Usuario a consultar.</param>
-    /// <returns>Nombre del rol del usuario.</returns>
+    /// <param name="user">User to query.</param>
+    /// <returns>User's role name.</returns>
     public async Task<string> GetUserRoleAsync(User user)
     {
         var roles = await _userManager.GetRolesAsync(user);
         return roles.FirstOrDefault()!;
     }
 
+    /// <summary>
+    /// Retrieves all unconfirmed users.
+    /// </summary>
+    /// <returns>List of users with unconfirmed emails.</returns>
     public async Task<List<User>> GetUnconfirmedUsersAsync()
     {
         return await _context.Users.Where(u => !u.EmailConfirmed).ToListAsync();
     }
 
     /// <summary>
-    /// Obtiene todos los usuarios registrados.
+    /// Retrieves all registered users.
     /// </summary>
-    /// <returns>Lista de usuarios existentes.</returns>
+    /// <returns>List of all existing users.</returns>
     public async Task<List<User>> GetAllAsync()
     {
         return await _context.Users.ToListAsync();

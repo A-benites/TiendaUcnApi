@@ -1,37 +1,37 @@
 namespace TiendaUcnApi.Src.Application.DTO.ProductDTO.CustomerDTO;
 
 /// <summary>
-/// DTO para mostrar información de producto al cliente.
+/// DTO for displaying product information to customers.
 /// </summary>
 public class ProductForCustomerDTO
 {
     /// <summary>
-    /// Identificador único del producto.
+    /// Unique product identifier.
     /// </summary>
     public required int Id { get; set; }
 
     /// <summary>
-    /// Título del producto.
+    /// Product title.
     /// </summary>
     public required string Title { get; set; }
 
     /// <summary>
-    /// Descripción del producto.
+    /// Product description.
     /// </summary>
     public required string Description { get; set; }
 
     /// <summary>
-    /// URL de la imagen principal del producto.
+    /// Main product image URL.
     /// </summary>
     public required string MainImageURL { get; set; }
 
     /// <summary>
-    /// Precio del producto.
+    /// Product price.
     /// </summary>
     public required string Price { get; set; }
 
     /// <summary>
-    /// Porcentaje de descuento aplicado.
+    /// Discount percentage applied.
     /// </summary>
     public required int Discount { get; set; }
 }

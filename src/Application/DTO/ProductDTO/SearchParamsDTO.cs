@@ -4,43 +4,43 @@ using TiendaUcnApi.src.Domain.Models;
 namespace TiendaUcnApi.src.Application.DTO.ProductDTO;
 
 /// <summary>
-/// Opciones de ordenamiento para productos.
+/// Sorting options for products.
 /// </summary>
 public enum ProductSortOption
 {
     /// <summary>
-    /// Ordenar por fecha de creación (más recientes primero).
+    /// Sort by creation date (newest first).
     /// </summary>
     Newest,
 
     /// <summary>
-    /// Ordenar por precio ascendente.
+    /// Sort by price in ascending order.
     /// </summary>
     PriceAsc,
 
     /// <summary>
-    /// Ordenar por precio descendente.
+    /// Sort by price in descending order.
     /// </summary>
     PriceDesc,
 
     /// <summary>
-    /// Ordenar por nombre alfabéticamente (A-Z).
+    /// Sort by name alphabetically (A-Z).
     /// </summary>
     NameAsc,
 
     /// <summary>
-    /// Ordenar por nombre alfabéticamente (Z-A).
+    /// Sort by name alphabetically (Z-A).
     /// </summary>
     NameDesc,
 }
 
 /// <summary>
-/// DTO para los parámetros de búsqueda, filtros, ordenamiento y paginación de productos.
+/// Data Transfer Object for product search parameters, filters, sorting, and pagination.
 /// </summary>
 public class SearchParamsDTO
 {
     /// <summary>
-    /// Número de página a consultar.
+    /// Page number to retrieve.
     /// </summary>
     [Required(ErrorMessage = "El número de página es obligatorio.")]
     [Range(
@@ -51,7 +51,7 @@ public class SearchParamsDTO
     public int PageNumber { get; set; }
 
     /// <summary>
-    /// Cantidad de productos por página.
+    /// Number of products per page.
     /// </summary>
     [Range(
         1,
@@ -61,46 +61,46 @@ public class SearchParamsDTO
     public int? PageSize { get; set; }
 
     /// <summary>
-    /// Término de búsqueda para filtrar productos.
+    /// Search term to filter products by title or description.
     /// </summary>
     [MinLength(2, ErrorMessage = "El término de búsqueda debe tener al menos 2 caracteres.")]
     [MaxLength(40, ErrorMessage = "El término de búsqueda no puede exceder los 40 caracteres.")]
     public string? SearchTerm { get; set; }
 
     /// <summary>
-    /// ID de categoría para filtrar productos.
+    /// Category ID to filter products.
     /// Implements R68 rubric requirement: category filter.
     /// </summary>
     public int? CategoryId { get; set; }
 
     /// <summary>
-    /// ID de marca para filtrar productos.
+    /// Brand ID to filter products.
     /// Implements R68 rubric requirement: brand filter.
     /// </summary>
     public int? BrandId { get; set; }
 
     /// <summary>
-    /// Precio mínimo para filtrar productos.
+    /// Minimum price to filter products.
     /// Implements R68 rubric requirement: price range filter.
     /// </summary>
     [Range(0, double.MaxValue, ErrorMessage = "El precio mínimo debe ser un valor positivo.")]
     public decimal? MinPrice { get; set; }
 
     /// <summary>
-    /// Precio máximo para filtrar productos.
+    /// Maximum price to filter products.
     /// Implements R68 rubric requirement: price range filter.
     /// </summary>
     [Range(0, double.MaxValue, ErrorMessage = "El precio máximo debe ser un valor positivo.")]
     public decimal? MaxPrice { get; set; }
 
     /// <summary>
-    /// Estado del producto para filtrar (New, Used).
+    /// Product status to filter (New, Used).
     /// Implements R68 rubric requirement: status filter.
     /// </summary>
     public Status? Status { get; set; }
 
     /// <summary>
-    /// Opción de ordenamiento para los productos.
+    /// Sorting option for products.
     /// Implements R70 rubric requirement: multiple sort options.
     /// </summary>
     public ProductSortOption? SortBy { get; set; }
