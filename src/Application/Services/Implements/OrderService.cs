@@ -4,6 +4,7 @@ using TiendaUcnApi.src.Application.DTO;
 using TiendaUcnApi.src.Application.DTO.OrderDTO;
 using TiendaUcnApi.src.Application.Services.Interfaces;
 using TiendaUcnApi.src.Domain.Models;
+using TiendaUcnApi.src.Infrastructure.Data;
 using TiendaUcnApi.src.Infrastructure.Repositories.Interfaces;
 
 namespace TiendaUcnApi.src.Application.Services.Implements;
@@ -13,16 +14,19 @@ public class OrderService : IOrderService
     private readonly IOrderRepository _orderRepository;
     private readonly ICartRepository _cartRepository;
     private readonly IProductRepository _productRepository;
+    private readonly AppDbContext _dbContext;
 
     public OrderService(
         IOrderRepository orderRepository,
         ICartRepository cartRepository,
-        IProductRepository productRepository
+        IProductRepository productRepository,
+        AppDbContext dbContext
     )
     {
         _orderRepository = orderRepository;
         _cartRepository = cartRepository;
         _productRepository = productRepository;
+        _dbContext = dbContext;
     }
 
     public async Task<GenericResponse<OrderDTO>> CreateAsync(string buyerId, int userId)
@@ -85,28 +89,66 @@ public class OrderService : IOrderService
                 .ToList(),
         };
 
-        var createdOrder = await _orderRepository.CreateAsync(order);
-        Log.Information(
-            "Orden creada exitosamente. OrderId: {OrderId}, Code: {Code}",
-            createdOrder.Id,
-            createdOrder.Code
-        );
-
-        // Actualizar stock de productos
-        foreach (var item in cart.CartItems)
+        // BEGIN TRANSACTION - Implements R57 rubric requirement
+        // Ensures atomicity: all operations succeed or all fail
+        using var transaction = await _dbContext.Database.BeginTransactionAsync();
+        try
         {
-            var currentStock = await _productRepository.GetRealStockAsync(item.ProductId);
-            await _productRepository.UpdateStockAsync(item.ProductId, currentStock - item.Quantity);
+            // 1. Create the order
+            var createdOrder = await _orderRepository.CreateAsync(order);
+            Log.Information(
+                "Orden creada exitosamente. OrderId: {OrderId}, Code: {Code}",
+                createdOrder.Id,
+                createdOrder.Code
+            );
+
+            // 2. Update stock for all products
+            foreach (var item in cart.CartItems)
+            {
+                var currentStock = await _productRepository.GetRealStockAsync(item.ProductId);
+                await _productRepository.UpdateStockAsync(
+                    item.ProductId,
+                    currentStock - item.Quantity
+                );
+                Log.Information(
+                    "Stock actualizado para producto {ProductId}. Stock anterior: {OldStock}, Nuevo stock: {NewStock}",
+                    item.ProductId,
+                    currentStock,
+                    currentStock - item.Quantity
+                );
+            }
+
+            // 3. Clear the cart
+            await _cartRepository.DeleteAsync(cart);
+            Log.Information(
+                "Carrito eliminado después de crear la orden. CartId: {CartId}",
+                cart.Id
+            );
+
+            // COMMIT TRANSACTION - All operations succeeded
+            await transaction.CommitAsync();
+            Log.Information(
+                "Transacción completada exitosamente para orden {OrderCode}",
+                createdOrder.Code
+            );
+
+            return new GenericResponse<OrderDTO>(
+                "Orden creada exitosamente",
+                createdOrder.Adapt<OrderDTO>()
+            );
         }
-
-        // Limpiar el carrito
-        await _cartRepository.DeleteAsync(cart);
-        Log.Information("Carrito eliminado después de crear la orden. CartId: {CartId}", cart.Id);
-
-        return new GenericResponse<OrderDTO>(
-            "Orden creada exitosamente",
-            createdOrder.Adapt<OrderDTO>()
-        );
+        catch (Exception ex)
+        {
+            // ROLLBACK TRANSACTION - An error occurred
+            await transaction.RollbackAsync();
+            Log.Error(
+                ex,
+                "Error al crear orden. Transacción revertida. BuyerId: {BuyerId}, UserId: {UserId}",
+                buyerId,
+                userId
+            );
+            throw;
+        }
     }
 
     public async Task<GenericResponse<List<OrderDTO>>> GetAllByUser(int userId)
