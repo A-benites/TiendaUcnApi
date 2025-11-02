@@ -1,7 +1,7 @@
-using TiendaUcnApi.src.Application.Services.Interfaces;
-using TiendaUcnApi.src.Infrastructure.Repositories.Interfaces;
-using TiendaUcnApi.src.Domain.Models;
 using Serilog;
+using TiendaUcnApi.src.Application.Services.Interfaces;
+using TiendaUcnApi.src.Domain.Models;
+using TiendaUcnApi.src.Infrastructure.Repositories.Interfaces;
 
 namespace TiendaUcnApi.src.Application.Services.Implements
 {
@@ -33,15 +33,8 @@ namespace TiendaUcnApi.src.Application.Services.Implements
         {
             try
             {
-                var unverifiedUsers = await _userRepository.GetUnconfirmedUsersAsync();
-
-                foreach (var user in unverifiedUsers)
-                {
-                    await _userRepository.DeleteAsync(user.Id);
-                    Log.Information("Deleted unverified user: {Email}", user.Email);
-                }
-
-                Log.Information("Job completed: deleted {Count} unverified users", unverifiedUsers.Count);
+                var deletedCount = await _userRepository.DeleteUnconfirmedAsync();
+                Log.Information("Job completed: deleted {Count} unverified users", deletedCount);
             }
             catch (Exception ex)
             {
@@ -97,7 +90,10 @@ namespace TiendaUcnApi.src.Application.Services.Implements
                     Log.Information("Sent abandoned cart reminder to: {Email}", cart.User.Email);
                 }
 
-                Log.Information("Job completed: reminders sent for {Count} abandoned carts", abandonedCarts.Count);
+                Log.Information(
+                    "Job completed: reminders sent for {Count} abandoned carts",
+                    abandonedCarts.Count
+                );
             }
             catch (Exception ex)
             {

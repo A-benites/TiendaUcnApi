@@ -28,25 +28,30 @@ try
     var builder = WebApplication.CreateBuilder(args);
 
     #region Logging Configuration
-    builder.Host.UseSerilog((context, services, configuration) =>
-        configuration.ReadFrom.Configuration(context.Configuration)
-                     .ReadFrom.Services(services)
-                     .Enrich.FromLogContext());
+    builder.Host.UseSerilog(
+        (context, services, configuration) =>
+            configuration
+                .ReadFrom.Configuration(context.Configuration)
+                .ReadFrom.Services(services)
+                .Enrich.FromLogContext()
+    );
     #endregion
 
     #region Database Configuration
     Log.Information("Configuring SQLite database");
     builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+        options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"))
+    );
     #endregion
 
     #region Hangfire Configuration
     Log.Information("Configuring Hangfire with SQLite storage");
 
     builder.Services.AddHangfire(config =>
-        config.UseSimpleAssemblyNameTypeSerializer()
-              .UseRecommendedSerializerSettings()
-              .UseSQLiteStorage(builder.Configuration.GetConnectionString("DefaultConnection"))
+        config
+            .UseSimpleAssemblyNameTypeSerializer()
+            .UseRecommendedSerializerSettings()
+            .UseSQLiteStorage(builder.Configuration.GetConnectionString("DefaultConnection"))
     );
 
     builder.Services.AddHangfireServer();
@@ -54,66 +59,82 @@ try
 
     #region Identity Configuration
     Log.Information("Configuring Identity");
-    builder.Services.AddIdentityCore<User>(options =>
-    {
-        options.Password.RequireDigit = true;
-        options.Password.RequiredLength = 8;
-        options.Password.RequireNonAlphanumeric = false;
-        options.Password.RequireUppercase = false;
-        options.Password.RequireLowercase = false;
-        options.User.RequireUniqueEmail = true;
-    })
-    .AddRoles<Role>()
-    .AddEntityFrameworkStores<AppDbContext>()
-    .AddDefaultTokenProviders();
+    builder
+        .Services.AddIdentityCore<User>(options =>
+        {
+            options.Password.RequireDigit = true;
+            options.Password.RequiredLength = 8;
+            options.Password.RequireNonAlphanumeric = false;
+            options.Password.RequireUppercase = false;
+            options.Password.RequireLowercase = false;
+            options.User.RequireUniqueEmail = true;
+        })
+        .AddRoles<Role>()
+        .AddEntityFrameworkStores<AppDbContext>()
+        .AddDefaultTokenProviders();
     #endregion
 
     #region Authentication Configuration
     Log.Information("Configuring JWT authentication");
-    builder.Services.AddAuthentication(options =>
-    {
-        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    })
-    .AddJwtBearer(options =>
-    {
-        string jwtSecret = builder.Configuration["JWTSecret"]
-            ?? throw new InvalidOperationException("JWT secret key not configured.");
-
-        options.MapInboundClaims = false;
-        options.TokenValidationParameters = new TokenValidationParameters
+    builder
+        .Services.AddAuthentication(options =>
         {
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
-            ValidateIssuer = false,
-            ValidateAudience = false,
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero,
-        };
-
-        options.Events = new JwtBearerEvents
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(options =>
         {
-            OnTokenValidated = async context =>
+            string jwtSecret =
+                builder.Configuration["JWTSecret"]
+                ?? throw new InvalidOperationException("JWT secret key not configured.");
+
+            options.MapInboundClaims = false;
+            options.TokenValidationParameters = new TokenValidationParameters
             {
-                var userManager = context.HttpContext.RequestServices.GetRequiredService<UserManager<User>>();
-                var claimsPrincipal = context.Principal;
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+                ValidateIssuer = false,
+                ValidateAudience = false,
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero,
+            };
 
-                if (claimsPrincipal == null)
+            options.Events = new JwtBearerEvents
+            {
+                OnTokenValidated = async context =>
                 {
-                    context.Fail("Invalid token.");
-                    return;
-                }
+                    var userManager = context.HttpContext.RequestServices.GetRequiredService<
+                        UserManager<User>
+                    >();
+                    var claimsPrincipal = context.Principal;
 
-                var userId = claimsPrincipal.FindFirstValue(ClaimTypes.NameIdentifier);
-                var user = await userManager.FindByIdAsync(userId);
+                    if (claimsPrincipal == null)
+                    {
+                        context.Fail("Invalid token.");
+                        return;
+                    }
 
-                if (user == null || user.SecurityStamp != claimsPrincipal.FindFirstValue("AspNet.Identity.SecurityStamp"))
-                {
-                    context.Fail("Invalid token. Session expired due to security change.");
-                }
-            },
-        };
-    });
+                    var userId = claimsPrincipal.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                    if (string.IsNullOrEmpty(userId))
+                    {
+                        context.Fail("Invalid token. User ID not found.");
+                        return;
+                    }
+
+                    var user = await userManager.FindByIdAsync(userId);
+
+                    if (
+                        user == null
+                        || user.SecurityStamp
+                            != claimsPrincipal.FindFirstValue("AspNet.Identity.SecurityStamp")
+                    )
+                    {
+                        context.Fail("Invalid token. Session expired due to security change.");
+                    }
+                },
+            };
+        });
     #endregion
 
     #region Dependency Injection
@@ -149,32 +170,38 @@ try
     builder.Services.AddHttpClient<ResendClient>();
     builder.Services.Configure<ResendClientOptions>(o =>
     {
-        o.ApiToken = builder.Configuration["ResendAPIKey"]
+        o.ApiToken =
+            builder.Configuration["ResendAPIKey"]
             ?? throw new InvalidOperationException("Resend API key not configured.");
     });
     builder.Services.AddTransient<IResend, ResendClient>();
     #endregion
 
-    builder.Services.AddControllers().ConfigureApiBehaviorOptions(options =>
-    {
-        options.InvalidModelStateResponseFactory = context =>
+    builder
+        .Services.AddControllers()
+        .ConfigureApiBehaviorOptions(options =>
         {
-            var errors = context.ModelState
-                .Where(kvp => kvp.Value != null && kvp.Value.Errors.Any())
-                .ToDictionary(
-                    kvp => kvp.Key,
-                    kvp => kvp.Value!.Errors.Select(e => e.ErrorMessage ?? string.Empty).ToArray()
-                );
-
-            return new BadRequestObjectResult(new
+            options.InvalidModelStateResponseFactory = context =>
             {
-                status = 400,
-                message = "Validation errors",
-                errors,
-                timestamp = DateTime.UtcNow,
-            });
-        };
-    });
+                var errors = context
+                    .ModelState.Where(kvp => kvp.Value != null && kvp.Value.Errors.Any())
+                    .ToDictionary(
+                        kvp => kvp.Key,
+                        kvp =>
+                            kvp.Value!.Errors.Select(e => e.ErrorMessage ?? string.Empty).ToArray()
+                    );
+
+                return new BadRequestObjectResult(
+                    new
+                    {
+                        status = 400,
+                        message = "Validation errors",
+                        errors,
+                        timestamp = DateTime.UtcNow,
+                    }
+                );
+            };
+        });
 
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
@@ -214,10 +241,13 @@ try
     app.UseMiddleware<TiendaUcnApi.src.API.Middleware.BuyerIdMiddleware>();
 
     // Hangfire Dashboard (solo local)
-    app.UseHangfireDashboard("/hangfire", new DashboardOptions
-    {
-        Authorization = new[] { new Hangfire.Dashboard.LocalRequestsOnlyAuthorizationFilter() }
-    });
+    app.UseHangfireDashboard(
+        "/hangfire",
+        new DashboardOptions
+        {
+            Authorization = new[] { new Hangfire.Dashboard.LocalRequestsOnlyAuthorizationFilter() },
+        }
+    );
 
     app.UseHttpsRedirection();
     app.UseAuthentication();
@@ -227,17 +257,17 @@ try
     // Apply migrations and seed data
     await app.SeedDatabaseAsync();
 
-    // 🕒 Register recurring jobs (configuración temporal para pruebas)
+    // Register recurring jobs
     RecurringJob.AddOrUpdate<IBackgroundJobService>(
         "delete-unconfirmed-users",
         service => service.DeleteUnconfirmedUsersAsync(),
-        "*/2 * * * *" // cada 2 minutos
+        "0 2 * * *" // Daily at 2:00 AM
     );
 
     RecurringJob.AddOrUpdate<IBackgroundJobService>(
         "send-cart-reminders",
         service => service.SendAbandonedCartRemindersAsync(),
-        "*/3 * * * *" // cada 30 minutos
+        "0 12 * * *" // Daily at 12:00 PM (noon)
     );
 
     #endregion

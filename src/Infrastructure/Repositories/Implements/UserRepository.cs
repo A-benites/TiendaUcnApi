@@ -124,11 +124,11 @@ public class UserRepository : IUserRepository
     public async Task<bool> DeleteAsync(int userId)
     {
         var user = await _userManager.FindByIdAsync(userId.ToString());
-        if (user == null) return false;
+        if (user == null)
+            return false;
 
-        
-        var carts = await _context.Carts
-            .Include(c => c.CartItems)
+        var carts = await _context
+            .Carts.Include(c => c.CartItems)
             .Where(c => c.UserId == userId)
             .ToListAsync();
 
@@ -140,37 +140,32 @@ public class UserRepository : IUserRepository
 
         await _context.SaveChangesAsync();
 
-        
         await _verificationCodeRepository.DeleteByUserIdAsync(userId);
 
-        
         var claims = await _userManager.GetClaimsAsync(user);
         if (claims.Any())
             await _userManager.RemoveClaimsAsync(user, claims);
 
-        
         var logins = await _userManager.GetLoginsAsync(user);
         foreach (var login in logins)
             await _userManager.RemoveLoginAsync(user, login.LoginProvider, login.ProviderKey);
 
-        
-        var tokens = await _context.Set<IdentityUserToken<int>>()
+        var tokens = await _context
+            .Set<IdentityUserToken<int>>()
             .Where(t => t.UserId == userId)
             .ToListAsync();
         _context.RemoveRange(tokens);
 
-        
         var roles = await _userManager.GetRolesAsync(user);
         if (roles.Any())
             await _userManager.RemoveFromRolesAsync(user, roles);
 
         await _context.SaveChangesAsync();
 
-        
         var result = await _userManager.DeleteAsync(user);
 
         return result.Succeeded;
-}
+    }
 
     /// <summary>
     /// Elimina usuarios no confirmados y sus códigos de verificación asociados.
@@ -180,7 +175,7 @@ public class UserRepository : IUserRepository
     {
         Log.Information("Iniciando eliminación de usuarios no confirmados");
 
-        var cutoffDate = DateTime.UtcNow.AddDays(_daysOfDeleteUnconfirmedUsers);
+        var cutoffDate = DateTime.UtcNow.AddDays(-_daysOfDeleteUnconfirmedUsers);
 
         var unconfirmedUsers = await _context
             .Users.Where(u => !u.EmailConfirmed && u.RegisteredAt < cutoffDate)
@@ -192,7 +187,7 @@ public class UserRepository : IUserRepository
             Log.Information("No se encontraron usuarios no confirmados para eliminar");
             return 0;
         }
-        
+
         foreach (var user in unconfirmedUsers)
         {
             if (user.VerificationCodes.Any())
@@ -277,12 +272,10 @@ public class UserRepository : IUserRepository
 
     public async Task<List<User>> GetUnconfirmedUsersAsync()
     {
-        return await _context.Users
-            .Where(u => !u.EmailConfirmed)
-            .ToListAsync();
+        return await _context.Users.Where(u => !u.EmailConfirmed).ToListAsync();
     }
 
-        /// <summary>
+    /// <summary>
     /// Obtiene todos los usuarios registrados.
     /// </summary>
     /// <returns>Lista de usuarios existentes.</returns>
@@ -290,6 +283,4 @@ public class UserRepository : IUserRepository
     {
         return await _context.Users.ToListAsync();
     }
-
-
 }
