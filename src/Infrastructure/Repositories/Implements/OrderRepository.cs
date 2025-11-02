@@ -1,4 +1,3 @@
-
 using Microsoft.EntityFrameworkCore;
 using TiendaUcnApi.src.Application.DTO.OrderDTO;
 using TiendaUcnApi.src.Domain.Models;
@@ -25,18 +24,20 @@ public class OrderRepository : IOrderRepository
 
     public async Task<IEnumerable<Order>> GetAllByUser(int userId)
     {
-        return await _context.Orders
-            .Include(o => o.OrderItems)
+        return await _context
+            .Orders.Include(o => o.OrderItems)
             .Where(o => o.UserId == userId)
             .OrderByDescending(o => o.CreatedAt)
             .ToListAsync();
     }
 
-    public async Task<(IEnumerable<Order> Orders, int TotalCount)> GetAllByUserPaginated(int userId, int page, int pageSize)
+    public async Task<(IEnumerable<Order> Orders, int TotalCount)> GetAllByUserPaginated(
+        int userId,
+        int page,
+        int pageSize
+    )
     {
-        var query = _context.Orders
-            .Include(o => o.OrderItems)
-            .Where(o => o.UserId == userId);
+        var query = _context.Orders.Include(o => o.OrderItems).Where(o => o.UserId == userId);
 
         // Get total count
         var totalCount = await query.CountAsync();
@@ -53,18 +54,17 @@ public class OrderRepository : IOrderRepository
 
     public async Task<Order?> GetByIdAsync(int id)
     {
-        return await _context.Orders
-            .Include(o => o.OrderItems)
+        return await _context
+            .Orders.Include(o => o.OrderItems)
             .Include(o => o.User)
             .FirstOrDefaultAsync(o => o.Id == id);
     }
 
-    public async Task<(IEnumerable<Order> Orders, int TotalCount)> GetAllAsync(OrderFilterDTO filter)
+    public async Task<(IEnumerable<Order> Orders, int TotalCount)> GetAllAsync(
+        OrderFilterDTO filter
+    )
     {
-        var query = _context.Orders
-            .Include(o => o.OrderItems)
-            .Include(o => o.User)
-            .AsQueryable();
+        var query = _context.Orders.Include(o => o.OrderItems).Include(o => o.User).AsQueryable();
 
         // Apply filters
         if (filter.Status.HasValue)
@@ -95,9 +95,17 @@ public class OrderRepository : IOrderRepository
         // Get total count
         var totalCount = await query.CountAsync();
 
-        // Apply pagination and ordering
+        // R116: Apply sorting based on SortBy parameter
+        query = filter.SortBy switch
+        {
+            OrderSortOption.CreatedAtAsc => query.OrderBy(o => o.CreatedAt),
+            OrderSortOption.TotalDesc => query.OrderByDescending(o => o.Total),
+            OrderSortOption.TotalAsc => query.OrderBy(o => o.Total),
+            OrderSortOption.CreatedAtDesc or _ => query.OrderByDescending(o => o.CreatedAt),
+        };
+
+        // Apply pagination
         var orders = await query
-            .OrderByDescending(o => o.CreatedAt)
             .Skip((filter.Page - 1) * filter.PageSize)
             .Take(filter.PageSize)
             .ToListAsync();
