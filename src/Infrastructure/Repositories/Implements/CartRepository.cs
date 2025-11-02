@@ -1,5 +1,6 @@
 using System.Globalization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using TiendaUcnApi.src.Domain.Models;
 using TiendaUcnApi.src.Infrastructure.Data;
 using TiendaUcnApi.src.Infrastructure.Repositories.Interfaces;
@@ -9,10 +10,12 @@ namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements
     public class CartRepository : ICartRepository
     {
         private readonly AppDbContext _context;
+        private readonly IConfiguration _configuration;
 
-        public CartRepository(AppDbContext dataContext)
+        public CartRepository(AppDbContext dataContext, IConfiguration configuration)
         {
             _context = dataContext;
+            _configuration = configuration;
         }
 
         public async Task<Cart?> FindAsync(string buyerId, int? userId)
@@ -153,10 +156,12 @@ namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements
                 .ToListAsync();
         }
 
-        // ✅ Carritos abandonados (no actualizados en 3 días y con items)
+        // ✅ Carritos abandonados (configurable en appsettings.json y filtra usuarios semilla)
         public async Task<List<Cart>> GetAbandonedCartsAsync()
         {
-            DateTime threshold = DateTime.UtcNow.AddDays(-3);
+            // Leer días de abandono desde appsettings.json (default: 3)
+            var abandonedDays = _configuration.GetValue<int>("Cart:AbandonedCartDays", 3);
+            DateTime threshold = DateTime.UtcNow.AddDays(-abandonedDays);
 
             return await _context.Carts
                 .Include(c => c.User)
@@ -167,7 +172,8 @@ namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements
                     c.UpdatedAt < threshold &&
                     c.CartItems.Any() &&
                     c.User != null &&
-                    c.User.Email != null
+                    c.User.Email != null &&
+                    c.User.IsSeed == false // ✅ Filtrar usuarios semilla
                 )
                 .ToListAsync();
         }
