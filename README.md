@@ -397,33 +397,43 @@ Reemplaza con la clave segura que generaste (mínimo 32 caracteres):
 - Única para tu aplicación
 - **NUNCA compartida ni subida a Git**
 
-#### D. Usuario Administrador (OBLIGATORIO)
+#### D. Usuario Administrador (RECOMENDADO: Dejar por defecto)
 
-Personaliza los datos del usuario administrador que se creará automáticamente:
+El proyecto viene pre-configurado con un usuario administrador que funciona con la colección de Postman:
 
 ```json
 "User": {
   "AdminUser": {
-    "Email": "admin@miempresa.com",           // ← Tu email
-    "Password": "MiContraseña123!",           // ← Tu contraseña (mín. 8 chars, 1 número)
-    "FirstName": "Juan",                       // ← Tu nombre
-    "LastName": "Pérez",                       // ← Tu apellido
-    "Gender": "Masculino",                     // ← Masculino/Femenino/Otro
-    "Rut": "12345678-9",                       // ← RUT válido chileno
-    "BirthDate": "15-03-1990",                 // ← Formato DD-MM-YYYY (+18 años)
-    "PhoneNumber": "+56912345678"              // ← Con código de país
+    "Email": "admin@tiendaucn.cl",             // ← Email del administrador
+    "Password": "Admin123!",                    // ← Contraseña del administrador
+    "FirstName": "Administrador",               // ← Nombre
+    "LastName": "Sistema",                      // ← Apellido
+    "Gender": "Otro",                           // ← Género
+    "Rut": "12345678-9",                        // ← RUT válido chileno
+    "BirthDate": "01-01-1990",                  // ← Formato DD-MM-YYYY
+    "PhoneNumber": "+56912345678"               // ← Con código de país
   },
-  "RandomUserPassword": "ContraseñaParaUsuariosGenerados123!"  // ← Puedes dejarlo así
+  "RandomUserPassword": "ContraseñaParaUsuariosGenerados123!"
 }
 ```
 
-**Validaciones del Usuario Admin**:
+> 💡 **IMPORTANTE**: Estas credenciales están sincronizadas con la colección de Postman incluida en el proyecto. Si las cambias, también deberás actualizar las variables en Postman.
+
+**Si decides personalizar el usuario administrador**:
 - ✅ **Email**: Válido y único
 - ✅ **Password**: Mínimo 8 caracteres, al menos 1 número
 - ✅ **RUT**: Válido chileno (con dígito verificador correcto)
 - ✅ **BirthDate**: Formato DD-MM-YYYY, mínimo 18 años
 - ✅ **PhoneNumber**: Con código de país (+56 para Chile)
 - ✅ **Gender**: Solo "Masculino", "Femenino", o "Otro"
+- ⚠️ **Recuerda actualizar las variables en Postman**: `testAdminEmail` y `testAdminPassword`
+
+> 📝 **Cómo actualizar variables en Postman**:
+> 1. Abre Postman e importa la colección `TiendaUCN API.postman_collection.json`
+> 2. Clic derecho en la colección → **Edit**
+> 3. Ve a la pestaña **Variables**
+> 4. Actualiza `testAdminEmail` y `testAdminPassword` con tus nuevas credenciales
+> 5. Clic en **Save**
 
 #### E. Configuraciones Opcionales (Puedes dejarlas por defecto)
 
@@ -479,8 +489,8 @@ Antes de continuar, verifica que configuraste correctamente:
 - [ ] **JWTSecret** (mínimo 32 caracteres, con símbolos)
 
 **Usuario Administrador**:
-- [ ] **Email** válido (formato: ejemplo@dominio.com)
-- [ ] **Password** válida (mínimo 8 caracteres, 1 número)
+- [ ] **Email** válido (formato: ejemplo@dominio.com) - Por defecto: admin@tiendaucn.cl
+- [ ] **Password** válida (mínimo 8 caracteres, 1 número) - Por defecto: Admin123!
 - [ ] **RUT** válido chileno (formato: 12345678-9)
 - [ ] **BirthDate** correcta (formato DD-MM-YYYY, +18 años)
 - [ ] **PhoneNumber** con código de país (+56912345678)
@@ -546,11 +556,11 @@ info: Microsoft.Hosting.Lifetime[0]
 
 1. En Swagger, busca **`POST /api/Auth/login`**
 2. Clic en **"Try it out"**
-3. Ingresa tus credenciales de administrador:
+3. Ingresa las credenciales del administrador:
    ```json
    {
-     "email": "admin@miempresa.com",
-     "password": "MiContraseña123!"
+     "email": "admin@tiendaucn.cl",
+     "password": "Admin123!"
    }
    ```
 4. Clic en **"Execute"**
@@ -574,6 +584,19 @@ Ahora puedes probar todos los endpoints protegidos.
    - `delete-unconfirmed-users`
    - `send-cart-reminders`
 
+#### E. 📮 Importar Colección de Postman (Opcional pero Recomendado)
+
+Para probar la API de manera completa, importa la colección incluida:
+
+1. Abre **Postman**
+2. Clic en **"Import"**
+3. Selecciona: `TiendaUCN API.postman_collection.json`
+4. Verifica que las variables de colección coincidan con tus credenciales:
+   - `testAdminEmail`: `admin@tiendaucn.cl`
+   - `testAdminPassword`: `Admin123!`
+
+> 💡 **Tip**: La colección incluye flujos completos de prueba (autenticación, compras, administración) con tests automatizados. Ver sección [Probar con Postman](#probar-con-postman) para más detalles.
+
 ---
 
 ## 📚 Uso de la API
@@ -596,10 +619,11 @@ Authorization: Bearer <tu_token>
 ### Usuarios de Prueba
 
 #### Usuario Administrador
-- Email: El que configuraste en `appsettings.json`
-- Password: El que configuraste
+- Email: `admin@tiendaucn.cl`
+- Password: `Admin123!`
 - Rol: Administrador
 - Permisos: Acceso completo
+- ℹ️ Estas credenciales están sincronizadas con la colección de Postman
 
 #### Usuario Cliente
 - Email: `cliente@test.com`
@@ -787,9 +811,62 @@ Este endpoint crea un pedido con todos los productos del carrito actual.
 
 El proyecto incluye una colección de Postman: `TiendaUCN API.postman_collection.json`
 
-1. Importa el archivo en Postman
-2. Los requests están organizados por carpetas
-3. Configura las variables de entorno si es necesario
+#### Importar la Colección
+
+1. Abre Postman
+2. Clic en **"Import"** (esquina superior izquierda)
+3. Selecciona el archivo `TiendaUCN API.postman_collection.json`
+4. Clic en **"Import"**
+
+#### ⚠️ IMPORTANTE: Verificar Variables de Colección
+
+La colección incluye variables pre-configuradas que deben coincidir con tu `appsettings.json`:
+
+**Para verificar/editar las variables**:
+1. En Postman, selecciona la colección "TiendaUCN API"
+2. Clic en los **tres puntos (...)** → **"Edit"**
+3. Ve a la pestaña **"Variables"**
+
+**Variables principales** (ya configuradas por defecto):
+
+| Variable | Valor por Defecto | Descripción |
+|----------|------------------|-------------|
+| `baseUrl` | `http://localhost:5000/api` | URL base de la API |
+| `testAdminEmail` | `admin@tiendaucn.cl` | Email del administrador |
+| `testAdminPassword` | `Admin123!` | Contraseña del administrador |
+| `verifiedUserEmail` | `cliente@test.com` | Usuario cliente de prueba |
+| `verifiedUserPassword` | `Cliente123!` | Contraseña del cliente |
+| `testUserEmail` | `postmanflowuser@test.com` | Email para pruebas de registro |
+| `testUserPassword` | `Postman123!` | Contraseña para pruebas |
+
+> 🔑 **Credenciales Sincronizadas**: Las variables `testAdminEmail` y `testAdminPassword` están sincronizadas con el usuario administrador de `appsettings.json`. Si cambias las credenciales del admin en la configuración, **debes actualizar estas variables en Postman**.
+
+#### Uso de los Flujos
+
+Los requests están organizados en carpetas por funcionalidad:
+
+1. **🔐 1. FLUJO: Autenticación Completa** - Registro, verificación y login
+2. **🛒 2. FLUJO: Compra Completa (Cliente)** - Desde productos hasta crear orden
+3. **🔧 3. FLUJO: Administración de Productos** - CRUD completo de productos
+4. **📁 Auth** - Endpoints de autenticación individuales
+5. **📁 Profile** - Gestión de perfil de usuario
+6. **📁 Products** - Endpoints públicos de productos
+7. **📁 Cart** - Gestión de carrito
+8. **📁 Orders** - Gestión de pedidos
+9. **📁 Admin** - Endpoints administrativos
+
+#### Variables Dinámicas (Capturadas Automáticamente)
+
+Durante la ejecución de los flujos, estas variables se capturan automáticamente:
+
+- `authToken` - Token JWT del usuario autenticado
+- `adminToken` - Token JWT del administrador
+- `currentUserId` - ID del usuario actual
+- `productId` - ID del producto creado/consultado
+- `categoryId` - ID de categoría
+- `brandId` - ID de marca
+
+**No necesitas configurarlas manualmente**, se actualizan automáticamente con los scripts de prueba.
 
 ### Probar con archivo .http
 
