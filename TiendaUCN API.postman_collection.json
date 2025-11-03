@@ -1,0 +1,4172 @@
+{
+	"info": {
+		"_postman_id": "a3fda594-751f-440a-8a45-8680cfbef8bb",
+		"name": "TiendaUCN API Copy",
+		"description": "Colección completa para probar la API de TiendaUCN. Incluye flujos de autenticación, compra y administración, con validación automática y captura de variables directamente en la colección para fácil portabilidad.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "45708606",
+		"_collection_link": "https://amir-2298467.postman.co/workspace/Amir's-Workspace~2e296f07-6611-4ed2-8877-638d7fa23250/collection/45708606-a3fda594-751f-440a-8a45-8680cfbef8bb?action=share&source=collection_link&creator=45708606"
+	},
+	"item": [
+		{
+			"name": "Flujo de Autenticación",
+			"item": [
+				{
+					"name": "1. Registro de nuevo usuario con datos válidos",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201 Created\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"pm.test(\"Response message is correct\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.eql(\"Se ha enviado un código de verificación a su correo electrónico.\");",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"firstName\": \"Postman-Flow\",\n    \"lastName\": \"User-Flow\",\n    \"gender\": \"Otro\",\n    \"birthDate\": \"1990-01-01\",\n    \"rut\": \"22.222.222-2\",\n    \"email\": \"{{testUserEmail}}\",\n    \"phoneNumber\": \"+56911112222\",\n    \"password\": \"{{testUserPassword}}\",\n    \"confirmPassword\": \"{{testUserPassword}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"register"
+							]
+						},
+						"description": "Paso 1: Registra un nuevo usuario con datos válidos."
+					},
+					"response": []
+				},
+				{
+					"name": "2. Verificación de unicidad de email",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 409 Conflict\", function () {",
+									"    pm.response.to.have.status(409);",
+									"});",
+									"pm.test(\"Error message indicates user already registered\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.include(\"ya está registrado\"); // Cubre email y RUT",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"firstName\": \"Postman-Flow-Dup\",\n    \"lastName\": \"User-Flow-Dup\",\n    \"gender\": \"Otro\",\n    \"birthDate\": \"1990-01-01\",\n    \"rut\": \"33.333.333-3\",\n    \"email\": \"{{testUserEmail}}\",\n    \"phoneNumber\": \"+56911113333\",\n    \"password\": \"{{testUserPassword}}\",\n    \"confirmPassword\": \"{{testUserPassword}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"register"
+							]
+						},
+						"description": "Paso 2: Intenta registrar un usuario con el mismo email/RUT, esperando un error 409."
+					},
+					"response": []
+				},
+				{
+					"name": "3. Login exitoso (usuario ya verificado) y captura token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response includes a token\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.be.a('string');",
+									"    pm.expect(jsonData.data.length).to.be.greaterThan(50);",
+									"});",
+									"",
+									"// --- Helper function to robustly parse JWT ---",
+									"function parseJwt(token) {",
+									"    try {",
+									"        var base64Url = token.split('.')[1];",
+									"        var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');",
+									"        var jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {",
+									"            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);",
+									"        }).join(''));",
+									"        return JSON.parse(jsonPayload);",
+									"    } catch (e) {",
+									"        console.error(\"Error decoding JWT: \", e);",
+									"        return null;",
+									"    }",
+									"}",
+									"",
+									"// --- Captura de variables ---",
+									"var jsonData = pm.response.json();",
+									"var token = jsonData.data;",
+									"",
+									"if (token) {",
+									"    pm.collectionVariables.set(\"authToken\", token);",
+									"    console.log(\"authToken (para usuario Seeder) guardado en las variables de la Colección.\");",
+									"",
+									"    // Decodifica el token para capturar el ID de usuario",
+									"    var decodedToken = parseJwt(token);",
+									"    if (decodedToken && decodedToken.nameid) {",
+									"        pm.collectionVariables.set(\"currentUserId\", decodedToken.nameid); ",
+									"        console.log(\"User ID capturado: \" + decodedToken.nameid);",
+									"    } else {",
+									"        console.error(\"No se pudo decodificar el token o no se encontró el claim 'nameid'.\");",
+									"    }",
+									"} else {",
+									"    console.error(\"No se encontró 'data' (token) en la respuesta JSON.\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{verifiedUserEmail}}\",\n    \"password\": \"{{verifiedUserPassword}}\",\n    \"rememberMe\": false\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Paso 3: Inicia sesión con el usuario pre-cargado (y verificado) por el Seeder. Captura el token en 'authToken'."
+					},
+					"response": []
+				},
+				{
+					"name": "4. Acceso a endpoint protegido (utilizando token)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Profile email matches logged in user\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.email).to.eql(pm.collectionVariables.get(\"verifiedUserEmail\"));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/user/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"user",
+								"profile"
+							]
+						},
+						"description": "Paso 4: Accede a una ruta protegida (perfil de usuario) usando el token capturado."
+					},
+					"response": []
+				},
+				{
+					"name": "5. Intento de acceso con token inválido (rechazo)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 401 Unauthorized\", function () {",
+									"    pm.response.to.have.status(401);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "un.token.invalido",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/user/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"user",
+								"profile"
+							]
+						},
+						"description": "Paso 5: Intenta acceder a una ruta protegida con un token JWT inválido, esperando un error 401."
+					},
+					"response": []
+				}
+			],
+			"description": "### Propósito\nEste flujo valida el ciclo de vida completo del registro y autenticación de un usuario, como se especifica en el requisito 7.4.\n\n### Endpoints Incluidos\n* `POST /auth/register`: Creación de una nueva cuenta de cliente.\n* `POST /auth/register` (Duplicado): Verificación de unicidad de email.\n* `POST /auth/login`: Inicio de sesión (para un usuario verificado).\n* `GET /user/profile`: Verificación de acceso a ruta protegida.\n* `GET /user/profile` (Token Inválido): Verificación de rechazo.\n\n### Flujo de Uso Típico\n1.  **ACCIÓN REQUERIDA**: Ir a la pestaña \"Variables\" de la colección y cambiar `testUserEmail` por un email real al que tengas acceso y que esté **verificado en tu cuenta de Resend**.\n2.  Ejecutar `1. Registro de nuevo usuario con datos válidos` (Debería dar 201 Created).\n3.  Ejecutar `2. Verificación de unicidad de email` (Debería dar 409 Conflict).\n4.  **NOTA IMPORTANTE**: El siguiente paso (`Login`) **no usa el usuario que acabas de registrar**, sino que usa el usuario `verifiedUserEmail` (cliente@test.com) que ya está verificado por el Seeder, cumpliendo con el requisito de \"login exitoso (de un usuario ya verificado)\".\n5.  Ejecutar `3. Login exitoso (usuario ya verificado)` (Captura `authToken` y `currentUserId`).\n6.  Ejecutar `4. Acceso a endpoint protegido` (Debería dar 200 OK).\n7.  Ejecutar `5. Intento de acceso con token inválido` (Debería dar 401 Unauthorized).\n\n### Códigos de Estado Posibles\n* **200 OK**: Login, Acceso a ruta.\n* **201 Created**: Registro exitoso.\n* **401 Unauthorized**: Token inválido o credenciales incorrectas.\n* **409 Conflict**: Email o RUT ya existen."
+		},
+		{
+			"name": "Flujo de Compra Completo",
+			"item": [
+				{
+					"name": "1. Login como cliente (capturando token)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response includes a token\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.be.a('string');",
+									"    pm.expect(jsonData.data.length).to.be.greaterThan(50);",
+									"});",
+									"",
+									"// --- Helper function to robustly parse JWT ---",
+									"function parseJwt(token) {",
+									"    try {",
+									"        var base64Url = token.split('.')[1];",
+									"        var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');",
+									"        var jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {",
+									"            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);",
+									"        }).join(''));",
+									"        return JSON.parse(jsonPayload);",
+									"    } catch (e) {",
+									"        console.error(\"Error decoding JWT: \", e);",
+									"        return null;",
+									"    }",
+									"}",
+									"",
+									"// --- Captura de variables ---",
+									"var jsonData = pm.response.json();",
+									"var token = jsonData.data;",
+									"",
+									"if (token) {",
+									"    pm.collectionVariables.set(\"authToken\", token);",
+									"    console.log(\"authToken (para Seeder) guardado en las variables de la Colección.\");",
+									"",
+									"    // Decodifica el token para capturar el ID de usuario",
+									"    var decodedToken = parseJwt(token);",
+									"    if (decodedToken && decodedToken.nameid) {",
+									"        pm.collectionVariables.set(\"currentUserId\", decodedToken.nameid); ",
+									"        console.log(\"User ID capturado: \" + decodedToken.nameid);",
+									"    } else {",
+									"        console.error(\"No se pudo decodificar el token o no se encontró el claim 'nameid'.\");",
+									"    }",
+									"} else {",
+									"    console.error(\"No se encontró 'data' (token) en la respuesta JSON.\");",
+									"}",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{verifiedUserEmail}}\",\n    \"password\": \"{{verifiedUserPassword}}\",\n    \"rememberMe\": false\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Paso 1: Inicia sesión como el cliente de prueba ('cliente@test.com') pre-cargado. Captura el 'authToken' y 'currentUserId'."
+					},
+					"response": []
+				},
+				{
+					"name": "2. Listado de productos disponibles (con filtros)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response contains product list\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.products).to.be.an('array');",
+									"    pm.expect(jsonData.data.products.length).to.be.greaterThan(0);",
+									"});",
+									"",
+									"// Captura el ID del primer producto de la lista",
+									"var jsonData = pm.response.json();",
+									"if (jsonData.data.products && jsonData.data.products.length > 0) {",
+									"    pm.collectionVariables.set(\"productId\", jsonData.data.products[0].id);",
+									"    console.log(\"Product ID capturado: \" + jsonData.data.products[0].id);",
+									"} else {",
+									"    console.error(\"No se encontraron productos (Seeder no se ejecutó?).\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/products?PageNumber=1&PageSize=5&SortBy=PriceAsc",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"products"
+							],
+							"query": [
+								{
+									"key": "PageNumber",
+									"value": "1"
+								},
+								{
+									"key": "PageSize",
+									"value": "5"
+								},
+								{
+									"key": "SortBy",
+									"value": "PriceAsc"
+								}
+							]
+						},
+						"description": "Paso 2: Lista los productos disponibles (con filtros) y captura el 'productId' del primer producto."
+					},
+					"response": []
+				},
+				{
+					"name": "3. Visualización de detalle de producto específico",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Product ID in response matches request\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var expectedId = parseInt(pm.collectionVariables.get(\"productId\"), 10);",
+									"    pm.expect(jsonData.data.id).to.eql(expectedId);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/products/{{productId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"products",
+								"{{productId}}"
+							]
+						},
+						"description": "Paso 3: Obtiene el detalle del producto capturado en el paso anterior."
+					},
+					"response": []
+				},
+				{
+					"name": "4. Agregado de producto al carrito (cantidad específica)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Cart contains the added item (Quantity 1)\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var addedProductId = parseInt(pm.collectionVariables.get(\"productId\"), 10);",
+									"    var item = jsonData.data.items.find(i => i.productId === addedProductId);",
+									"    pm.expect(item).to.not.be.undefined;",
+									"    pm.expect(item.quantity).to.eql(1);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"productId\": {{productId}},\n    \"quantity\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/cart/items",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cart",
+								"items"
+							]
+						},
+						"description": "Paso 4: Añade 1 unidad (cantidad específica) del 'productId' al carrito."
+					},
+					"response": []
+				},
+				{
+					"name": "5. Verificación de contenido del carrito",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Cart is not empty and contains the item\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.items.length).to.be.greaterThan(0);",
+									"    var addedProductId = parseInt(pm.collectionVariables.get(\"productId\"), 10);",
+									"    var item = jsonData.data.items.find(i => i.productId === addedProductId);",
+									"    pm.expect(item).to.not.be.undefined;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/cart",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cart"
+							]
+						},
+						"description": "Paso 5: Obtiene el carrito del usuario para verificar que el ítem fue añadido."
+					},
+					"response": []
+				},
+				{
+					"name": "6. Modificación de cantidad en carrito",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Cart item quantity updated to 3\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var addedProductId = parseInt(pm.collectionVariables.get(\"productId\"), 10);",
+									"    var item = jsonData.data.items.find(i => i.productId === addedProductId);",
+									"    pm.expect(item).to.not.be.undefined;",
+									"    pm.expect(item.quantity).to.eql(3);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"productId\": {{productId}},\n    \"quantity\": 3\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/cart/items",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cart",
+								"items"
+							]
+						},
+						"description": "Paso 6: Actualiza la cantidad del ítem en el carrito a 3 unidades."
+					},
+					"response": []
+				},
+				{
+					"name": "7. Proceso de checkout completo",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Order created successfully\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.id).to.be.a('number');",
+									"    pm.expect(jsonData.data.code).to.be.a('string');",
+									"    pm.expect(jsonData.data.orderItems.length).to.be.greaterThan(0);",
+									"});",
+									"",
+									"// Captura el ID del pedido creado",
+									"var jsonData = pm.response.json();",
+									"pm.collectionVariables.set(\"orderId\", jsonData.data.id);",
+									"console.log(\"Order ID capturado: \" + jsonData.data.id);",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/orders",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders"
+							]
+						},
+						"description": "Paso 7: Crea una orden a partir del carrito del usuario. Esto valida el stock y vacía el carrito."
+					},
+					"response": []
+				},
+				{
+					"name": "8. Verificación de pedido creado",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Order ID matches\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var newOrderId = parseInt(pm.collectionVariables.get(\"orderId\"), 10);",
+									"    pm.expect(jsonData.data.id).to.eql(newOrderId);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/orders/{{orderId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders",
+								"{{orderId}}"
+							]
+						},
+						"description": "Paso 8: Obtiene el detalle del pedido recién creado para verificar que existe."
+					},
+					"response": []
+				},
+				{
+					"name": "9. Verificación de carrito vacío después del checkout",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Cart is now empty\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.items).to.be.an('array');",
+									"    pm.expect(jsonData.data.items.length).to.eql(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/cart",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cart"
+							]
+						},
+						"description": "Paso 9: Verifica que el carrito se haya vaciado automáticamente después de crear el pedido."
+					},
+					"response": []
+				},
+				{
+					"name": "10. Consulta de historial de pedidos",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"History contains the new order\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var newOrderId = parseInt(pm.collectionVariables.get(\"orderId\"), 10);",
+									"    var order = jsonData.data.orders.find(o => o.id === newOrderId);",
+									"    pm.expect(order).to.not.be.undefined;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/orders?page=1&pageSize=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Paso 10: Obtiene el historial de pedidos del usuario y verifica que el nuevo pedido esté presente."
+					},
+					"response": []
+				}
+			],
+			"description": "### Propósito\nEste flujo valida el ciclo de vida completo de una compra por parte de un cliente, como se especifica en el requisito 7.4.\n\n### Requisitos\nEste flujo utiliza las credenciales del **usuario pre-cargado por el Seeder** (`verifiedUserEmail`, `verifiedUserPassword`) para asegurar que la cuenta ya existe y está verificada.\n\n### Endpoints Incluidos\n* `POST /auth/login`: Para obtener el `authToken` del cliente.\n* `GET /products`: Para listar productos y aplicar filtros.\n* `GET /products/{id}`: Para ver el detalle del producto.\n* `POST /cart/items`: Para agregar al carrito.\n* `GET /cart`: Para verificar el contenido.\n* `PATCH /cart/items`: Para modificar la cantidad.\n* `POST /orders`: Para realizar el checkout.\n* `GET /orders/{id}`: Para verificar el pedido creado.\n* `GET /cart` (Post-Checkout): Para verificar que el carrito está vacío.\n* `GET /orders`: Para consultar el historial de pedidos.\n\n### Códigos de Estado Posibles\n* **200 OK**: Operación exitosa.\n* **400 Bad Request**: Stock insuficiente, ID de producto inválido.\n* **401 Unauthorized**: Token de cliente no provisto o inválido.\n* **404 Not Found**: Producto no encontrado."
+		},
+		{
+			"name": "Flujo Administrativo",
+			"item": [
+				{
+					"name": "1. Login como administrador (capturando token)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response includes a token\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.be.a('string');",
+									"});",
+									"",
+									"// --- Captura de variables ---",
+									"var jsonData = pm.response.json();",
+									"var token = jsonData.data;",
+									"",
+									"if (token) {",
+									"    pm.collectionVariables.set(\"adminToken\", token);",
+									"    console.log(\"adminToken guardado en las variables de la Colección.\");",
+									"} else {",
+									"    console.error(\"No se encontró 'data' (token) en la respuesta JSON.\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{testAdminEmail}}\",\n    \"password\": \"{{testAdminPassword}}\",\n    \"rememberMe\": false\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Paso 1: Inicia sesión como administrador ('admin@tiendaucn.cl') y captura el 'adminToken'."
+					},
+					"response": []
+				},
+				{
+					"name": "[Pre-vuelo] Get Categories",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"// Captura la primera categoría para usarla en la creación del producto",
+									"var jsonData = pm.response.json();",
+									"if (jsonData.data.categories && jsonData.data.categories.length > 0) {",
+									"    pm.collectionVariables.set(\"adminCategoryId\", jsonData.data.categories[0].id);",
+									"    console.log(\"Admin Category ID capturado: \" + jsonData.data.categories[0].id);",
+									"} else {",
+									"    console.error(\"No se encontraron categorías (Seeder no se ejecutó?).\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/admin/categories",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"categories"
+							]
+						},
+						"description": "Paso 1.1 (Pre-vuelo): Obtiene la lista de categorías para capturar 'adminCategoryId' (necesario para crear un producto)."
+					},
+					"response": []
+				},
+				{
+					"name": "[Pre-vuelo] Get Brands",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"// Captura la primera marca para usarla en la creación del producto",
+									"var jsonData = pm.response.json();",
+									"if (jsonData.data && jsonData.data.length > 0) {",
+									"    pm.collectionVariables.set(\"adminBrandId\", jsonData.data[0].id);",
+									"    console.log(\"Admin Brand ID capturado: \" + jsonData.data[0].id);",
+									"} else {",
+									"    console.error(\"No se encontraron marcas (Seeder no se ejecutó?).\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/admin/brands",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"brands"
+							]
+						},
+						"description": "Paso 1.2 (Pre-vuelo): Obtiene la lista de marcas para capturar 'adminBrandId' (necesario para crear un producto)."
+					},
+					"response": []
+				},
+				{
+					"name": "2. Creación de nuevo producto con imagen",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201 Created\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"pm.test(\"Response contains new product ID\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.be.a('string');",
+									"    pm.collectionVariables.set(\"adminProductId\", jsonData.data);",
+									"    console.log(\"Nuevo Product ID (Admin) capturado: \" + jsonData.data);",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "Title",
+									"value": "{{testProductName}}",
+									"type": "text"
+								},
+								{
+									"key": "Description",
+									"value": "Este es un producto de prueba creado por Postman para el flujo de admin.",
+									"type": "text"
+								},
+								{
+									"key": "Price",
+									"value": "{{testProductPrice}}",
+									"type": "text"
+								},
+								{
+									"key": "Discount",
+									"value": "10",
+									"type": "text"
+								},
+								{
+									"key": "Stock",
+									"value": "50",
+									"type": "text"
+								},
+								{
+									"key": "Status",
+									"value": "New",
+									"type": "text"
+								},
+								{
+									"key": "CategoryId",
+									"value": "{{adminCategoryId}}",
+									"type": "text"
+								},
+								{
+									"key": "BrandId",
+									"value": "{{adminBrandId}}",
+									"type": "text"
+								},
+								{
+									"key": "Images",
+									"description": "Debes reemplazar 'src' con una ruta a una imagen válida en tu máquina local para que esta request funcione.",
+									"type": "file",
+									"src": "postman-cloud:///1f0b8348-ff71-4430-b74e-31ca2ec1c184"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/admin/products",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"products"
+							]
+						},
+						"description": "Paso 2: Crea un nuevo producto. El cuerpo es 'form-data' ya que incluye una imagen. Captura el 'adminProductId'."
+					},
+					"response": []
+				},
+				{
+					"name": "3. Verificación de producto creado",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Product details are correct\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var newProductId = parseInt(pm.collectionVariables.get(\"adminProductId\"), 10);",
+									"    pm.expect(jsonData.data.id).to.eql(newProductId);",
+									"    pm.expect(jsonData.data.title).to.include(\"Postman Test Product\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/admin/products/{{adminProductId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"products",
+								"{{adminProductId}}"
+							]
+						},
+						"description": "Paso 3: Verifica que el producto recién creado se pueda obtener."
+					},
+					"response": []
+				},
+				{
+					"name": "4. Listado de productos (filtros administrativos)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response contains admin product list\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.products).to.be.an('array');",
+									"    pm.expect(jsonData.data.totalPages).to.be.a('number');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/admin/products?PageNumber=1&PageSize=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"products"
+							],
+							"query": [
+								{
+									"key": "PageNumber",
+									"value": "1"
+								},
+								{
+									"key": "PageSize",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Paso 4: Obtiene la lista de productos (incluyendo inactivos) para la vista de administrador."
+					},
+					"response": []
+				},
+				{
+					"name": "5. Modificación de producto existente",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Product title was updated\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.title).to.include(\"- Updated\");",
+									"    pm.expect(jsonData.data.stock).to.eql(49);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"{{testProductName}} - Updated\",\n    \"stock\": 49\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/admin/products/{{adminProductId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"products",
+								"{{adminProductId}}"
+							]
+						},
+						"description": "Paso 5: Actualiza el título y el stock del producto recién creado."
+					},
+					"response": []
+				},
+				{
+					"name": "6. Verificación de cambios aplicados",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Product details reflect the update\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.title).to.include(\"- Updated\");",
+									"    pm.expect(jsonData.data.stock).to.eql(49);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/admin/products/{{adminProductId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"products",
+								"{{adminProductId}}"
+							]
+						},
+						"description": "Paso 6: Vuelve a solicitar el producto para verificar que los cambios del paso anterior se guardaron."
+					},
+					"response": []
+				},
+				{
+					"name": "7. Intento de acceso (cliente) a endpoint admin (rechazo)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 403 Forbidden\", function () {",
+									"    pm.response.to.have.status(403);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/admin/products",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"products"
+							]
+						},
+						"description": "Paso 7: Intenta acceder a un endpoint de administrador usando un token de cliente ('authToken'), esperando un error 403 (Prohibido)."
+					},
+					"response": []
+				},
+				{
+					"name": "8. Eliminación lógica de producto",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response message is correct\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.eql(\"Producto desactivado exitosamente\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/admin/products/{{adminProductId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"products",
+								"{{adminProductId}}"
+							]
+						},
+						"description": "Paso 8: Realiza una eliminación lógica (desactivación) del producto."
+					},
+					"response": []
+				},
+				{
+					"name": "9. Verificación de Eliminación",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Product is marked as unavailable\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.isAvailable).to.be.false;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/admin/products/{{adminProductId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"admin",
+								"products",
+								"{{adminProductId}}"
+							]
+						},
+						"description": "Paso 9 (Verificación): Vuelve a solicitar el producto (como admin) para verificar que la propiedad `isAvailable` es `false`."
+					},
+					"response": []
+				}
+			],
+			"description": "### Propósito\nEste flujo valida el ciclo de vida completo de la gestión de productos por parte de un administrador, como se especifica en el requisito 7.4.\n\n### Requisitos\nEste flujo utiliza las credenciales del **administrador pre-cargado por el Seeder** (`testAdminEmail`, `testAdminPassword`).\n\n### Endpoints Incluidos\n* `POST /auth/login`: Para obtener el `adminToken`.\n* `GET /admin/categories` y `GET /admin/brands`: (Pre-vuelo) Para obtener IDs válidos para la creación del producto.\n* `POST /admin/products`: Para crear un nuevo producto.\n* `GET /admin/products/{id}`: Para verificar la creación y modificación.\n* `GET /admin/products`: Para listar productos (vista de admin).\n* `PUT /admin/products/{id}`: Para modificar el producto.\n* `GET /admin/products` (Usando `authToken`): Para verificar el rechazo a clientes.\n* `DELETE /admin/products/{id}`: Para la eliminación lógica.\n\n### Códigos de Estado Posibles\n* **200 OK**: Operación exitosa.\n* **201 Created**: Producto creado.\n* **401 Unauthorized**: Token de admin no provisto o inválido.\n* **403 Forbidden**: Se usó un token de cliente (`authToken`) en lugar de `adminToken`.\n* **404 Not Found**: Producto no encontrado."
+		},
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register New User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201 Created\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"pm.test(\"Response message is correct\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.eql(\"Se ha enviado un código de verificación a su correo electrónico.\");",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"firstName\": \"Postman\",\n    \"lastName\": \"User\",\n    \"gender\": \"Otro\",\n    \"birthDate\": \"1990-01-01\",\n    \"rut\": \"11.111.111-1\",\n    \"email\": \"{{testUserEmail}}\",\n    \"phoneNumber\": \"+56912345678\",\n    \"password\": \"{{testUserPassword}}\",\n    \"confirmPassword\": \"{{testUserPassword}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/Auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"Auth",
+								"register"
+							]
+						},
+						"description": "Registra un nuevo usuario con un email dinámico (basado en timestamp) para permitir ejecuciones repetidas."
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Email",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response message is correct\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.eql(\"¡Ya puedes iniciar sesión y disfrutar de todos los beneficios de Tienda UCN!\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{testUserEmail}}\",\n    \"verificationCode\": \"{{verificationCode}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/Auth/verify",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"Auth",
+								"verify"
+							]
+						},
+						"description": "Verifica el email del nuevo usuario. Requiere un 'verificationCode' válido obtenido manualmente del email."
+					},
+					"response": []
+				},
+				{
+					"name": "Resend Verification Code",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{testUserEmail}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/Auth/resend-email-verification-code",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"Auth",
+								"resend-email-verification-code"
+							]
+						},
+						"description": "Solicita un nuevo código de verificación para el email proporcionado."
+					},
+					"response": []
+				},
+				{
+					"name": "Login (Customer)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response includes a token\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.be.a('string');",
+									"    pm.expect(jsonData.data.length).to.be.greaterThan(50);",
+									"});",
+									"",
+									"// --- Helper function to robustly parse JWT ---",
+									"function parseJwt(token) {",
+									"    try {",
+									"        var base64Url = token.split('.')[1];",
+									"        var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');",
+									"        var jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {",
+									"            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);",
+									"        }).join(''));",
+									"        return JSON.parse(jsonPayload);",
+									"    } catch (e) {",
+									"        console.error(\"Error decoding JWT: \", e);",
+									"        return null;",
+									"    }",
+									"}",
+									"",
+									"// --- Captura de variables ---",
+									"var jsonData = pm.response.json();",
+									"var token = jsonData.data;",
+									"",
+									"if (token) {",
+									"    pm.collectionVariables.set(\"authToken\", token);",
+									"    console.log(\"authToken guardado en las variables de la Colección.\");",
+									"",
+									"    // Decodifica el token para capturar el ID de usuario",
+									"    var decodedToken = parseJwt(token);",
+									"    if (decodedToken && decodedToken.nameid) {",
+									"        pm.collectionVariables.set(\"currentUserId\", decodedToken.nameid); ",
+									"        console.log(\"User ID capturado: \" + decodedToken.nameid);",
+									"    } else {",
+									"        console.error(\"No se pudo decodificar el token o no se encontró el claim 'nameid'.\");",
+									"    }",
+									"} else {",
+									"    console.error(\"No se encontró 'data' (token) en la respuesta JSON.\");",
+									"}",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{verifiedUserEmail}}\",\n    \"password\": \"{{verifiedUserPassword}}\",\n    \"rememberMe\": false\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/Auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"Auth",
+								"login"
+							]
+						},
+						"description": "Inicia sesión como el cliente de prueba ('cliente@test.com') y captura el 'authToken' y 'currentUserId'."
+					},
+					"response": []
+				},
+				{
+					"name": "Login (Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response includes a token\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.be.a('string');",
+									"});",
+									"",
+									"// --- Captura de variables ---",
+									"var jsonData = pm.response.json();",
+									"var token = jsonData.data;",
+									"",
+									"if (token) {",
+									"    pm.collectionVariables.set(\"adminToken\", token);",
+									"    console.log(\"adminToken guardado en las variables de la Colección.\");",
+									"} else {",
+									"    console.error(\"No se encontró 'data' (token) en la respuesta JSON.\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{testAdminEmail}}\",\n    \"password\": \"{{testAdminPassword}}\",\n    \"rememberMe\": false\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/Auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"Auth",
+								"login"
+							]
+						},
+						"description": "Inicia sesión como administrador ('admin@tiendaucn.cl') y captura el 'adminToken'."
+					},
+					"response": []
+				},
+				{
+					"name": "Recover Password (Forgot)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{verifiedUserEmail}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/Auth/recover-password",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"Auth",
+								"recover-password"
+							]
+						},
+						"description": "Inicia el flujo de recuperación de contraseña. Enviará un código al email."
+					},
+					"response": []
+				},
+				{
+					"name": "Reset Password",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"{{verifiedUserEmail}}\",\n    \"code\": \"{{verificationCode}}\", \n    \"newPassword\": \"{{testUserPassword}}\",\n    \"confirmPassword\": \"{{testUserPassword}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/Auth/reset-password",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"Auth",
+								"reset-password"
+							]
+						},
+						"description": "Completa el flujo de reseteo de contraseña. Requiere un 'verificationCode' válido obtenido del email."
+					},
+					"response": []
+				}
+			],
+			"description": "### Descripción\nEndpoints para el registro, inicio de sesión y recuperación de contraseña de usuarios. Estos son los bloques de construcción para otros flujos.\n\n### Endpoints Incluidos\n\n**`POST /Auth/register`**\n* **Propósito:** Registra un nuevo usuario en el sistema.\n* **Body (raw/json):** `RegisterDTO`\n    ```json\n    {\n        \"firstName\": \"Postman\",\n        \"lastName\": \"User 123\",\n        \"gender\": \"Otro\",\n        \"birthDate\": \"1990-01-01\",\n        \"rut\": \"1.111.111-K\",\n        \"email\": \"user@test.com\",\n        \"phoneNumber\": \"+56912345678\",\n        \"password\": \"TestUser123!\",\n        \"confirmPassword\": \"TestUser123!\"\n    }\n    ```\n* **Respuesta Exitosa (201 Created):** `GenericResponse<string>`\n    ```json\n    {\n        \"message\": \"Se ha enviado un código de verificación a su correo electrónico.\",\n        \"data\": null\n    }\n    ```\n* **Códigos de Estado Posibles:**\n    * `201 Created`: Usuario creado, pendiente de verificación.\n    * `400 Bad Request`: Errores de validación del DTO (ej. contraseña débil, RUT inválido).\n    * `409 Conflict`: El email o el RUT ya están registrados.\n\n**`POST /Auth/verify`**\n* **Propósito:** Verifica el email de un usuario usando el código de 6 dígitos.\n* **Body (raw/json):** `VerifyEmailDTO`\n    ```json\n    {\n        \"email\": \"user@test.com\",\n        \"verificationCode\": \"123456\"\n    }\n    ```\n* **Respuesta Exitosa (200 OK):** `GenericResponse<string>`\n    ```json\n    {\n        \"message\": \"¡Ya puedes iniciar sesión y disfrutar de todos los beneficios de Tienda UCN!\",\n        \"data\": null\n    }\n    ```\n* **Códigos de Estado Posibles:**\n    * `200 OK`: Email verificado.\n    * `400 Bad Request`: Código incorrecto o expirado.\n    * `404 Not Found`: Usuario no encontrado.\n\n**`POST /Auth/resend-email-verification-code`**\n* **Propósito:** Reenvía un nuevo código de verificación al email del usuario (si aún no está verificado).\n* **Body (raw/json):** `ResendEmailVerificationCodeDTO`\n    ```json\n    {\n        \"email\": \"user@test.com\"\n    }\n    ```\n* **Respuesta Exitosa (200 OK):** `GenericResponse<string>`.\n* **Códigos de Estado Posibles:**\n    * `200 OK`: Código reenviado.\n    * `404 Not Found`: Usuario no existe.\n    * `409 Conflict`: El email ya fue verificado.\n    * `429 Too Many Requests`: Se debe esperar un tiempo antes de reenviar.\n\n**`POST /Auth/login`**\n* **Propósito:** Autentica un usuario (verificado) y retorna un token JWT.\n* **Body (raw/json):** `LoginDTO`\n    ```json\n    {\n        \"email\": \"cliente@test.com\",\n        \"password\": \"Cliente123!\",\n        \"rememberMe\": false\n    }\n    ```\n* **Respuesta Exitosa (200 OK):** `GenericResponse<string>`\n    ```json\n    {\n        \"message\": \"Successful login\",\n        \"data\": \"eyJh... (JWT Token)\"\n    }\n    ```\n* **Códigos de Estado Posibles:**\n    * `200 OK`: Login exitoso.\n    * `401 Unauthorized`: Credenciales inválidas o email no verificado.\n\n**`POST /Auth/recover-password`**\n* **Propósito:** Inicia el flujo de recuperación de contraseña. Envía un código de 6 dígitos al email.\n* **Body (raw/json):** `ForgotPasswordDTO`\n    ```json\n    {\n        \"email\": \"cliente@test.com\"\n    }\n    ```\n* **Respuesta Exitosa (200 OK):** `GenericResponse<string>`. (Mensaje genérico por seguridad).\n\n**`PATCH /Auth/reset-password`**\n* **Propósito:** Completa el reseteo de contraseña usando el código.\n* **Body (raw/json):** `ResetPasswordDTO`\n    ```json\n    {\n        \"email\": \"cliente@test.com\",\n        \"code\": \"123456\",\n        \"newPassword\": \"NuevaPass123!\",\n        \"confirmPassword\": \"NuevaPass123!\"\n    }\n    ```\n* **Respuesta Exitosa (200 OK):** `GenericResponse<string>`. (Mensaje genérico por seguridad).\n* **Códigos de Estado Posibles:**\n    * `200 OK`: Contraseña cambiada.\n    * `400 Bad Request`: Código inválido/expirado o la nueva contraseña no cumple los requisitos.\n"
+		},
+		{
+			"name": "Profile (Users)",
+			"item": [
+				{
+					"name": "Get Profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Profile data is correct\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.email).to.eql(pm.collectionVariables.get(\"verifiedUserEmail\"));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/user/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"user",
+								"profile"
+							]
+						},
+						"description": "Obtiene la información del perfil del usuario actualmente autenticado."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"firstName\": \"Cliente Actualizado\",\n    \"lastName\": \"DePrueba Editado\",\n    \"phoneNumber\": \"+56987654321\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/user/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"user",
+								"profile"
+							]
+						},
+						"description": "Actualiza los datos del perfil del usuario. \n\n**Nota:** Si se incluye 'email', se iniciará un flujo de verificación por separado."
+					},
+					"response": []
+				},
+				{
+					"name": "Change Password",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"oldPassword\": \"{{verifiedUserPassword}}\",\n    \"newPassword\": \"{{verifiedUserPassword}}New\",\n    \"confirmNewPassword\": \"{{verifiedUserPassword}}New\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/user/change-password",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"user",
+								"change-password"
+							]
+						},
+						"description": "Cambia la contraseña del usuario. Requiere la contraseña antigua y la nueva."
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Email Change",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"newEmail\": \"new-email-{{$timestamp}}@test.com\",\n    \"code\": \"{{verificationCode}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/user/verify-email-change",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"user",
+								"verify-email-change"
+							]
+						},
+						"description": "Verifica un cambio de email. Requiere que 'Update Profile' se haya llamado primero con un nuevo email, y un 'verificationCode' válido enviado a ese nuevo email."
+					},
+					"response": []
+				}
+			],
+			"description": "### Descripción\nEndpoints para gestionar el perfil del usuario autenticado (Req 7.1). Todos los endpoints de esta carpeta requieren un `authToken` de cliente válido.\n\nEl controlador base para estas rutas es `api/user`.\n\n### Endpoints Incluidos\n\n**`GET /user/profile`**\n* **Propósito:** Obtiene la información del perfil del usuario actualmente autenticado.\n* **Autenticación:** Bearer Token (`{{authToken}}`).\n* **Respuesta Exitosa (200 OK):** `GenericResponse<ProfileDTO>`\n    ```json\n    {\n        \"message\": \"Profile retrieved successfully\",\n        \"data\": {\n            \"email\": \"cliente@test.com\",\n            \"firstName\": \"Cliente\",\n            \"lastName\": \"DePrueba\",\n            \"rut\": \"55.555.555-5\",\n            \"gender\": 1,\n            \"birthDate\": \"1998-05-10\",\n            \"phoneNumber\": \"+56955555555\"\n        }\n    }\n    ```\n* **Códigos de Estado Posibles:**\n    * `200 OK`: Perfil obtenido.\n    * `401 Unauthorized`: Token inválido o no proporcionado.\n    * `404 Not Found`: El usuario asociado al token no fue encontrado en la base de datos.\n\n**`PUT /user/profile`**\n* **Propósito:** Actualiza los datos del perfil del usuario autenticado.\n* **Autenticación:** Bearer Token (`{{authToken}}`).\n* **Body (raw/json):** `UpdateProfileDTO` (Todos los campos son opcionales)\n    ```json\n    {\n        \"firstName\": \"Cliente Actualizado\",\n        \"lastName\": \"DePrueba Editado\",\n        \"phoneNumber\": \"+56987654321\"\n    }\n    ```\n* **Nota sobre Email:** Si se incluye un campo `email` **diferente** al actual, la API **no** lo cambiará inmediatamente. En su lugar, enviará un código de verificación al *nuevo* email. Se debe usar el endpoint `POST /user/verify-email-change` para completar el cambio.\n* **Respuesta Exitosa (200 OK):** `GenericResponse<string>`.\n* **Códigos de Estado Posibles:**\n    * `200 OK`: Datos actualizados.\n    * `400 Bad Request`: Errores de validación del DTO (ej. formato de RUT, teléfono, etc.).\n    * `401 Unauthorized`: Token inválido.\n    * `409 Conflict`: El `rut` o `email` (si se intenta cambiar) ya está en uso por *otro* usuario.\n\n**`PATCH /user/change-password`**\n* **Propósito:** Cambia la contraseña del usuario autenticado.\n* **Autenticación:** Bearer Token (`{{authToken}}`).\n* **Body (raw/json):** `ChangePasswordDTO`\n    ```json\n    {\n        \"oldPassword\": \"Cliente123!\",\n        \"newPassword\": \"NuevaPass456!\",\n        \"confirmNewPassword\": \"NuevaPass456!\"\n    }\n    ```\n* **Respuesta Exitosa (200 OK):** `GenericResponse<string>`.\n* **Códigos de Estado Posibles:**\n    * `200 OK`: Contraseña cambiada.\n    * `400 Bad Request`: La `oldPassword` es incorrecta, `newPassword` no coincide con la confirmación, o la `newPassword` no cumple los requisitos de seguridad (largo, mayúscula, etc.).\n    * `401 Unauthorized`: Token inválido.\n\n**`POST /user/verify-email-change`**\n* **Propósito:** Confirma un cambio de dirección de email usando el código enviado.\n* **Autenticación:** Bearer Token (`{{authToken}}`).\n* **Body (raw/json):** `VerifyEmailChangeDTO`\n    ```json\n    {\n        \"newEmail\": \"nuevo-correo@test.com\",\n        \"code\": \"123456\"\n    }\n    ```\n* **Respuesta Exitosa (200 OK):** `GenericResponse<string>`.\n* **Códigos de Estado Posibles:**\n    * `200 OK`: Email actualizado.\n    * `400 Bad Request`: El código es incorrecto o ha expirado.\n    * `401 Unauthorized`: Token inválido."
+		},
+		{
+			"name": "Products",
+			"item": [
+				{
+					"name": "List Products",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response contains pagination and products\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.products).to.be.an('array');",
+									"    pm.expect(jsonData.data.totalPages).to.be.a('number');",
+									"    pm.expect(jsonData.data.page).to.eql(1);",
+									"});",
+									"",
+									"// Captura el ID del primer producto de la lista",
+									"var jsonData = pm.response.json();",
+									"if (jsonData.data.products && jsonData.data.products.length > 0) {",
+									"    pm.collectionVariables.set(\"productId\", jsonData.data.products[0].id);",
+									"    console.log(\"Product ID capturado: \" + jsonData.data.products[0].id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/products?PageNumber=1&PageSize=10&SortBy=Newest&MinPrice=1000",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"products"
+							],
+							"query": [
+								{
+									"key": "PageNumber",
+									"value": "1"
+								},
+								{
+									"key": "PageSize",
+									"value": "10"
+								},
+								{
+									"key": "SortBy",
+									"value": "Newest"
+								},
+								{
+									"key": "MinPrice",
+									"value": "1000"
+								}
+							]
+						},
+						"description": "Obtiene la lista de productos para clientes, con filtros de paginación, orden y precio. Captura el 'productId' del primer resultado."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Product Detail",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Product ID in response matches request\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var expectedId = parseInt(pm.collectionVariables.get(\"productId\"), 10);",
+									"    pm.expect(jsonData.data.id).to.eql(expectedId);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/products/{{productId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"products",
+								"{{productId}}"
+							]
+						},
+						"description": "Obtiene el detalle de un producto específico usando el 'productId' capturado."
+					},
+					"response": []
+				}
+			],
+			"description": "### Descripción\nEndpoints públicos para listar y ver productos (Req 7.1). Estos endpoints son accesibles por cualquier usuario, autenticado o no.\n\nEl controlador base es `api/products`.\n\n### Endpoints Incluidos\n\n**`GET /products`**\n* **Propósito:** Obtiene la lista de productos para clientes. Solo muestra productos que están `IsAvailable = true`.\n* **Parámetros (Query):** Acepta un `SearchParamsDTO`.\n    * `PageNumber` (int, req): Número de página (ej. 1).\n    * `PageSize` (int, op): Productos por página (ej. 10).\n    * `SearchTerm` (string, op): Término de búsqueda (ej. \"Laptop\").\n    * `CategoryId` (int, op): Filtrar por ID de categoría (ej. 1).\n    * `BrandId` (int, op): Filtrar por ID de marca (ej. 2).\n    * `MinPrice` (decimal, op): Precio mínimo (ej. 50000).\n    * `MaxPrice` (decimal, op): Precio máximo (ej. 500000).\n    * `Status` (enum, op): `New` (0) o `Used` (1).\n    * `SortBy` (enum, op): `Newest` (0), `PriceAsc` (1), `PriceDesc` (2), `NameAsc` (3), `NameDesc` (4).\n* **Ejemplo de Query:** `?PageNumber=1&PageSize=10&SortBy=PriceAsc&MinPrice=1000`\n* **Respuesta Exitosa (200 OK):** `GenericResponse<ProductListResponseDTO>`\n    ```json\n    {\n        \"message\": \"Products found\",\n        \"data\": {\n            \"products\": [\n                {\n                    \"id\": 1,\n                    \"title\": \"Laptop Gamer\",\n                    \"description\": \"...\",\n                    \"mainImageURL\": \"...\",\n                    \"price\": 899990.0,\n                    \"discount\": 10,\n                    \"finalPrice\": 809991.0,\n                    \"stock\": 15,\n                    \"categoryName\": \"Tecnología\",\n                    \"brandName\": \"MarcaX\"\n                }\n            ],\n            \"totalCount\": 1,\n            \"page\": 1,\n            \"pageSize\": 10,\n            \"totalPages\": 1\n        }\n    }\n    ```\n* **Códigos de Estado Posibles:**\n    * `200 OK`: Lista de productos obtenida.\n    * `400 Bad Request`: Parámetros de paginación o filtro inválidos.\n\n**`GET /products/{id}`**\n* **Propósito:** Obtiene el detalle de un producto específico. Solo lo muestra si está `IsAvailable = true`.\n* **Parámetros (Ruta):**\n    * `id` (int, req): El ID del producto (ej. 1).\n* **Respuesta Exitosa (200 OK):** `GenericResponse<ProductDetailDTO>`\n    ```json\n    {\n        \"message\": \"Product found\",\n        \"data\": {\n            \"id\": 1,\n            \"title\": \"Laptop Gamer\",\n            \"description\": \"...\",\n            \"imagesURL\": [\"...\"],\n            \"price\": \"$899.990\",\n            \"discount\": 10,\n            \"finalPrice\": \"$809.991\",\n            \"stock\": 15,\n            \"stockIndicator\": \"Few units available\",\n            \"categoryName\": \"Tecnología\",\n            \"brandName\": \"MarcaX\",\n            \"statusName\": \"New\",\n            \"isAvailable\": true\n        }\n    }\n    ```\n* **Códigos de Estado Posibles:**\n    * `200 OK`: Producto encontrado.\n    * `404 Not Found`: Producto no existe o no está disponible (`IsAvailable = false`).\n"
+		},
+		{
+			"name": "Cart",
+			"item": [
+				{
+					"name": "Get Cart",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response is a valid cart object\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.buyerId).to.be.a('string');",
+									"    pm.expect(jsonData.data.items).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/Cart",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"Cart"
+							]
+						},
+						"description": "Obtiene el carrito del usuario. Si se usa 'authToken', recupera el carrito del usuario; de lo contrario, usa/crea un carrito anónimo (basado en la cookie 'buyerId')."
+					},
+					"response": []
+				},
+				{
+					"name": "Add Item to Cart",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Cart contains the added item\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var addedProductId = parseInt(pm.collectionVariables.get(\"productId\"), 10);",
+									"    var item = jsonData.data.items.find(i => i.productId === addedProductId);",
+									"    pm.expect(item).to.not.be.undefined;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"productId\": {{productId}},\n    \"quantity\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/Cart/items",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"Cart",
+								"items"
+							]
+						},
+						"description": "Añade un producto ('productId') al carrito."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Item Quantity",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Cart item quantity updated\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var addedProductId = parseInt(pm.collectionVariables.get(\"productId\"), 10);",
+									"    var item = jsonData.data.items.find(i => i.productId === addedProductId);",
+									"    pm.expect(item).to.not.be.undefined;",
+									"    pm.expect(item.quantity).to.eql(3);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"productId\": {{productId}},\n    \"quantity\": 3\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/Cart/items",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"Cart",
+								"items"
+							]
+						},
+						"description": "Cambia la cantidad de un 'productId' existente en el carrito."
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Item from Cart",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Item was removed from cart\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var addedProductId = parseInt(pm.collectionVariables.get(\"productId\"), 10);",
+									"    var item = jsonData.data.items.find(i => i.productId === addedProductId);",
+									"    pm.expect(item).to.be.undefined;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/Cart/items/{{productId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"Cart",
+								"items",
+								"{{productId}}"
+							]
+						},
+						"description": "Elimina un 'productId' del carrito."
+					},
+					"response": []
+				},
+				{
+					"name": "Clear Cart",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Cart is empty\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.items.length).to.eql(0);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/Cart/clear",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"Cart",
+								"clear"
+							]
+						},
+						"description": "Elimina todos los ítems del carrito."
+					},
+					"response": []
+				},
+				{
+					"name": "Checkout Cart",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response message is correct\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.eql(\"Checkout completed successfully\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/Cart/checkout",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"Cart",
+								"checkout"
+							]
+						},
+						"description": "Valida el stock del carrito antes de crear una orden. Requiere authToken de Cliente."
+					},
+					"response": []
+				}
+			],
+			"description": "### Descripción\nEndpoints para gestionar el carrito de compras (Req 7.1). Pueden usarse de forma anónima (usando la cookie `buyerId`) o autenticada (usando `authToken`).\n\nEl controlador base es `api/Cart` (Note el PascalCase).\n\n### Endpoints Incluidos\n\n**`GET /Cart`**\n* **Propósito:** Obtiene el carrito actual. Si el usuario está autenticado, busca su carrito. Si es anónimo, usa la cookie `buyerId`. Si no existe ninguno, crea uno nuevo (y setea la cookie `buyerId` si es anónimo).\n* **Autenticación:** Opcional.\n* **Respuesta Exitosa (200 OK):** `GenericResponse<CartDTO>`\n    ```json\n    {\n        \"message\": \"Cart retrieved successfully\",\n        \"data\": {\n            \"buyerId\": \"...\",\n            \"userId\": 1,\n            \"items\": [],\n            \"subTotalPrice\": \"$0\",\n            \"totalPrice\": \"$0\",\n            \"removedUnavailableProducts\": null\n        }\n    }\n    ```\n\n**`POST /Cart/items`**\n* **Propósito:** Añade un producto al carrito o incrementa su cantidad si ya existe.\n* **Autenticación:** Opcional.\n* **Body (raw/json):** `AddCartItemDTO`\n    ```json\n    {\n        \"productId\": 1,\n        \"quantity\": 1\n    }\n    ```\n* **Respuesta Exitosa (200 OK):** `GenericResponse<CartDTO>` (con el carrito actualizado).\n* **Códigos de Estado Posibles:**\n    * `200 OK`: Ítem añadido.\n    * `404 Not Found`: El `productId` no existe.\n    * `400 Bad Request`: Stock insuficiente (`ArgumentException` desde el servicio).\n\n**`PATCH /Cart/items`**\n* **Propósito:** Actualiza la cantidad de un producto específico en el carrito.\n* **Autenticación:** Opcional.\n* **Body (raw/json):** `ChangeItemQuantityDTO`\n    ```json\n    {\n        \"productId\": 1,\n        \"quantity\": 3\n    }\n    ```\n* **Respuesta Exitosa (200 OK):** `GenericResponse<CartDTO>` (con el carrito actualizado).\n* **Códigos de Estado Posibles:**\n    * `200 OK`: Cantidad actualizada.\n    * `404 Not Found`: El `productId` no existe en el carrito.\n    * `400 Bad Request`: Stock insuficiente.\n\n**`DELETE /Cart/items/{productId}`**\n* **Propósito:** Elimina un producto (y toda su cantidad) del carrito.\n* **Autenticación:** Opcional.\n* **Parámetros (Ruta):**\n    * `productId` (int, req): El ID del producto a eliminar.\n* **Respuesta Exitosa (200 OK):** `GenericResponse<CartDTO>` (con el carrito actualizado).\n* **Códigos de Estado Posibles:**\n    * `200 OK`: Ítem eliminado.\n    * `404 Not Found`: El `productId` no existe en el carrito.\n\n**`POST /Cart/clear`**\n* **Propósito:** Elimina todos los ítems del carrito.\n* **Autenticación:** Opcional.\n* **Respuesta Exitosa (200 OK):** `GenericResponse<CartDTO>` (con el carrito vacío).\n\n**`POST /Cart/checkout`**\n* **Propósito:** Valida el carrito antes de la creación de la orden. Verifica el stock real y la disponibilidad de todos los productos.\n* **Autenticación:** Requerida (Rol \"Customer\").\n* **Respuesta Exitosa (200 OK):** `GenericResponse<CartDTO>`. (El carrito puede venir modificado si se ajustó el stock).\n* **Códigos de Estado Posibles:**\n    * `200 OK`: Carrito validado.\n    * `401 Unauthorized`: Usuario no autenticado como cliente.\n    * `400 Bad Request`: El carrito está vacío (`InvalidOperationException`)."
+		},
+		{
+			"name": "Orders",
+			"item": [
+				{
+					"name": "Create Order (from Cart)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Order created successfully\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.id).to.be.a('number');",
+									"    pm.expect(jsonData.data.code).to.be.a('string');",
+									"    pm.expect(jsonData.data.orderItems.length).to.be.greaterThan(0);",
+									"});",
+									"",
+									"// Captura el ID del pedido creado",
+									"var jsonData = pm.response.json();",
+									"pm.collectionVariables.set(\"orderId\", jsonData.data.id);",
+									"console.log(\"Order ID capturado: \" + jsonData.data.id);",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/orders",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders"
+							]
+						},
+						"description": "Crea una orden a partir del carrito del usuario. Esto valida el stock y vacía el carrito. Requiere que el carrito tenga ítems."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Order History",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Response contains orders list\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.orders).to.be.an('array');",
+									"    pm.expect(jsonData.data.totalPages).to.be.a('number');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/orders?page=1&pageSize=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Obtiene el historial de pedidos paginado del usuario autenticado."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Order Detail",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Order ID matches\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var expectedOrderId = parseInt(pm.collectionVariables.get(\"orderId\"), 10);",
+									"    pm.expect(jsonData.data.id).to.eql(expectedOrderId);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/orders/{{orderId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orders",
+								"{{orderId}}"
+							]
+						},
+						"description": "Obtiene el detalle de un pedido específico ('orderId') que pertenezca al usuario."
+					},
+					"response": []
+				}
+			],
+			"description": "### Descripción\nEndpoints para crear pedidos y ver el historial (Req 7.1). Todos los endpoints requieren autenticación (`authToken`).\n\nEl controlador base es `api/orders`.\n\n### Endpoints Incluidos\n\n**`POST /orders`**\n* **Propósito:** Crea una nueva orden a partir del carrito del usuario. Esta acción es transaccional: crea la orden, descuenta el stock de los productos y elimina el carrito.\n* **Autenticación:** Requerida (`{{authToken}}`).\n* **Pre-requisito:** El carrito del usuario debe tener ítems y debe haberse llamado a `POST /Cart/checkout` (aunque la lógica de `CreateAsync` también valida el stock).\n* **Respuesta Exitosa (200 OK):** `GenericResponse<OrderDTO>`\n    ```json\n    {\n        \"message\": \"Order created successfully\",\n        \"data\": {\n            \"id\": 1,\n            \"code\": \"ORD-ABC12345\",\n            \"total\": 150.00,\n            \"subTotal\": 160.00,\n            \"createdAt\": \"...\",\n            \"orderItems\": [...]\n        }\n    }\n    ```\n* **Códigos de Estado Posibles:**\n    * `200 OK`: Orden creada.\n    * `401 Unauthorized`: Usuario no autenticado.\n    * `400 Bad Request`: El carrito está vacío o hay stock insuficiente para algún producto (`InvalidOperationException`).\n\n**`GET /orders`**\n* **Propósito:** Obtiene el historial de pedidos paginado del usuario autenticado.\n* **Autenticación:** Requerida (`{{authToken}}`).\n* **Parámetros (Query):**\n    * `page` (int, op): Número de página (default: 1).\n    * `pageSize` (int, op): Pedidos por página (default: 10).\n* **Respuesta Exitosa (200 OK):** `GenericResponse<OrderListDTO>`\n    ```json\n    {\n        \"message\": \"Orders retrieved successfully\",\n        \"data\": {\n            \"orders\": [...],\n            \"totalCount\": 1,\n            \"currentPage\": 1,\n            \"pageSize\": 10,\n            \"totalPages\": 1\n        }\n    }\n    ```\n* **Códigos de Estado Posibles:**\n    * `200 OK`: Lista de pedidos obtenida.\n    * `401 Unauthorized`: Usuario no autenticado.\n\n**`GET /orders/{id}`**\n* **Propósito:** Obtiene el detalle de un pedido específico (`orderId`) que debe pertenecer al usuario autenticado.\n* **Autenticación:** Requerida (`{{authToken}}`).\n* **Parámetros (Ruta):**\n    * `id` (int, req): El ID del pedido a consultar.\n* **Respuesta Exitosa (200 OK):** `GenericResponse<OrderDTO>`.\n* **Códigos de Estado Posibles:**\n    * `200 OK`: Detalle de la orden obtenido.\n    * `401 Unauthorized`: Usuario no autenticado, o la orden consultada no pertenece al usuario.\n    * `404 Not Found`: La orden con ese `id` no existe.\n"
+		},
+		{
+			"name": "Admin",
+			"item": [
+				{
+					"name": "Admin Products",
+					"item": [
+						{
+							"name": "Create Product",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 201 Created\", function () {",
+											"    pm.response.to.have.status(201);",
+											"});",
+											"pm.test(\"Response contains new product ID\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    pm.expect(jsonData.data).to.be.a('string');",
+											"    pm.collectionVariables.set(\"newProductId\", jsonData.data);",
+											"    console.log(\"Nuevo Product ID capturado: \" + jsonData.data);",
+											"});"
+										],
+										"type": "text/javascript",
+										"packages": {},
+										"requests": {}
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{adminToken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "Title",
+											"value": "{{testProductName}}",
+											"type": "text"
+										},
+										{
+											"key": "Description",
+											"value": "Este es un producto de prueba creado por Postman para el flujo de admin.",
+											"type": "text"
+										},
+										{
+											"key": "Price",
+											"value": "{{testProductPrice}}",
+											"type": "text"
+										},
+										{
+											"key": "Discount",
+											"value": "10",
+											"type": "text"
+										},
+										{
+											"key": "Stock",
+											"value": "50",
+											"type": "text"
+										},
+										{
+											"key": "Status",
+											"value": "New",
+											"type": "text"
+										},
+										{
+											"key": "CategoryId",
+											"value": "{{newCategoryId}}",
+											"type": "text"
+										},
+										{
+											"key": "BrandId",
+											"value": "{{newBrandId}}",
+											"type": "text"
+										},
+										{
+											"key": "Images",
+											"description": "Debes reemplazar 'src' con una ruta a una imagen válida en tu máquina local para que esta request funcione.",
+											"type": "file",
+											"src": "postman-cloud:///1f0b8344-e541-49b0-a7f7-7b05b5faf7b7"
+										}
+									]
+								},
+								"url": {
+									"raw": "{{baseUrl}}/admin/products",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"products"
+									]
+								},
+								"description": "Crea un nuevo producto. Requiere 'form-data' para la subida de imágenes. Captura el 'newProductId'."
+							},
+							"response": []
+						},
+						{
+							"name": "List Admin Products",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200 OK\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"pm.test(\"Response contains admin product list\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    pm.expect(jsonData.data.products).to.be.an('array');",
+											"    pm.expect(jsonData.data.totalPages).to.be.a('number');",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{adminToken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/admin/products?PageNumber=1&PageSize=10",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"products"
+									],
+									"query": [
+										{
+											"key": "PageNumber",
+											"value": "1"
+										},
+										{
+											"key": "PageSize",
+											"value": "10"
+										}
+									]
+								},
+								"description": "Obtiene la lista de productos (incluyendo inactivos) para la vista de administrador."
+							},
+							"response": []
+						},
+						{
+							"name": "Get Admin Product Detail",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200 OK\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"pm.test(\"Product ID matches\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    var expectedId = parseInt(pm.collectionVariables.get(\"newProductId\"), 10);",
+											"    pm.expect(jsonData.data.id).to.eql(expectedId);",
+											"});",
+											"",
+											"// Captura el ID de la primera imagen si existe",
+											"var jsonData = pm.response.json();",
+											"console.log('Response data keys:', Object.keys(jsonData.data || {}));",
+											"",
+											"if (jsonData.data && jsonData.data.images && Array.isArray(jsonData.data.images)) {",
+											"    if (jsonData.data.images.length > 0) {",
+											"        pm.collectionVariables.set(\"newImageId\", jsonData.data.images[0].id);",
+											"        console.log(\"✅ Image ID captured: \" + jsonData.data.images[0].id);",
+											"        console.log(\"Total images found: \" + jsonData.data.images.length);",
+											"    } else {",
+											"        console.log(\"⚠️ Images array exists but is empty\");",
+											"    }",
+											"} else if (jsonData.data && jsonData.data.imagesURL) {",
+											"    console.error(\"❌ ERROR: Endpoint is returning old format (imagesURL) instead of new format (images array with IDs)\");",
+											"    console.error(\"This means the server is not using ProductDetailForAdminDTO\");",
+											"} else {",
+											"    console.log(\"⚠️ No images found for this product.\");",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{adminToken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/admin/products/{{newProductId}}",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"products",
+										"{{newProductId}}"
+									]
+								},
+								"description": "Obtiene el detalle de un producto específico ('newProductId') desde la perspectiva del admin."
+							},
+							"response": []
+						},
+						{
+							"name": "Update Product",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200 OK\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"pm.test(\"Product stock was updated\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    pm.expect(jsonData.data.stock).to.eql(49);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{adminToken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"stock\": 49\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/admin/products/{{newProductId}}",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"products",
+										"{{newProductId}}"
+									]
+								},
+								"description": "Actualiza la información de un producto ('newProductId')."
+							},
+							"response": []
+						},
+						{
+							"name": "Update Product Discount",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200 OK\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{adminToken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"discount\": 25\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/admin/products/{{newProductId}}/discount",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"products",
+										"{{newProductId}}",
+										"discount"
+									]
+								},
+								"description": "Actualiza solo el descuento de un producto."
+							},
+							"response": []
+						},
+						{
+							"name": "Toggle Product Status (Deactivate)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200 OK\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"pm.test(\"Response message is correct\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    pm.expect(jsonData.message).to.eql(\"Product status updated successfully\");",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{adminToken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PATCH",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/admin/products/{{newProductId}}/status",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"products",
+										"{{newProductId}}",
+										"status"
+									]
+								},
+								"description": "Cambia el estado 'IsAvailable' (disponible/no disponible) del producto."
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Product (Logical Delete)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200 OK\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"pm.test(\"Response message is correct\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    pm.expect(jsonData.message).to.eql(\"Product deactivated successfully\");",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{adminToken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/admin/products/{{newProductId}}",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"products",
+										"{{newProductId}}"
+									]
+								},
+								"description": "Realiza una eliminación lógica (desactivación) del producto. Llama al mismo endpoint que 'Toggle Status' pero con el método DELETE."
+							},
+							"response": []
+						},
+						{
+							"name": "Upload Image",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200 OK\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"// Después de subir la imagen, necesitamos obtener su ID",
+											"// Hacemos un GET del producto para capturar el ID de la imagen recién subida",
+											"const productId = pm.collectionVariables.get(\"newProductId\");",
+											"const baseUrl = pm.collectionVariables.get(\"baseUrl\");",
+											"const adminToken = pm.collectionVariables.get(\"adminToken\");",
+											"",
+											"pm.sendRequest({",
+											"    url: `${baseUrl}/admin/products/${productId}`,",
+											"    method: 'GET',",
+											"    header: {",
+											"        'Authorization': `Bearer ${adminToken}`",
+											"    }",
+											"}, function (err, res) {",
+											"    if (err) {",
+											"        console.error('Error fetching product details:', err);",
+											"        return;",
+											"    }",
+											"    const productData = res.json();",
+											"    console.log('Product data received:', JSON.stringify(productData, null, 2));",
+											"    ",
+											"    // Verificar si la respuesta tiene el nuevo formato con array 'images'",
+											"    if (productData.data && productData.data.images && Array.isArray(productData.data.images)) {",
+											"        if (productData.data.images.length > 0) {",
+											"            // Captura la última imagen (la recién subida)",
+											"            const lastImage = productData.data.images[productData.data.images.length - 1];",
+											"            pm.collectionVariables.set(\"newImageId\", lastImage.id);",
+											"            console.log(\"✅ New image ID captured: \" + lastImage.id);",
+											"        } else {",
+											"            console.log(\"⚠️ Images array is empty\");",
+											"        }",
+											"    } else {",
+											"        console.error(\"❌ ERROR: Response does not have 'images' array. Check if endpoint returns ProductDetailForAdminDTO\");",
+											"        console.error(\"Response structure:\", Object.keys(productData.data || {}));",
+											"    }",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{adminToken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "images",
+											"description": "Debes reemplazar 'src' con una ruta a una imagen válida.",
+											"type": "file",
+											"src": "postman-cloud:///1f0b8348-ff71-4430-b74e-31ca2ec1c184"
+										}
+									]
+								},
+								"url": {
+									"raw": "{{baseUrl}}/admin/products/{{newProductId}}/images",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"products",
+										"{{newProductId}}",
+										"images"
+									]
+								},
+								"description": "Sube imágenes adicionales a un producto existente."
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Image",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200 OK\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{adminToken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/admin/products/{{newProductId}}/images/{{newImageId}}",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"products",
+										"{{newProductId}}",
+										"images",
+										"{{newImageId}}"
+									]
+								},
+								"description": "Elimina una imagen específica ('newImageId') de un producto. Requiere capturar un 'newImageId' (difícil de automatizar sin acceso a la DB, se debe poner manualmente)."
+							},
+							"response": []
+						}
+					],
+					"description": "### Descripción\nGestión de productos (CRUD, imágenes, descuentos) por administradores. Permite crear, actualizar, y gestionar la visibilidad y descuentos de los productos.\n\nControlador: `AdminProductController.cs`\nRuta base: `api/admin/products`\n\n### Endpoints Incluidos\n\n**`GET /admin/products`**\n* **Propósito:** Lista todos los productos (incluyendo activos e inactivos) con filtros y paginación.\n* **Parámetros (Query):** `SearchParamsDTO` (PageNumber, PageSize, SearchTerm, etc.)\n* **Respuesta (200 OK):** `GenericResponse<ListedProductsForAdminDTO>`\n\n**`GET /admin/products/{id}`**\n* **Propósito:** Obtiene el detalle de un producto específico, sin importar si está disponible o no.\n* **Parámetros (Ruta):** `id` (int).\n* **Respuesta (200 OK):** `GenericResponse<ProductDetailDTO>`.\n* **Errores (404 Not Found):** Si el producto no existe.\n\n**`POST /admin/products`**\n* **Propósito:** Crea un nuevo producto.\n* **Body:** `multipart/form-data`.\n    * Campos de `ProductCreateDTO` (Title, Description, Price, Discount, Stock, Status, CategoryId, BrandId).\n    * `Images` (List<IFormFile>): Una o más imágenes.\n* **Respuesta (201 Created):** `GenericResponse<string>` (Contiene el ID del nuevo producto).\n* **Errores (400 Bad Request):** Faltan imágenes o datos de DTO inválidos.\n\n**`PUT /admin/products/{id}`**\n* **Propósito:** Actualiza la información de un producto.\n* **Parámetros (Ruta):** `id` (int).\n* **Body (raw/json):** `ProducUpdateDTO` (Campos opcionales: Title, Description, Price, Discount, Stock, Status).\n* **Respuesta (200 OK):** `GenericResponse<ProductDetailDTO>`.\n* **Errores (404 Not Found):** Producto no encontrado.\n\n**`PATCH /admin/products/{id}/discount`**\n* **Propósito:** Actualiza rápidamente solo el descuento de un producto.\n* **Parámetros (Ruta):** `id` (int).\n* **Body (raw/json):** `UpdateProductDiscountDTO` (ej. `{\"discount\": 25}`).\n* **Respuesta (200 OK):** `GenericResponse<string>`.\n* **Errores (404 Not Found):** Producto no encontrado.\n\n**`PATCH /admin/products/{id}/status`**\n* **Propósito:** Activa o desactiva un producto (toggle `IsAvailable`).\n* **Parámetros (Ruta):** `id` (int).\n* **Respuesta (200 OK):** `GenericResponse<string>`.\n\n**`DELETE /admin/products/{id}`**\n* **Propósito:** Desactiva un producto (eliminación lógica). Internamente llama al mismo servicio que `PATCH /status`.\n* **Parámetros (Ruta):** `id` (int).\n* **Respuesta (200 OK):** `GenericResponse<string>`.\n\n**`POST /admin/products/{id}/images`**\n* **Propósito:** Sube imágenes adicionales a un producto existente.\n* **Parámetros (Ruta):** `id` (int).\n* **Body:** `multipart/form-data` (Campo `images` tipo File).\n* **Respuesta (200 OK):** `GenericResponse<string>`.\n\n**`DELETE /admin/products/{id}/images/{imageId}`**\n* **Propósito:** Elimina una imagen específica de un producto (de Cloudinary y la DB).\n* **Parámetros (Ruta):** `id` (int), `imageId` (int).\n* **Respuesta (200 OK):** `GenericResponse<string>`.\n* **Errores (404 Not Found):** Imagen no encontrada.\n",
+					"auth": {
+						"type": "bearer",
+						"bearer": [
+							{
+								"key": "token",
+								"value": "{{adminToken}}",
+								"type": "string"
+							}
+						]
+					}
+				},
+				{
+					"name": "Admin Categories",
+					"item": [
+						{
+							"name": "List Categories",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200 OK\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"// Captura la primera categoría para tests de update/delete",
+											"var jsonData = pm.response.json();",
+											"if (jsonData.data.categories && jsonData.data.categories.length > 0) {",
+											"    pm.collectionVariables.set(\"newCategoryId\", jsonData.data.categories[0].id);",
+											"} else {",
+											"    console.error(\"No se encontraron categorías.\");",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/admin/categories?search=&page=1&size=10",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"categories"
+									],
+									"query": [
+										{
+											"key": "search",
+											"value": ""
+										},
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "size",
+											"value": "10"
+										}
+									]
+								},
+								"description": "Obtiene la lista de categorías."
+							},
+							"response": []
+						},
+						{
+							"name": "Create Category",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200 OK\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"var jsonData = pm.response.json();",
+											"pm.collectionVariables.set(\"tempCategoryId\", jsonData.data.id);",
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Categoría Postman {{$timestamp}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/admin/categories",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"categories"
+									]
+								},
+								"description": "Crea una nueva categoría."
+							},
+							"response": []
+						},
+						{
+							"name": "Get Category",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/admin/categories/{{newCategoryId}}",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"categories",
+										"{{newCategoryId}}"
+									]
+								},
+								"description": "Obtiene una categoría por su ID."
+							},
+							"response": []
+						},
+						{
+							"name": "Update Category",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Categoría Postman Editada {{$timestamp}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/admin/categories/{{newCategoryId}}",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"categories",
+										"{{newCategoryId}}"
+									]
+								},
+								"description": "Actualiza el nombre de una categoría."
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Category",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/admin/categories/{{tempCategoryId}}",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"categories",
+										"{{tempCategoryId}}"
+									]
+								},
+								"description": "Elimina una categoría (creada en 'Create Category'). Falla si tiene productos asociados."
+							},
+							"response": []
+						}
+					],
+					"description": "### Descripción\nGestión de categorías (CRUD) por administradores. Permite crear, actualizar y eliminar las categorías que se usan para clasificar productos.\n\nControlador: `CategoryController.cs`\nRuta base: `api/admin/categories`\n\n### Endpoints Incluidos\n\n**`GET /admin/categories`**\n* **Propósito:** Lista todas las categorías, con opción de búsqueda.\n* **Parámetros (Query):**\n    * `search` (string, op): Filtra categorías por nombre.\n    * `page` (int, op): (Ignorado, hardcodeado a 1 en el controlador).\n    * `size` (int, op): (Ignorado, hardcodeado a 100 en el controlador).\n* **Respuesta (200 OK):** `GenericResponse<object>`\n    ```json\n    {\n        \"message\": \"Categories retrieved successfully\",\n        \"data\": {\n            \"categories\": [\n                {\n                    \"id\": 1,\n                    \"name\": \"Tecnología\",\n                    \"createdAt\": \"...\",\n                    \"productCount\": 5\n                }\n            ]\n        }\n    }\n    ```\n\n**`GET /admin/categories/{id}`**\n* **Propósito:** Obtiene el detalle de una categoría por su ID.\n* **Parámetros (Ruta):** `id` (int).\n* **Respuesta (200 OK):** `GenericResponse<CategoryDTO>`.\n* **Errores (404 Not Found):** Si la categoría no existe.\n\n**`POST /admin/categories`**\n* **Propósito:** Crea una nueva categoría.\n* **Body (raw/json):** `CategoryCreateDTO`\n    ```json\n    {\n        \"name\": \"Nueva Categoría\"\n    }\n    ```\n* **Respuesta (200 OK):** `GenericResponse<CategoryDTO>` (El controlador devuelve 200 OK, no 201 Created).\n* **Errores (409 Conflict):** Ya existe una categoría con ese nombre (`InvalidOperationException`).\n\n**`PUT /admin/categories/{id}`**\n* **Propósito:** Actualiza el nombre de una categoría.\n* **Parámetros (Ruta):** `id` (int).\n* **Body (raw/json):** `CategoryUpdateDTO`\n    ```json\n    {\n        \"name\": \"Nombre Editado\"\n    }\n    ```\n* **Respuesta (200 OK):** `GenericResponse<CategoryDTO>`.\n* **Errores (404 Not Found):** Categoría no encontrada o el nuevo nombre ya está en uso por otra categoría (`KeyNotFoundException`).\n\n**`DELETE /admin/categories/{id}`**\n* **Propósito:** Elimina una categoría.\n* **Parámetros (Ruta):** `id` (int).\n* **Respuesta (200 OK):** `GenericResponse<string>`.\n* **Errores (409 Conflict):** No se puede eliminar la categoría porque tiene productos asociados (`InvalidOperationException`).\n* **Errores (404 Not Found):** (Implícito en el 409) Si la categoría no existe.",
+					"auth": {
+						"type": "bearer",
+						"bearer": [
+							{
+								"key": "token",
+								"value": "{{adminToken}}",
+								"type": "string"
+							}
+						]
+					}
+				},
+				{
+					"name": "Admin Brands",
+					"item": [
+						{
+							"name": "List Brands",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200 OK\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"// Captura la primera marca para tests de update/delete",
+											"var jsonData = pm.response.json();",
+											"if (jsonData.data && jsonData.data.length > 0) {",
+											"    pm.collectionVariables.set(\"newBrandId\", jsonData.data[0].id);",
+											"} else {",
+											"    console.error(\"No se encontraron marcas.\");",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/admin/brands?search=&page=1&size=10",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"brands"
+									],
+									"query": [
+										{
+											"key": "search",
+											"value": ""
+										},
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "size",
+											"value": "10"
+										}
+									]
+								},
+								"description": "Obtiene la lista de marcas."
+							},
+							"response": []
+						},
+						{
+							"name": "Create Brand",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 201 Created\", function () {",
+											"    pm.response.to.have.status(201);",
+											"});",
+											"var jsonData = pm.response.json();",
+											"pm.collectionVariables.set(\"tempBrandId\", jsonData.data.id);",
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Marca Postman {{$timestamp}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/admin/brands",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"brands"
+									]
+								},
+								"description": "Crea una nueva marca."
+							},
+							"response": []
+						},
+						{
+							"name": "Get Brand",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/admin/brands/{{newBrandId}}",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"brands",
+										"{{newBrandId}}"
+									]
+								},
+								"description": "Obtiene una marca por su ID."
+							},
+							"response": []
+						},
+						{
+							"name": "Update Brand",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Marca Postman Editada {{$timestamp}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/admin/brands/{{newBrandId}}",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"brands",
+										"{{newBrandId}}"
+									]
+								},
+								"description": "Actualiza el nombre de una marca."
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Brand",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/admin/brands/{{tempBrandId}}",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"brands",
+										"{{tempBrandId}}"
+									]
+								},
+								"description": "Elimina una marca (creada en 'Create Brand'). Falla si tiene productos asociados."
+							},
+							"response": []
+						}
+					],
+					"description": "### Descripción\nGestión de marcas (CRUD) por administradores. Permite crear, actualizar y eliminar las marcas que se usan para clasificar productos.\n\nControlador: `BrandController.cs`\nRuta base: `api/admin/brands`\n\n### Endpoints Incluidos\n\n**`GET /admin/brands`**\n* **Propósito:** Lista todas las marcas, con opción de búsqueda y paginación.\n* **Parámetros (Query):**\n    * `search` (string, op): Filtra marcas por nombre.\n    * `page` (int, op): (default: 1).\n    * `size` (int, op): (default: 10).\n* **Respuesta (200 OK):** `GenericResponse<object>` (Contiene un array de `BrandDTO`)\n    ```json\n    {\n        \"message\": \"Brands retrieved successfully\",\n        \"data\": [\n            {\n                \"id\": 1,\n                \"name\": \"MarcaX\",\n                \"createdAt\": \"...\",\n                \"productCount\": 0\n            }\n        ]\n    }\n    ```\n\n**`GET /admin/brands/{id}`**\n* **Propósito:** Obtiene el detalle de una marca por su ID.\n* **Parámetros (Ruta):** `id` (int).\n* **Respuesta (200 OK):** `GenericResponse<object>` (Contiene un `BrandDTO`).\n* **Errores (404 Not Found):** Si la marca no existe.\n\n**`POST /admin/brands`**\n* **Propósito:** Crea una nueva marca.\n* **Body (raw/json):** `BrandCreateDTO`\n    ```json\n    {\n        \"name\": \"Nueva Marca\"\n    }\n    ```\n* **Respuesta (201 Created):** `GenericResponse<object>` (Contiene el `BrandDTO` creado).\n* **Errores (409 Conflict):** Ya existe una marca con ese nombre (`InvalidOperationException`).\n\n**`PUT /admin/brands/{id}`**\n* **Propósito:** Actualiza el nombre de una marca.\n* **Parámetros (Ruta):** `id` (int).\n* **Body (raw/json):** `BrandUpdateDTO`\n    ```json\n    {\n        \"name\": \"Nombre Editado\"\n    }\n    ```\n* **Respuesta (200 OK):** `GenericResponse<object>` (Contiene el `BrandDTO` actualizado).\n* **Errores (409 Conflict):** Marca no encontrada o el nuevo nombre ya está en uso por otra marca (`InvalidOperationException`).\n\n**`DELETE /admin/brands/{id}`**\n* **Propósito:** Elimina una marca.\n* **Parámetros (Ruta):** `id` (int).\n* **Respuesta (200 OK):** `GenericResponse<object>`.\n* **Errores (409 Conflict):** No se puede eliminar la marca porque tiene productos asociados (`ConflictException` desde el servicio) o no fue encontrada (`InvalidOperationException`).\n",
+					"auth": {
+						"type": "bearer",
+						"bearer": [
+							{
+								"key": "token",
+								"value": "{{adminToken}}",
+								"type": "string"
+							}
+						]
+					}
+				},
+				{
+					"name": "Admin Orders",
+					"item": [
+						{
+							"name": "List All Orders",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200 OK\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"// Captura el primer pedido (creado en el flujo de compra) para actualizar su estado",
+											"var jsonData = pm.response.json();",
+											"if (jsonData.data.orders && jsonData.data.orders.length > 0) {",
+											"    pm.collectionVariables.set(\"orderId\", jsonData.data.orders[0].id);",
+											"} else {",
+											"    console.warn(\"No hay pedidos para probar la actualización de estado. Ejecuta el Flujo de Compra primero.\");",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/admin/orders?Page=1&PageSize=10&SortBy=CreatedAtDesc",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"orders"
+									],
+									"query": [
+										{
+											"key": "Page",
+											"value": "1"
+										},
+										{
+											"key": "PageSize",
+											"value": "10"
+										},
+										{
+											"key": "SortBy",
+											"value": "CreatedAtDesc"
+										}
+									]
+								},
+								"description": "Lista todos los pedidos de todos los usuarios, con filtros. Captura el 'orderId' del pedido más reciente."
+							},
+							"response": []
+						},
+						{
+							"name": "Get Any Order Detail",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/admin/orders/{{orderId}}",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"orders",
+										"{{orderId}}"
+									]
+								},
+								"description": "Obtiene el detalle de cualquier pedido ('orderId') por su ID."
+							},
+							"response": []
+						},
+						{
+							"name": "Update Order Status (Processing)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200 OK\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"status\": 1\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/admin/orders/{{orderId}}/status",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"orders",
+										"{{orderId}}",
+										"status"
+									]
+								},
+								"description": "Actualiza el estado de un pedido a 'Processing' (1). Valida la transición de estado (Pending -> Processing)."
+							},
+							"response": []
+						},
+						{
+							"name": "Update Order Status (Shipped)",
+							"request": {
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"status\": 2\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/admin/orders/{{orderId}}/status",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"orders",
+										"{{orderId}}",
+										"status"
+									]
+								},
+								"description": "Actualiza el estado de un pedido a 'Shipped' (2). Valida la transición (Processing -> Shipped)."
+							},
+							"response": []
+						}
+					],
+					"description": "### Descripción\nGestión de pedidos (listar todos, actualizar estado) por administradores. Permite a un administrador ver y procesar los pedidos de todos los clientes.\n\nControlador: `AdminOrderController.cs`\nRuta base: `api/admin/orders`\n\n### Endpoints Incluidos\n\n**`GET /admin/orders`**\n* **Propósito:** Lista todos los pedidos de todos los usuarios, con filtros y paginación.\n* **Parámetros (Query):** `OrderFilterDTO`\n    * `Status` (enum, op): 0 (Pending), 1 (Processing), 2 (Shipped), 3 (Delivered), 4 (Cancelled).\n    * `UserId` (int, op): Filtrar por ID de usuario.\n    * `StartDate` (datetime, op): Fecha de inicio.\n    * `EndDate` (datetime, op): Fecha de fin.\n    * `Code` (string, op): Buscar por código de orden.\n    * `SortBy` (enum, op): `CreatedAtDesc` (0), `CreatedAtAsc` (1), `TotalDesc` (2), `TotalAsc` (3).\n    * `Page` (int, op): (default: 1).\n    * `PageSize` (int, op): (default: 10).\n* **Respuesta (200 OK):** `GenericResponse<OrderListDTO>`.\n\n**`GET /admin/orders/{id}`**\n* **Propósito:** Obtiene el detalle de cualquier pedido por su ID (sin restricción de propiedad).\n* **Parámetros (Ruta):** `id` (int).\n* **Respuesta (200 OK):** `GenericResponse<OrderDTO>`.\n* **Errores (404 Not Found):** Si la orden no existe.\n\n**`PATCH /admin/orders/{id}/status`**\n* **Propósito:** Actualiza el estado de un pedido.\n* **Parámetros (Ruta):** `id` (int).\n* **Body (raw/json):** `UpdateOrderStatusDTO`\n    ```json\n    {\n        \"status\": 1\n    }\n    ```\n    (Donde `Status` es el enum: 0=Pending, 1=Processing, 2=Shipped, 3=Delivered, 4=Cancelled)\n* **Respuesta (200 OK):** `GenericResponse<OrderDTO>` (con la orden actualizada).\n* **Errores (404 Not Found):** Orden no encontrada.\n* **Errores (409 Conflict):** La transición de estado no es válida (ej. de `Pending` a `Delivered`) (`InvalidOperationException` desde `OrderStatusTransitionValidator`).\n",
+					"auth": {
+						"type": "bearer",
+						"bearer": [
+							{
+								"key": "token",
+								"value": "{{adminToken}}",
+								"type": "string"
+							}
+						]
+					}
+				},
+				{
+					"name": "Admin Users",
+					"item": [
+						{
+							"name": "List Users",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200 OK\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"pm.test(\"Response is a paged result\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    pm.expect(jsonData.items).to.be.an('array');",
+											"    pm.expect(jsonData.totalCount).to.be.a('number');",
+											"});",
+											"// Captura el ID del primer usuario (que no sea el admin actual) para modificarlo",
+											"var jsonData = pm.response.json();",
+											"var adminEmail = pm.collectionVariables.get(\"testAdminEmail\");",
+											"var targetUser = jsonData.items.find(u => u.email !== adminEmail);",
+											"",
+											"if (targetUser) {",
+											"    pm.collectionVariables.set(\"targetUserId\", targetUser.id);",
+											"    console.log(\"Target User ID capturado: \" + targetUser.id);",
+											"} else if (jsonData.items.length > 0) {",
+											"     pm.collectionVariables.set(\"targetUserId\", jsonData.items[0].id); // Fallback al primero",
+											"     console.warn(\"Capturando el primer usuario (podría ser el admin actual)\");",
+											"} else {",
+											"    console.error(\"No se encontraron usuarios para probar la gestión.\");",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/admin/users?page=1&pageSize=10&orderBy=createdAt&orderDir=desc",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"users"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "pageSize",
+											"value": "10"
+										},
+										{
+											"key": "orderBy",
+											"value": "createdAt"
+										},
+										{
+											"key": "orderDir",
+											"value": "desc"
+										}
+									]
+								},
+								"description": "Lista todos los usuarios con filtros y paginación. Captura un 'targetUserId' para los siguientes pasos."
+							},
+							"response": []
+						},
+						{
+							"name": "Get User Detail",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200 OK\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"pm.test(\"User ID matches\", function () {",
+											"    var jsonData = pm.response.json();",
+											"    var expectedId = parseInt(pm.collectionVariables.get(\"targetUserId\"), 10);",
+											"    pm.expect(jsonData.id).to.eql(expectedId);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/admin/users/{{targetUserId}}",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"users",
+										"{{targetUserId}}"
+									]
+								},
+								"description": "Obtiene el detalle de un usuario específico ('targetUserId')."
+							},
+							"response": []
+						},
+						{
+							"name": "Change User Status (Block)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 204 No Content\", function () {",
+											"    pm.response.to.have.status(204);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"status\": \"Blocked\",\n    \"reason\": \"Prueba de bloqueo desde Postman\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/admin/users/{{targetUserId}}/status",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"users",
+										"{{targetUserId}}",
+										"status"
+									]
+								},
+								"description": "Bloquea a un usuario ('targetUserId')."
+							},
+							"response": []
+						},
+						{
+							"name": "Change User Status (Active)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 204 No Content\", function () {",
+											"    pm.response.to.have.status(204);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"status\": \"Active\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/admin/users/{{targetUserId}}/status",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"users",
+										"{{targetUserId}}",
+										"status"
+									]
+								},
+								"description": "Desbloquea (activa) a un usuario ('targetUserId')."
+							},
+							"response": []
+						},
+						{
+							"name": "Change User Role (to Admin)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 204 No Content\", function () {",
+											"    pm.response.to.have.status(204);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"role\": \"Administrador\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/admin/users/{{targetUserId}}/role",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"users",
+										"{{targetUserId}}",
+										"role"
+									]
+								},
+								"description": "Cambia el rol de un usuario ('targetUserId') a 'Administrador'."
+							},
+							"response": []
+						},
+						{
+							"name": "Change User Role (to Customer)",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 204 No Content\", function () {",
+											"    pm.response.to.have.status(204);",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"role\": \"Cliente\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/admin/users/{{targetUserId}}/role",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"admin",
+										"users",
+										"{{targetUserId}}",
+										"role"
+									]
+								},
+								"description": "Cambia el rol de un usuario ('targetUserId') a 'Cliente'."
+							},
+							"response": []
+						}
+					],
+					"description": "### Descripción\nGestión de cuentas de usuario (listar, ver detalle, cambiar estado/rol) por administradores.\n\nControlador: `UserController.cs`\nRuta base: `api/admin/users`\n\n### Endpoints Incluidos\n\n**`GET /admin/users`**\n* **Propósito:** Lista todos los usuarios con filtros y paginación.\n* **Parámetros (Query):**\n    * `page` (int, op): (default: 1).\n    * `pageSize` (int, op): (default: 20).\n    * `role` (string, op): (ej. \"Cliente\", \"Administrador\").\n    * `status` (string, op): (ej. \"Active\", \"Blocked\").\n    * `email` (string, op): Buscar por email.\n    * `createdFrom` / `createdTo` (datetime, op): Rango de fechas.\n    * `orderBy` (string, op): (ej. \"createdAt\", \"email\").\n    * `orderDir` (string, op): (ej. \"asc\", \"desc\").\n* **Respuesta (200 OK):** `PagedResult<UserListItemDto>`\n\n**`GET /admin/users/{id}`**\n* **Propósito:** Obtiene el detalle de un usuario específico.\n* **Parámetros (Ruta):** `id` (int).\n* **Respuesta (200 OK):** `UserDetailDto`.\n* **Errores (404 Not Found):** Usuario no encontrado.\n\n**`PATCH /admin/users/{id}/status`**\n* **Propósito:** Cambia el estado de un usuario (Active/Blocked).\n* **Parámetros (Ruta):** `id` (int).\n* **Body (raw/json):** `UpdateUserStatusDto`\n    ```json\n    {\n        \"status\": \"Blocked\",\n        \"reason\": \"Prueba de bloqueo\"\n    }\n    ```\n* **Respuesta (204 No Content):** Éxito.\n* **Errores (404 Not Found):** Usuario no encontrado.\n* **Errores (409 Conflict):** No se puede bloquear al usuario (ej. es el último admin o es él mismo).\n\n**`PATCH /admin/users/{id}/role`**\n* **Propósito:** Cambia el rol de un usuario (Cliente/Administrador).\n* **Parámetros (Ruta):** `id` (int).\n* **Body (raw/json):** `UpdateUserRoleDto`\n    ```json\n    {\n        \"role\": \"Administrador\"\n    }\n    ```\n* **Respuesta (204 No Content):** Éxito.\n* **Errores (404 Not Found):** Usuario no encontrado.\n* **Errores (400 Bad Request):** El rol no es válido (ej. \"Moderador\").\n* **Errores (409 Conflict):** No se puede quitar el rol (ej. es el último admin).\n",
+					"auth": {
+						"type": "bearer",
+						"bearer": [
+							{
+								"key": "token",
+								"value": "{{adminToken}}",
+								"type": "string"
+							}
+						]
+					}
+				}
+			],
+			"description": "### Descripción\nEndpoints para la administración del sistema (Req 7.1). Todos los endpoints y subcarpetas aquí listados requieren un token de autenticación de administrador (`adminToken`).\n\nEstos endpoints cubren la gestión de Productos, Categorías, Marcas, Pedidos de usuarios y Cuentas de usuario.",
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{adminToken}}",
+						"type": "string"
+					}
+				]
+			}
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5000/api",
+			"description": {
+				"content": "URL base para el ambiente de desarrollo local.",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "authToken",
+			"value": "",
+			"description": {
+				"content": "Token JWT para el usuario 'Cliente'. Se captura automáticamente en el login.",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "adminToken",
+			"value": "",
+			"description": {
+				"content": "Token JWT para el usuario 'Administrador'. Se captura automáticamente en el login de admin.",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "currentUserId",
+			"value": "",
+			"description": {
+				"content": "ID del usuario 'Cliente' autenticado. Se captura automáticamente del token de login.",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "productId",
+			"value": "1",
+			"description": {
+				"content": "ID de un producto capturado dinámicamente (usualmente del listado) para usar en el flujo de compra. Se inicializa en 1 por si el seeder corre.",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "orderId",
+			"value": "1",
+			"description": {
+				"content": "ID de un pedido capturado dinámicamente (al crear un pedido) para usar en el historial y detalle.",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "testUserEmail",
+			"value": "customer-{{$timestamp}}@test.com",
+			"description": {
+				"content": "Email dinámico para el registro de usuarios de prueba. Usa un timestamp para ser único.",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "testUserPassword",
+			"value": "TestUser123!",
+			"description": {
+				"content": "Contraseña estándar para los usuarios de prueba registrados.",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "testAdminEmail",
+			"value": "admin@tiendaucn.cl",
+			"description": {
+				"content": "Email del administrador (definido en appsettings.json/DataSeeder).",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "testAdminPassword",
+			"value": "Admin123!",
+			"description": {
+				"content": "Contraseña del administrador (definido en appsettings.json/DataSeeder).",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "testProductName",
+			"value": "Postman Test Product {{$timestamp}}",
+			"description": {
+				"content": "Nombre dinámico para crear productos en el flujo de admin.",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "testProductPrice",
+			"value": "19990",
+			"description": {
+				"content": "Precio estándar para crear productos de prueba.",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "verificationCode",
+			"value": "123456",
+			"description": {
+				"content": "Variable para pegar manualmente el código de verificación de email.",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "verifiedUserEmail",
+			"value": "cliente@test.com",
+			"description": {
+				"content": "Email del cliente pre-cargado por el Seeder (DataSeeder.cs) para el flujo de compra.",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "verifiedUserPassword",
+			"value": "Cliente123!",
+			"description": {
+				"content": "Contraseña del cliente pre-cargado por el Seeder (DataSeeder.cs).",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "newProductId",
+			"value": "",
+			"description": {
+				"content": "ID del producto creado en el flujo de Admin.",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "newCategoryId",
+			"value": "1",
+			"description": {
+				"content": "ID de categoría capturado para crear un producto en el flujo de Admin.",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "newBrandId",
+			"value": "1",
+			"description": {
+				"content": "ID de marca capturado para crear un producto en el flujo de Admin.",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "newImageId",
+			"value": "1",
+			"description": {
+				"content": "ID de una imagen (capturado manualmente) para probar la eliminación de imágenes.",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "targetUserId",
+			"value": "2",
+			"description": {
+				"content": "ID de un usuario capturado por el Admin para probar la gestión (bloqueo, cambio de rol).",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "tempCategoryId",
+			"value": "",
+			"description": {
+				"content": "ID de una categoría creada temporalmente para probar su eliminación.",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "tempBrandId",
+			"value": "",
+			"description": {
+				"content": "ID de una marca creada temporalmente para probar su eliminación.",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "newAuthToken",
+			"value": "",
+			"description": {
+				"content": "Token capturado para el usuario recién registrado en el flujo de autenticación.",
+				"type": "text/plain"
+			}
+		},
+		{
+			"key": "adminCategoryId",
+			"value": ""
+		},
+		{
+			"key": "adminBrandId",
+			"value": ""
+		},
+		{
+			"key": "adminProductId",
+			"value": ""
+		}
+	]
+}
