@@ -166,7 +166,7 @@ namespace TiendaUcnApi.src.API.Controllers
         /// <response code="401">User not authenticated.</response>
         /// <response code="400">Cart is empty or contains invalid items.</response>
         [HttpPost("checkout")]
-        [Authorize(Roles = "Customer")]
+        [Authorize(Roles = "Cliente")]
         public async Task<IActionResult> CheckoutAsync()
         {
             var buyerId = GetBuyerId();
