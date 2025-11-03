@@ -4,103 +4,113 @@ using TiendaUcnApi.src.Domain.Models;
 namespace TiendaUcnApi.src.Infrastructure.Repositories.Interfaces;
 
 /// <summary>
-/// Interfaz para el repositorio de productos, que define los métodos para interactuar con los datos de productos.
+/// Repository interface for product data access operations.
+/// Handles product CRUD operations, filtering, and stock management.
 /// </summary>
 public interface IProductRepository
 {
     /// <summary>
-    /// Retorna una lista de productos para el administrador con los parámetros de búsqueda especificados.
+    /// Retrieves filtered products for admin view with pagination and search criteria.
     /// </summary>
-    /// <param name="searchParams">Parámetros de búsqueda para filtrar los productos.</param>
-    /// <returns>Una tarea que representa la operación asíncrona, con una lista de productos para el administrador y el conteo total de productos.</returns>
+    /// <param name="searchParams">Search parameters including filters, sorting, and pagination.</param>
+    /// <returns>Tuple containing products collection and total count.</returns>
     Task<(IEnumerable<Product> products, int totalCount)> GetFilteredForAdminAsync(
         SearchParamsDTO searchParams
     );
 
     /// <summary>
-    /// Retorna una lista de productos para el cliente con los parámetros de búsqueda especificados.
+    /// Retrieves filtered products for customer view with pagination and search criteria.
+    /// Only returns available products.
     /// </summary>
-    /// <param name="searchParams">Parámetros de búsqueda para filtrar los productos.</param>
-    /// <returns>Una tarea que representa la operación asíncrona, con una lista de productos para el cliente y el conteo total de productos.</returns>
+    /// <param name="searchParams">Search parameters including filters, sorting, and pagination.</param>
+    /// <returns>Tuple containing products collection and total count.</returns>
     Task<(IEnumerable<Product> products, int totalCount)> GetFilteredForCustomerAsync(
         SearchParamsDTO searchParams
     );
 
     /// <summary>
-    /// Retorna un producto específico por su ID.
+    /// Retrieves a specific product by its identifier.
     /// </summary>
-    /// <param name="id">El ID del producto a buscar.</param>
-    /// <returns>Una tarea que representa la operación asíncrona, con el producto encontrado o null si no se encuentra.</returns>
+    /// <param name="id">The product identifier.</param>
+    /// <returns>Product entity or null if not found.</returns>
     Task<Product?> GetByIdAsync(int id);
 
     /// <summary>
-    /// Crea un nuevo producto en el repositorio.
+    /// Creates a new product in the database.
     /// </summary>
-    /// <param name="product">El producto a crear.</param>
-    /// <returns>Una tarea que representa la operación asíncrona, con el id del producto creado.</returns>
+    /// <param name="product">The product entity to create.</param>
+    /// <returns>The identifier of the created product.</returns>
     Task<int> CreateAsync(Product product);
 
     /// <summary>
-    /// Obtiene una categoría por su Id.
+    /// Retrieves a category by its identifier.
     /// </summary>
-    /// <param name="id">Id de la categoría.</param>
-    /// <returns>Una tarea que representa la operación asíncrona, con la categoría encontrada.</returns>
+    /// <param name="id">The category identifier.</param>
+    /// <returns>Category entity or null if not found.</returns>
     Task<Category?> GetCategoryByIdAsync(int id);
 
     /// <summary>
-    /// Obtiene una marca por su Id.
+    /// Retrieves a brand by its identifier.
     /// </summary>
-    /// <param name="id">Id de la marca.</param>
-    /// <returns>Una tarea que representa la operación asíncrona, con la marca encontrada.</returns>
+    /// <param name="id">The brand identifier.</param>
+    /// <returns>Brand entity or null if not found.</returns>
     Task<Brand?> GetBrandByIdAsync(int id);
 
     /// <summary>
-    /// Cambia el estado activo de un producto por su ID.
+    /// Toggles the availability status of a product (soft delete).
     /// </summary>
-    /// <param name="id">El ID del producto cuyo estado se cambiará.</param>
+    /// <param name="id">The product identifier whose status will be toggled.</param>
     Task ToggleActiveAsync(int id);
 
     /// <summary>
-    /// Obtiene el stock real de un producto por su ID.
+    /// Gets the actual stock quantity for a product.
     /// </summary>
-    /// <param name="productId">El ID del producto cuyo stock se obtendrá.</param>
-    /// <returns>Una tarea que representa la operación asíncrona, con el stock real del producto.</returns>
+    /// <param name="productId">The product identifier.</param>
+    /// <returns>Current stock quantity.</returns>
     Task<int> GetRealStockAsync(int productId);
 
     /// <summary>
-    /// Actualiza el stock de un producto por su ID.
+    /// Updates the stock quantity of a product.
     /// </summary>
-    /// <param name="productId">El ID del producto cuyo stock se actualizará.</param>
-    /// <param name="stock">El nuevo stock del producto.</param>
-    /// <returns>Una tarea que representa la operación asíncrona.</returns>
+    /// <param name="productId">The product identifier.</param>
+    /// <param name="stock">New stock quantity.</param>
     Task UpdateStockAsync(int productId, int stock);
 
     /// <summary>
-    /// Retorna un producto específico por su ID desde el punto de vista de un admin.
+    /// Retrieves a product by its identifier for admin view.
+    /// Includes all product data regardless of availability status.
     /// </summary>
-    /// <param name="id">El ID del producto a buscar.</param>
-    /// <returns>Una tarea que representa la operación asíncrona, con el producto encontrado o null si no se encuentra.</returns>
+    /// <param name="id">The product identifier.</param>
+    /// <returns>Product entity or null if not found.</returns>
     Task<Product?> GetByIdForAdminAsync(int id);
 
     /// <summary>
-    /// Actualiza los datos de un producto.
+    /// Retrieves a product by its identifier for customer view.
+    /// Only returns the product if it's available.
     /// </summary>
-    /// <param name="product">Producto con los datos actualizados.</param>
-    /// <returns>Una tarea que representa la operación asíncrona, con el producto actualizado.</returns>
+    /// <param name="id">The product identifier.</param>
+    /// <returns>Product entity or null if not found or unavailable.</returns>
+    Task<Product?> GetByIdForCustomerAsync(int id);
+
+    /// <summary>
+    /// Updates an existing product in the database.
+    /// </summary>
+    /// <param name="product">The product entity with updated data.</param>
+    /// <returns>The updated product entity.</returns>
     Task<Product> UpdateAsync(Product product);
 
     /// <summary>
-    /// Actualiza el descuento de un producto.
+    /// Updates the discount percentage of a product.
     /// </summary>
-    /// <param name="productId">ID del producto.</param>
-    /// <param name="discount">Nuevo descuento.</param>
-    /// <returns>Una tarea que representa la operación asíncrona.</returns>
+    /// <param name="productId">The product identifier.</param>
+    /// <param name="discount">New discount percentage (0-100).</param>
     Task UpdateDiscountAsync(int productId, int discount);
 
     /// <summary>
-    /// Obtiene un producto con seguimiento de cambios por su ID para administración.
+    /// Retrieves a product with change tracking enabled for admin operations.
+    /// Used when modifications need to be tracked by Entity Framework.
     /// </summary>
-    /// <param name="id">ID del producto.</param>
-    /// <returns>Una tarea que representa la operación asíncrona, con el producto encontrado o null si no existe.</returns>
+    /// <param name="id">The product identifier.</param>
+    /// <returns>Tracked product entity or null if not found.</returns>
     Task<Product?> GetTrackedByIdForAdminAsync(int id);
 }

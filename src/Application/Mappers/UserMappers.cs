@@ -5,14 +5,18 @@ using TiendaUcnApi.src.Domain.Models;
 namespace TiendaUcnApi.src.Application.Mappers;
 
 /// <summary>
-/// Clase para mapear objetos de tipo DTO a User y viceversa.
+/// Configures mappings between User entities and User DTOs using Mapster.
+/// Handles transformations for user registration and authentication operations.
 /// </summary>
 public class UserMapper
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="UserMapper"/> class.
+    /// </summary>
     public UserMapper() { }
 
     /// <summary>
-    /// Configura el mapeo de RegisterDTO a User.
+    /// Configures all user-related mappings.
     /// </summary>
     public void ConfigureAllMappings()
     {
@@ -20,7 +24,8 @@ public class UserMapper
     }
 
     /// <summary>
-    /// Configura el mapeo de RegisterDTO a User.
+    /// Configures the mapping from RegisterDTO to User entity.
+    /// Maps registration data to create a new user account with email unconfirmed by default.
     /// </summary>
     public void ConfigureAuthMappings()
     {

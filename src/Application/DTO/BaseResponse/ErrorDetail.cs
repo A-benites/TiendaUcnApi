@@ -1,19 +1,19 @@
 namespace TiendaUcnApi.src.Application.DTO.BaseResponse
 {
     /// <summary>
-    /// Clase que representa los detalles de un error.
+    /// Class representing error details.
     /// </summary>
-    /// <param name="message">Mensaje de error.</param>
-    /// <param name="details">Detalles adicionales del error (opcional).</param>
+    /// <param name="message">Error message.</param>
+    /// <param name="details">Additional error details (optional).</param>
     public class ErrorDetail(string message, string? details = null)
     {
         /// <summary>
-        /// Mensaje principal del error.
+        /// Main error message.
         /// </summary>
         public string Message { get; set; } = message;
 
         /// <summary>
-        /// Detalles adicionales del error (opcional).
+        /// Additional error details (optional).
         /// </summary>
         public string? Details { get; set; } = details;
     }

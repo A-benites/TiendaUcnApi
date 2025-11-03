@@ -6,29 +6,30 @@ using TiendaUcnApi.src.Infrastructure.Repositories.Interfaces;
 namespace TiendaUcnApi.src.Infrastructure.Repositories.Implements;
 
 /// <summary>
-/// Implementación del repositorio de códigos de verificación.
+/// Implementation of the verification code repository.
+/// Handles database operations for email verification codes and password reset codes.
 /// </summary>
 public class VerificationCodeRepository : IVerificationCodeRepository
 {
     /// <summary>
-    /// Contexto de base de datos de la aplicación.
+    /// Application database context.
     /// </summary>
     private readonly AppDbContext _context;
 
     /// <summary>
-    /// Inicializa una nueva instancia del repositorio de códigos de verificación.
+    /// Initializes a new instance of the <see cref="VerificationCodeRepository"/> class.
     /// </summary>
-    /// <param name="dataContext">Contexto de base de datos.</param>
+    /// <param name="dataContext">Database context.</param>
     public VerificationCodeRepository(AppDbContext dataContext)
     {
         _context = dataContext;
     }
 
     /// <summary>
-    /// Crea un nuevo código de verificación.
+    /// Creates a new verification code.
     /// </summary>
-    /// <param name="verificationCode">El código de verificación a crear.</param>
-    /// <returns>El código de verificación creado.</returns>
+    /// <param name="verificationCode">The verification code to create.</param>
+    /// <returns>The created verification code.</returns>
     public async Task<VerificationCode> CreateAsync(VerificationCode verificationCode)
     {
         await _context.VerificationCodes.AddAsync(verificationCode);
@@ -37,11 +38,11 @@ public class VerificationCodeRepository : IVerificationCodeRepository
     }
 
     /// <summary>
-    /// Elimina un código de verificación por ID de usuario y tipo de código.
+    /// Deletes a verification code by user ID and code type.
     /// </summary>
-    /// <param name="id">El ID del usuario.</param>
-    /// <param name="codeType">El tipo de código de verificación.</param>
-    /// <returns>True si se eliminó correctamente, false si no existía.</returns>
+    /// <param name="id">The user ID.</param>
+    /// <param name="codeType">The verification code type.</param>
+    /// <returns>True if deleted successfully, false if it didn't exist.</returns>
     public async Task<bool> DeleteByUserIdAsync(int id, CodeType codeType)
     {
         await _context
@@ -54,10 +55,10 @@ public class VerificationCodeRepository : IVerificationCodeRepository
     }
 
     /// <summary>
-    /// Elimina todos los códigos de verificación asociados a un usuario.
+    /// Deletes all verification codes associated with a user.
     /// </summary>
-    /// <param name="userId">El ID del usuario.</param>
-    /// <returns>El número de códigos de verificación eliminados.</returns>
+    /// <param name="userId">The user ID.</param>
+    /// <returns>The number of deleted verification codes.</returns>
     public async Task<int> DeleteByUserIdAsync(int userId)
     {
         var codes = await _context.VerificationCodes.Where(vc => vc.UserId == userId).ToListAsync();
@@ -67,11 +68,11 @@ public class VerificationCodeRepository : IVerificationCodeRepository
     }
 
     /// <summary>
-    /// Obtiene el último código de verificación por ID de usuario y tipo de código.
+    /// Retrieves the latest verification code by user ID and code type.
     /// </summary>
-    /// <param name="userId">El ID del usuario.</param>
-    /// <param name="codeType">El tipo de código de verificación.</param>
-    /// <returns>El último código de verificación encontrado, o null si no existe.</returns>
+    /// <param name="userId">The user ID.</param>
+    /// <param name="codeType">The verification code type.</param>
+    /// <returns>The latest verification code found, or null if it doesn't exist.</returns>
     public async Task<VerificationCode?> GetLatestByUserIdAsync(int userId, CodeType codeType)
     {
         return await _context
@@ -81,11 +82,11 @@ public class VerificationCodeRepository : IVerificationCodeRepository
     }
 
     /// <summary>
-    /// Aumenta el contador de intentos de un código de verificación.
+    /// Increases the attempt counter of a verification code.
     /// </summary>
-    /// <param name="userId">El ID del usuario.</param>
-    /// <param name="codeType">El tipo de código de verificación.</param>
-    /// <returns>El número de intentos incrementados.</returns>
+    /// <param name="userId">The user ID.</param>
+    /// <param name="codeType">The verification code type.</param>
+    /// <returns>The incremented attempt count.</returns>
     public async Task<int> IncreaseAttemptsAsync(int userId, CodeType codeType)
     {
         await _context
@@ -102,10 +103,10 @@ public class VerificationCodeRepository : IVerificationCodeRepository
     }
 
     /// <summary>
-    /// Actualiza un código de verificación existente.
+    /// Updates an existing verification code.
     /// </summary>
-    /// <param name="verificationCode">El código de verificación a actualizar.</param>
-    /// <returns>El código de verificación actualizado.</returns>
+    /// <param name="verificationCode">The verification code to update.</param>
+    /// <returns>The updated verification code.</returns>
     public async Task<VerificationCode?> UpdateAsync(VerificationCode verificationCode)
     {
         await _context

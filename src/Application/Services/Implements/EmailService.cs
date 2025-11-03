@@ -5,31 +5,32 @@ using TiendaUcnApi.src.Domain.Models;
 namespace TiendaUcnApi.src.Application.Services.Implements;
 
 /// <summary>
-/// Servicio para enviar correos electrónicos.
+/// Service for sending email messages using Resend API.
+/// Supports template-based emails with placeholder replacements.
 /// </summary>
 public class EmailService : IEmailService
 {
     /// <summary>
-    /// Cliente para enviar correos con Resend.
+    /// Resend client for sending emails.
     /// </summary>
     private readonly IResend _resend;
 
     /// <summary>
-    /// Configuración de la aplicación.
+    /// Application configuration.
     /// </summary>
     private readonly IConfiguration _configuration;
 
     /// <summary>
-    /// Entorno de hosting web.
+    /// Web hosting environment.
     /// </summary>
     private readonly IWebHostEnvironment _webHostEnvironment;
 
     /// <summary>
-    /// Constructor con todas las dependencias necesarias.
+    /// Initializes a new instance of the EmailService class with all necessary dependencies.
     /// </summary>
-    /// <param name="resend">Cliente Resend.</param>
-    /// <param name="configuration">Configuración de la aplicación.</param>
-    /// <param name="webHostEnvironment">Entorno de hosting web.</param>
+    /// <param name="resend">Resend client for email delivery.</param>
+    /// <param name="configuration">Application configuration.</param>
+    /// <param name="webHostEnvironment">Web hosting environment for template path resolution.</param>
     public EmailService(
         IResend resend,
         IConfiguration configuration,
@@ -42,10 +43,11 @@ public class EmailService : IEmailService
     }
 
     /// <summary>
-    /// Envía un código de verificación al correo electrónico del usuario.
+    /// Sends a verification code email to the user.
+    /// Uses the VerificationCode email template.
     /// </summary>
-    /// <param name="email">Correo electrónico del usuario.</param>
-    /// <param name="code">Código de verificación.</param>
+    /// <param name="email">User's email address.</param>
+    /// <param name="code">Verification code to send.</param>
     public async Task SendVerificationCodeEmailAsync(string email, string code)
     {
         var replacements = new Dictionary<string, string> { { "{{CODE}}", code } };
@@ -55,22 +57,20 @@ public class EmailService : IEmailService
         {
             To = email,
             Subject =
-                _configuration["EmailConfiguration:VerificationSubject"]
-                ?? "Código de Verificación",
+                _configuration["EmailConfiguration:VerificationSubject"] ?? "Verification Code",
             From =
                 _configuration["EmailConfiguration:From"]
-                ?? throw new InvalidOperationException(
-                    "La configuración de 'From' no puede ser nula."
-                ),
+                ?? throw new InvalidOperationException("The 'From' configuration cannot be null."),
             HtmlBody = htmlBody,
         };
         await _resend.EmailSendAsync(message);
     }
 
     /// <summary>
-    /// Envía un correo electrónico de bienvenida al usuario.
+    /// Sends a welcome email to the user after successful registration.
+    /// Uses the Welcome email template.
     /// </summary>
-    /// <param name="email">Correo electrónico del usuario.</param>
+    /// <param name="email">User's email address.</param>
     public async Task SendWelcomeEmailAsync(string email)
     {
         var htmlBody = await LoadTemplate("Welcome", null);
@@ -78,12 +78,10 @@ public class EmailService : IEmailService
         var message = new EmailMessage
         {
             To = email,
-            Subject = _configuration["EmailConfiguration:WelcomeSubject"] ?? "¡Bienvenido/a!",
+            Subject = _configuration["EmailConfiguration:WelcomeSubject"] ?? "Welcome!",
             From =
                 _configuration["EmailConfiguration:From"]
-                ?? throw new InvalidOperationException(
-                    "La configuración de 'From' no puede ser nula."
-                ),
+                ?? throw new InvalidOperationException("The 'From' configuration cannot be null."),
             HtmlBody = htmlBody,
         };
 
@@ -91,11 +89,12 @@ public class EmailService : IEmailService
     }
 
     /// <summary>
-    /// Envía un correo para restablecer la contraseña.
+    /// Sends a password reset email with a reset link.
+    /// Uses the PasswordReset email template.
     /// </summary>
-    /// <param name="to">Correo electrónico de destino.</param>
-    /// <param name="userName">Nombre del usuario.</param>
-    /// <param name="resetLink">Enlace para restablecer la contraseña.</param>
+    /// <param name="to">Destination email address.</param>
+    /// <param name="userName">User's name for personalization.</param>
+    /// <param name="resetLink">Link to reset the password.</param>
     public async Task SendPasswordResetEmailAsync(string to, string userName, string resetLink)
     {
         var replacements = new Dictionary<string, string>
@@ -108,25 +107,22 @@ public class EmailService : IEmailService
         var message = new EmailMessage
         {
             To = to,
-            Subject =
-                _configuration["EmailConfiguration:PasswordResetSubject"]
-                ?? "Restablecimiento de Contraseña",
+            Subject = _configuration["EmailConfiguration:PasswordResetSubject"] ?? "Password Reset",
             From =
                 _configuration["EmailConfiguration:From"]
-                ?? throw new InvalidOperationException(
-                    "La configuración de 'From' no puede ser nula."
-                ),
+                ?? throw new InvalidOperationException("The 'From' configuration cannot be null."),
             HtmlBody = htmlBody,
         };
         await _resend.EmailSendAsync(message);
     }
 
     /// <summary>
-    /// Envía un código para restablecer la contraseña.
+    /// Sends a verification code for password reset.
+    /// Uses the PasswordResetCode email template.
     /// </summary>
-    /// <param name="to">Correo electrónico de destino.</param>
-    /// <param name="userName">Nombre del usuario.</param>
-    /// <param name="code">Código de verificación.</param>
+    /// <param name="to">Destination email address.</param>
+    /// <param name="userName">User's name for personalization.</param>
+    /// <param name="code">Verification code for password reset.</param>
     public async Task SendPasswordResetCodeEmailAsync(string to, string userName, string code)
     {
         var replacements = new Dictionary<string, string>
@@ -141,23 +137,22 @@ public class EmailService : IEmailService
             To = to,
             Subject =
                 _configuration["EmailConfiguration:PasswordResetSubject"]
-                ?? "Código para Restablecer tu Contraseña",
+                ?? "Code to Reset Your Password",
             From =
                 _configuration["EmailConfiguration:From"]
-                ?? throw new InvalidOperationException(
-                    "La configuración de 'From' no puede ser nula."
-                ),
+                ?? throw new InvalidOperationException("The 'From' configuration cannot be null."),
             HtmlBody = htmlBody,
         };
         await _resend.EmailSendAsync(message);
     }
 
     /// <summary>
-    /// Carga una plantilla de correo electrónico y reemplaza los marcadores de posición.
+    /// Loads an email template and replaces placeholders with actual values.
+    /// Templates are located in src/Application/Templates/Email/.
     /// </summary>
-    /// <param name="templateName">El nombre de la plantilla sin extensión.</param>
-    /// <param name="replacements">Un diccionario con los marcadores de posición y sus valores.</param>
-    /// <returns>El contenido HTML de la plantilla con los valores reemplazados.</returns>
+    /// <param name="templateName">Template name without extension.</param>
+    /// <param name="replacements">Dictionary of placeholders and their replacement values.</param>
+    /// <returns>The HTML content of the template with values replaced.</returns>
     private async Task<string> LoadTemplate(
         string templateName,
         Dictionary<string, string>? replacements
@@ -182,5 +177,59 @@ public class EmailService : IEmailService
         }
 
         return html;
+    }
+
+    /// <summary>
+    /// Sends an abandoned cart reminder email to encourage the user to complete their purchase.
+    /// Uses the AbandonedCartReminder email template.
+    /// </summary>
+    /// <param name="toEmail">User's email address.</param>
+    /// <param name="userName">User's name for personalization.</param>
+    /// <param name="cartItemsHtml">HTML representation of cart items.</param>
+    /// <param name="cartUrl">URL to the user's cart.</param>
+    public async Task SendAbandonedCartReminderAsync(
+        string toEmail,
+        string userName,
+        string cartItemsHtml,
+        string cartUrl
+    )
+    {
+        // Get the project root directory (navigate up from bin/Debug/netX.X)
+        string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+        string? projectRoot = Directory.GetParent(baseDir)?.Parent?.Parent?.Parent?.FullName;
+
+        if (projectRoot == null)
+            throw new DirectoryNotFoundException("Could not determine the project path.");
+
+        // Build the correct path to the template
+        string templatePath = Path.Combine(
+            projectRoot,
+            "src",
+            "Application",
+            "Templates",
+            "Email",
+            "AbandonedCartReminder.html"
+        );
+
+        if (!File.Exists(templatePath))
+            throw new FileNotFoundException($"Template not found at: {templatePath}");
+
+        // Read the HTML file and replace variables
+        string template = await File.ReadAllTextAsync(templatePath);
+        string body = template
+            .Replace("{{UserName}}", userName)
+            .Replace("{{CartItems}}", cartItemsHtml)
+            .Replace("{{CartUrl}}", cartUrl);
+
+        // Send the email using Resend
+        var message = new EmailMessage
+        {
+            From = "TiendaUCN <onboarding@resend.dev>",
+            To = toEmail,
+            Subject = "¡Aún tienes productos en tu carrito! 🛒",
+            HtmlBody = body,
+        };
+
+        await _resend.EmailSendAsync(message);
     }
 }
