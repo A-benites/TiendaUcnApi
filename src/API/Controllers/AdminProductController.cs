@@ -61,7 +61,9 @@ public class AdminProductController : ControllerBase // Changed to avoid route c
     public async Task<IActionResult> GetByIdForAdminAsync(int id)
     {
         var result = await _productService.GetByIdForAdminAsync(id);
-        return Ok(new GenericResponse<ProductDetailDTO>("Product retrieved successfully", result));
+        return Ok(
+            new GenericResponse<ProductDetailForAdminDTO>("Product retrieved successfully", result)
+        );
     }
 
     /// <summary>
