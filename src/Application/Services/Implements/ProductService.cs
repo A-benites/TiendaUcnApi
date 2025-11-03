@@ -119,13 +119,13 @@ public class ProductService : IProductService
     /// <param name="id">Product ID.</param>
     /// <returns>Product detail DTO.</returns>
     /// <exception cref="KeyNotFoundException">Thrown when product is not found.</exception>
-    public async Task<ProductDetailDTO> GetByIdForAdminAsync(int id)
+    public async Task<ProductDetailForAdminDTO> GetByIdForAdminAsync(int id)
     {
         var product =
             await _productRepository.GetByIdForAdminAsync(id)
             ?? throw new KeyNotFoundException($"Product with ID {id} not found.");
         Log.Information("Product found: {@Product}", product);
-        return product.Adapt<ProductDetailDTO>();
+        return product.Adapt<ProductDetailForAdminDTO>();
     }
 
     /// <summary>

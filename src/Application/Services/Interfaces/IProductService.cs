@@ -39,7 +39,7 @@ public interface IProductService
     /// </summary>
     /// <param name="id">The product ID to search for.</param>
     /// <returns>Product details including admin-specific information.</returns>
-    Task<ProductDetailDTO> GetByIdForAdminAsync(int id);
+    Task<ProductDetailForAdminDTO> GetByIdForAdminAsync(int id);
 
     /// <summary>
     /// Retrieves a specific product by its ID for customer view.
