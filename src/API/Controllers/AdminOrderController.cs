@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TiendaUcnApi.src.Application.DTO;
@@ -7,9 +8,9 @@ using TiendaUcnApi.src.Application.Services.Interfaces;
 namespace TiendaUcnApi.src.API.Controllers;
 
 /// <summary>
-/// Controlador para la administración de órdenes.
-/// Permite ver todas las órdenes, filtrarlas y actualizar su estado.
-/// Solo accesible por usuarios con rol "Administrador".
+/// Controller for administrative order management.
+/// Allows viewing all orders, filtering them, and updating their status.
+/// Only accessible by users with "Administrador" role.
 /// </summary>
 [ApiController]
 [Route("api/admin/orders")]
@@ -18,16 +19,21 @@ public class AdminOrderController : ControllerBase
 {
     private readonly IOrderService _orderService;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AdminOrderController"/> class.
+    /// </summary>
+    /// <param name="orderService">The order service for business logic.</param>
     public AdminOrderController(IOrderService orderService)
     {
         _orderService = orderService;
     }
 
     /// <summary>
-    /// Obtiene todas las órdenes con filtros y paginación.
+    /// Retrieves all orders with filters and pagination.
     /// </summary>
-    /// <param name="filter">Filtros de búsqueda.</param>
-    /// <returns>Lista paginada de órdenes.</returns>
+    /// <param name="filter">Search filters.</param>
+    /// <returns>Paginated list of orders.</returns>
+    /// <response code="200">Returns the order list.</response>
     [HttpGet]
     public async Task<IActionResult> GetAllOrders([FromQuery] OrderFilterDTO filter)
     {
@@ -36,10 +42,12 @@ public class AdminOrderController : ControllerBase
     }
 
     /// <summary>
-    /// Obtiene el detalle de una orden específica por su ID.
+    /// Retrieves the details of a specific order by its ID.
     /// </summary>
-    /// <param name="id">ID de la orden.</param>
-    /// <returns>Detalle de la orden.</returns>
+    /// <param name="id">Order ID.</param>
+    /// <returns>Order details.</returns>
+    /// <response code="200">Returns the order details.</response>
+    /// <response code="404">Order not found.</response>
     [HttpGet("{id}")]
     public async Task<IActionResult> GetOrderById(int id)
     {
@@ -48,15 +56,26 @@ public class AdminOrderController : ControllerBase
     }
 
     /// <summary>
-    /// Actualiza el estado de una orden.
+    /// Updates the status of an order.
+    /// Extracts the admin ID from authenticated user claims to track who performed the status change.
     /// </summary>
-    /// <param name="id">ID de la orden.</param>
-    /// <param name="dto">DTO con el nuevo estado.</param>
-    /// <returns>Orden actualizada.</returns>
+    /// <param name="id">Order ID.</param>
+    /// <param name="dto">DTO with the new status.</param>
+    /// <returns>Updated order.</returns>
+    /// <response code="200">Order updated successfully.</response>
+    /// <response code="401">Invalid admin credentials.</response>
+    /// <response code="404">Order not found.</response>
     [HttpPatch("{id}/status")]
     public async Task<IActionResult> UpdateOrderStatus(int id, [FromBody] UpdateOrderStatusDTO dto)
     {
-        var response = await _orderService.UpdateOrderStatusAsync(id, dto);
+        // R125: Extract adminId from authenticated user claims
+        var adminIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (adminIdClaim == null || !int.TryParse(adminIdClaim.Value, out var adminId))
+        {
+            return Unauthorized(new { message = "Invalid admin credentials" });
+        }
+
+        var response = await _orderService.UpdateOrderStatusAsync(id, dto, adminId);
         return Ok(response);
     }
 }

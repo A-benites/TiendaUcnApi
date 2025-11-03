@@ -1,32 +1,37 @@
-using Serilog;
 using System.Security;
 using System.Text.Json;
+using Serilog;
 using TiendaUcnApi.src.Application.DTO.BaseResponse;
+using TiendaUcnApi.src.Application.Exceptions;
 
 namespace TiendaUcnApi.src.API.Middlewares.ErrorHandlingMiddleware;
 
 /// <summary>
-/// Middleware para el manejo de excepciones en la aplicación.
+/// Global exception handling middleware that catches unhandled exceptions and converts them to standardized HTTP responses.
+/// Provides consistent error formatting and logging across the application.
 /// </summary>
 public class ErrorHandlingMiddleware(RequestDelegate next)
 {
     private readonly RequestDelegate _next = next;
 
     /// <summary>
-    /// Método que se invoca en cada solicitud HTTP.
+    /// Processes an HTTP request, handling any exceptions that occur during execution.
     /// </summary>
+    /// <param name="context">The HTTP context for the current request.</param>
     public async Task InvokeAsync(HttpContext context)
     {
         try
         {
             await _next(context);
+
+            // Handle 401 Unauthorized responses with custom message
             if (context.Response.StatusCode == StatusCodes.Status401Unauthorized)
             {
                 context.Response.ContentType = "application/json";
                 var result = System.Text.Json.JsonSerializer.Serialize(
                     new
                     {
-                        message = "No tienes autorización para realizar esta acción. Por favor inicia sesión.",
+                        message = "You are not authorized to perform this action. Please log in.",
                     }
                 );
                 await context.Response.WriteAsync(result);
@@ -34,54 +39,57 @@ public class ErrorHandlingMiddleware(RequestDelegate next)
         }
         catch (Exception ex)
         {
-            //Capturamos excepciones no controladas y generación de un ID de seguimiento único
+            // Capture unhandled exceptions and generate a unique trace ID for tracking
             var traceId = Guid.NewGuid().ToString();
             context.Response.Headers["trace-id"] = traceId;
 
             var (statusCode, title) = MapExceptionToStatus(ex);
 
-            // Creamos un objeto ProblemDetails para la respuesta
+            // Create an ErrorDetail object for the response
             ErrorDetail error = new ErrorDetail(title, ex.Message);
 
-            Log.Error(ex, "Excepción no controlada. Trace ID: {TraceId}", traceId);
+            Log.Error(ex, "Unhandled exception. Trace ID: {TraceId}", traceId);
 
-            // Configuramos la respuesta HTTP como JSON
+            // Configure HTTP response as JSON
             context.Response.ContentType = "application/json";
-            // Establecemos el código de estado HTTP adecuado
+            // Set the appropriate HTTP status code
             context.Response.StatusCode = statusCode;
 
-            // Serializamos el objeto ProblemDetails a JSON y lo escribimos en la respuesta
+            // Serialize the ErrorDetail object to JSON and write it to the response
             var json = JsonSerializer.Serialize(
                 error,
                 new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }
             );
 
-            // Acá se escribe la respuesta al cliente
+            // Write the response to the client
             await context.Response.WriteAsync(json);
         }
     }
 
+    /// <summary>
+    /// Maps exception types to HTTP status codes and user-friendly titles.
+    /// </summary>
+    /// <param name="ex">The exception to map.</param>
+    /// <returns>A tuple containing the HTTP status code and error title.</returns>
     private static (int, string) MapExceptionToStatus(Exception ex)
     {
         return ex switch
         {
-            UnauthorizedAccessException _ => (StatusCodes.Status401Unauthorized, "No autorizado"),
-            ArgumentNullException _ => (StatusCodes.Status400BadRequest, "Solicitud inválida"),
-            KeyNotFoundException _ => (StatusCodes.Status404NotFound, "Recurso no encontrado"),
-            InvalidOperationException _ => (
-                StatusCodes.Status409Conflict,
-                "Conflicto de operación"
-            ),
-            FormatException _ => (StatusCodes.Status400BadRequest, "Formato inválido"),
-            SecurityException _ => (StatusCodes.Status403Forbidden, "Acceso prohibido"),
+            ConflictException _ => (StatusCodes.Status409Conflict, "Conflict"),
+            UnauthorizedAccessException _ => (StatusCodes.Status401Unauthorized, "Unauthorized"),
+            ArgumentNullException _ => (StatusCodes.Status400BadRequest, "Invalid Request"),
+            KeyNotFoundException _ => (StatusCodes.Status404NotFound, "Resource Not Found"),
+            InvalidOperationException _ => (StatusCodes.Status409Conflict, "Operation Conflict"),
+            FormatException _ => (StatusCodes.Status400BadRequest, "Invalid Format"),
+            SecurityException _ => (StatusCodes.Status403Forbidden, "Access Forbidden"),
             ArgumentOutOfRangeException _ => (
                 StatusCodes.Status400BadRequest,
-                "Argumento fuera de rango"
+                "Argument Out of Range"
             ),
-            ArgumentException _ => (StatusCodes.Status400BadRequest, "Argumento inválido"),
-            TimeoutException _ => (StatusCodes.Status429TooManyRequests, "Demasiadas solicitudes"),
-            JsonException _ => (StatusCodes.Status400BadRequest, "JSON inválido"),
-            _ => (StatusCodes.Status500InternalServerError, "Error interno del servidor"),
+            ArgumentException _ => (StatusCodes.Status400BadRequest, "Invalid Argument"),
+            TimeoutException _ => (StatusCodes.Status429TooManyRequests, "Too Many Requests"),
+            JsonException _ => (StatusCodes.Status400BadRequest, "Invalid JSON"),
+            _ => (StatusCodes.Status500InternalServerError, "Internal Server Error"),
         };
     }
 }

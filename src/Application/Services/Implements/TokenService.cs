@@ -1,55 +1,60 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using TiendaUcnApi.src.Application.Services.Interfaces;
 using TiendaUcnApi.src.Domain.Models;
 
 namespace TiendaUcnApi.src.Application.Services.Implements
 {
     /// <summary>
-    /// Implementación del servicio de generación de tokens JWT.
+    /// JWT token generation service implementation.
     /// </summary>
     public class TokenService : ITokenService
     {
         /// <summary>
-        /// Configuración de la aplicación.
+        /// Application configuration.
         /// </summary>
         private readonly IConfiguration _configuration;
 
         /// <summary>
-        /// Clave secreta para la firma de los tokens JWT.
+        /// Secret key for JWT token signing.
         /// </summary>
         private readonly string _jwtSecret;
 
         /// <summary>
-        /// Administrador de usuarios de Identity.
+        /// Identity user manager.
         /// </summary>
         private readonly UserManager<User> _userManager;
 
         /// <summary>
-        /// Constructor que inyecta la configuración y el UserManager.
+        /// Initializes a new instance of the TokenService class.
+        /// Injects configuration and UserManager dependencies.
         /// </summary>
-        /// <param name="configuration">Configuración de la aplicación.</param>
-        /// <param name="userManager">Administrador de usuarios.</param>
+        /// <param name="configuration">Application configuration.</param>
+        /// <param name="userManager">User manager.</param>
+        /// <exception cref="ArgumentNullException">Thrown when configuration is null.</exception>
+        /// <exception cref="InvalidOperationException">Thrown when JWT secret is not configured.</exception>
         public TokenService(IConfiguration configuration, UserManager<User> userManager)
         {
             _configuration =
                 configuration ?? throw new ArgumentNullException(nameof(configuration));
             _jwtSecret =
                 _configuration["JWTSecret"]
-                ?? throw new InvalidOperationException("La clave secreta JWT no está configurada.");
+                ?? throw new InvalidOperationException("The JWT secret key is not configured.");
             _userManager = userManager;
         }
 
         /// <summary>
-        /// Genera un token JWT para el usuario.
+        /// Generates a JWT token for the user.
+        /// Includes user ID, email, role, and security stamp in token claims.
         /// </summary>
-        /// <param name="user">Usuario autenticado.</param>
-        /// <param name="roleName">Rol del usuario.</param>
-        /// <param name="rememberMe">Indica si el token debe durar más tiempo.</param>
-        /// <returns>Token JWT generado.</returns>
+        /// <param name="user">Authenticated user.</param>
+        /// <param name="roleName">User's role.</param>
+        /// <param name="rememberMe">Indicates if the token should last longer (24h vs 1h).</param>
+        /// <returns>Generated JWT token string.</returns>
+        /// <exception cref="InvalidOperationException">Thrown when token generation fails.</exception>
         public string GenerateToken(User user, string roleName, bool rememberMe = false)
         {
             try
@@ -74,16 +79,13 @@ namespace TiendaUcnApi.src.Application.Services.Implements
                     signingCredentials: creds
                 );
 
-                Log.Information(
-                    "Token JWT generado exitosamente para el usuario {UserId}",
-                    user.Id
-                );
+                Log.Information("JWT token generated successfully for user {UserId}", user.Id);
                 return new JwtSecurityTokenHandler().WriteToken(token);
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Error al generar el token JWT para el usuario {UserId}", user.Id);
-                throw new InvalidOperationException("Error al generar el token JWT", ex);
+                Log.Error(ex, "Error generating JWT token for user {UserId}", user.Id);
+                throw new InvalidOperationException("Error generating JWT token", ex);
             }
         }
     }

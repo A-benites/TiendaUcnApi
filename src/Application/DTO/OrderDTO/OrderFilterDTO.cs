@@ -3,42 +3,75 @@ using TiendaUcnApi.src.Domain.Models;
 namespace TiendaUcnApi.src.Application.DTO.OrderDTO;
 
 /// <summary>
-/// DTO para filtrar órdenes.
+/// Sorting options for orders.
+/// Implements R116 rubric requirement: safe ordering by createdAt and total.
+/// </summary>
+public enum OrderSortOption
+{
+    /// <summary>
+    /// Sort by creation date descending (most recent first).
+    /// </summary>
+    CreatedAtDesc,
+
+    /// <summary>
+    /// Sort by creation date ascending (oldest first).
+    /// </summary>
+    CreatedAtAsc,
+
+    /// <summary>
+    /// Sort by total amount descending (highest to lowest).
+    /// </summary>
+    TotalDesc,
+
+    /// <summary>
+    /// Sort by total amount ascending (lowest to highest).
+    /// </summary>
+    TotalAsc,
+}
+
+/// <summary>
+/// Data Transfer Object for filtering orders.
 /// </summary>
 public class OrderFilterDTO
 {
     /// <summary>
-    /// Filtrar por estado de la orden.
+    /// Filter by order status.
     /// </summary>
     public OrderStatus? Status { get; set; }
 
     /// <summary>
-    /// Filtrar por ID de usuario (solo para admin).
+    /// Filter by user ID (admin only).
     /// </summary>
     public int? UserId { get; set; }
 
     /// <summary>
-    /// Filtrar por fecha de inicio.
+    /// Filter by start date.
     /// </summary>
     public DateTime? StartDate { get; set; }
 
     /// <summary>
-    /// Filtrar por fecha de fin.
+    /// Filter by end date.
     /// </summary>
     public DateTime? EndDate { get; set; }
 
     /// <summary>
-    /// Código de orden para búsqueda.
+    /// Order code for search.
     /// </summary>
     public string? Code { get; set; }
 
     /// <summary>
-    /// Número de página para paginación.
+    /// Sorting option for orders.
+    /// Implements R116 rubric requirement.
+    /// </summary>
+    public OrderSortOption? SortBy { get; set; }
+
+    /// <summary>
+    /// Page number for pagination.
     /// </summary>
     public int Page { get; set; } = 1;
 
     /// <summary>
-    /// Tamaño de página para paginación.
+    /// Page size for pagination.
     /// </summary>
     public int PageSize { get; set; } = 10;
 }

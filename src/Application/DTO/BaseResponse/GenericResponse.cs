@@ -1,20 +1,20 @@
 namespace TiendaUcnApi.src.Application.DTO;
 
 /// <summary>
-/// Clase que representa una respuesta genérica de la aplicación.
+/// Class representing a generic application response.
 /// </summary>
-/// <typeparam name="T">Tipo de datos que contiene la respuesta.</typeparam>
-/// <param name="message">Mensaje de la respuesta.</param>
-/// <param name="data">Datos de la respuesta (opcional).</param>
+/// <typeparam name="T">Type of data contained in the response.</typeparam>
+/// <param name="message">Response message.</param>
+/// <param name="data">Response data (optional).</param>
 public class GenericResponse<T>(string message, T? data = default)
 {
     /// <summary>
-    /// Mensaje principal de la respuesta.
+    /// Main response message.
     /// </summary>
     public string Message { get; set; } = message;
 
     /// <summary>
-    /// Datos de la respuesta (pueden ser nulos).
+    /// Response data (may be null).
     /// </summary>
     public T? Data { get; set; } = data;
 }

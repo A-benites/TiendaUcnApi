@@ -5,12 +5,13 @@ using TiendaUcnApi.src.Domain.Models;
 namespace TiendaUcnApi.src.Application.Mappers;
 
 /// <summary>
-/// Configuración de mapeos para órdenes usando Mapster.
+/// Configures mappings between Order entities and Order DTOs using Mapster.
+/// Handles transformations for order display with historical product information.
 /// </summary>
 public class OrderMapper
 {
     /// <summary>
-    /// Configura todos los mapeos relacionados con órdenes.
+    /// Configures all order-related mappings.
     /// </summary>
     public void ConfigureAllMappings()
     {
@@ -19,7 +20,8 @@ public class OrderMapper
     }
 
     /// <summary>
-    /// Configura el mapeo de Order a OrderDTO.
+    /// Configures the mapping from Order entity to OrderDTO.
+    /// Maps order identification, pricing totals, timestamps, and associated order items.
     /// </summary>
     private void ConfigureOrderMappings()
     {
@@ -34,7 +36,9 @@ public class OrderMapper
     }
 
     /// <summary>
-    /// Configura el mapeo de OrderItem a OrderItemDTO.
+    /// Configures the mapping from OrderItem entity to OrderItemDTO.
+    /// Maps historical product data captured at the moment of order creation,
+    /// including price, title, description, image, and discount applied.
     /// </summary>
     private void ConfigureOrderItemMappings()
     {

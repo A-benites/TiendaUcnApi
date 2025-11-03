@@ -4,12 +4,12 @@ using TiendaUcnApi.src.Domain.Models;
 namespace TiendaUcnApi.src.Application.DTO.ProductDTO;
 
 /// <summary>
-/// DTO para la creación de un nuevo producto.
+/// Data Transfer Object for creating a new product.
 /// </summary>
 public class ProductCreateDTO
 {
     /// <summary>
-    /// Título del producto.
+    /// Product title. Must be between 3 and 50 characters.
     /// </summary>
     [Required(ErrorMessage = "El título del producto es obligatorio.")]
     [StringLength(50, ErrorMessage = "El título no puede exceder los 50 caracteres.")]
@@ -17,7 +17,7 @@ public class ProductCreateDTO
     public required string Title { get; set; }
 
     /// <summary>
-    /// Descripción del producto.
+    /// Product description. Must be between 10 and 100 characters.
     /// </summary>
     [Required(ErrorMessage = "La descripción del producto es obligatoria.")]
     [StringLength(100, ErrorMessage = "La descripción no puede exceder los 100 caracteres.")]
@@ -25,47 +25,47 @@ public class ProductCreateDTO
     public required string Description { get; set; }
 
     /// <summary>
-    /// Precio del producto.
+    /// Product price. Must be a positive integer.
     /// </summary>
     [Required(ErrorMessage = "El precio del producto es obligatorio.")]
     [Range(0, int.MaxValue, ErrorMessage = "El precio debe ser un valor entero positivo.")]
     public required int Price { get; set; }
 
     /// <summary>
-    /// Porcentaje de descuento del producto.
+    /// Product discount percentage. Must be between 0 and 100.
     /// </summary>
     [Required(ErrorMessage = "El descuento del producto es obligatorio.")]
     [Range(0, 100, ErrorMessage = "El descuento debe estar entre 0 y 100.")]
     public required int Discount { get; set; }
 
     /// <summary>
-    /// Stock disponible del producto.
+    /// Available stock quantity. Must be a positive value.
     /// </summary>
     [Required(ErrorMessage = "El stock del producto es obligatorio.")]
     [Range(1, int.MaxValue, ErrorMessage = "El stock debe ser un valor positivo.")]
     public required int Stock { get; set; }
 
     /// <summary>
-    /// Estado del producto (Nuevo, Usado).
+    /// Product status (New or Used).
     /// </summary>
     [Required(ErrorMessage = "El estado del producto es obligatorio.")]
     [RegularExpression("^(New|Used)$", ErrorMessage = "El estado debe ser 'Nuevo' o 'Usado'.")]
     public required Status Status { get; set; }
 
     /// <summary>
-    /// ID de la categoría del producto.
+    /// Category ID for the product.
     /// </summary>
     [Required(ErrorMessage = "El ID de la categoría es obligatorio.")]
     public required int CategoryId { get; set; }
 
     /// <summary>
-    /// ID de la marca del producto.
+    /// Brand ID for the product.
     /// </summary>
     [Required(ErrorMessage = "El ID de la marca es obligatorio.")]
     public required int BrandId { get; set; }
 
     /// <summary>
-    /// Imágenes del producto.
+    /// Product images to upload.
     /// </summary>
     [Required(ErrorMessage = "Las imágenes del producto son obligatorias.")]
     public required List<IFormFile> Images { get; set; } = new List<IFormFile>();

@@ -1,27 +1,27 @@
 namespace TiendaUcnApi.src.Application.DTO.CategoryDTO
 {
     /// <summary>
-    /// DTO para representar una categoría existente en la API.
+    /// Data Transfer Object representing an existing category in the API.
     /// </summary>
     public class CategoryDTO
     {
         /// <summary>
-        /// Identificador único de la categoría.
+        /// Unique identifier for the category.
         /// </summary>
         public int Id { get; set; }
 
         /// <summary>
-        /// Nombre de la categoría.
+        /// Category name.
         /// </summary>
         public string Name { get; set; } = string.Empty;
 
         /// <summary>
-        /// Fecha de creación de la categoría.
+        /// Date when the category was created.
         /// </summary>
         public DateTime CreatedAt { get; set; }
 
         /// <summary>
-        /// Número total de productos asociados a la categoría.
+        /// Total number of products associated with this category.
         /// </summary>
         public int ProductCount { get; set; }
     }

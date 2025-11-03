@@ -1,32 +1,32 @@
 namespace TiendaUcnApi.src.Application.DTO.ProductDTO.AdminDTO;
 
 /// <summary>
-/// DTO que representa una lista paginada de productos para administración.
+/// DTO representing a paginated list of products for administration.
 /// </summary>
 public class ListedProductsForAdminDTO
 {
     /// <summary>
-    /// Lista de productos para administración.
+    /// List of products for administration.
     /// </summary>
     public List<ProductForAdminDTO> Products { get; set; } = new List<ProductForAdminDTO>();
 
     /// <summary>
-    /// Cantidad total de productos encontrados.
+    /// Total count of products found.
     /// </summary>
     public int TotalCount { get; set; }
 
     /// <summary>
-    /// Número total de páginas disponibles.
+    /// Total number of pages available.
     /// </summary>
     public int TotalPages { get; set; }
 
     /// <summary>
-    /// Página actual de la consulta.
+    /// Current query page.
     /// </summary>
     public int CurrentPage { get; set; }
 
     /// <summary>
-    /// Cantidad de productos por página.
+    /// Number of products per page.
     /// </summary>
     public int PageSize { get; set; }
 }

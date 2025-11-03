@@ -1,25 +1,25 @@
 using System.ComponentModel.DataAnnotations;
 
 /// <summary>
-/// DTO para el inicio de sesión de usuario.
+/// Data Transfer Object for user login.
 /// </summary>
 public class LoginDTO
 {
     /// <summary>
-    /// Correo electrónico del usuario.
+    /// User's email address.
     /// </summary>
     [Required(ErrorMessage = "El email es requerido.")]
     [EmailAddress(ErrorMessage = "El Correo electrónico no es válido.")]
     public required string Email { get; set; }
 
     /// <summary>
-    /// Contraseña del usuario.
+    /// User's password.
     /// </summary>
     [Required(ErrorMessage = "La contraseña es requerida.")]
     public required string Password { get; set; }
 
     /// <summary>
-    /// Indica si el usuario desea recordar la sesión.
+    /// Indicates whether the user wants to remember the session.
     /// </summary>
     public bool RememberMe { get; set; }
 }

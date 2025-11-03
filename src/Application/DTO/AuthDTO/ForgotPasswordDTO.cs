@@ -1,12 +1,12 @@
 using System.ComponentModel.DataAnnotations;
 
 /// <summary>
-/// DTO para solicitar el restablecimiento de contraseña.
+/// Data Transfer Object for requesting password reset.
 /// </summary>
 public class ForgotPasswordDTO
 {
     /// <summary>
-    /// Correo electrónico del usuario.
+    /// User's email address where the password reset code will be sent.
     /// </summary>
     [EmailAddress]
     public required string Email { get; set; }

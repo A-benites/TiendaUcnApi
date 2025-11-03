@@ -1,37 +1,37 @@
 namespace TiendaUcnApi.src.Application.DTO.OrderDTO;
 
 /// <summary>
-/// DTO para representar un pedido.
+/// Data Transfer Object representing an order.
 /// </summary>
 public class OrderDTO
 {
     /// <summary>
-    /// Identificador único del pedido.
+    /// Unique identifier for the order.
     /// </summary>
     public int Id { get; set; }
 
     /// <summary>
-    /// Código único del pedido.
+    /// Unique order code.
     /// </summary>
     public required string Code { get; set; }
 
     /// <summary>
-    /// Total del pedido con descuentos.
+    /// Total amount of the order with discounts applied.
     /// </summary>
     public decimal Total { get; set; }
 
     /// <summary>
-    /// Subtotal del pedido sin descuentos.
+    /// Subtotal amount of the order without discounts.
     /// </summary>
     public decimal SubTotal { get; set; }
 
     /// <summary>
-    /// Fecha de creación del pedido.
+    /// Date and time when the order was created.
     /// </summary>
     public DateTime CreatedAt { get; set; }
 
     /// <summary>
-    /// Lista de items en el pedido.
+    /// List of items in the order.
     /// </summary>
     public List<OrderItemDTO> OrderItems { get; set; } = new List<OrderItemDTO>();
 }

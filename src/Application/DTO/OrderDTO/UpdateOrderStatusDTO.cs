@@ -4,12 +4,12 @@ using TiendaUcnApi.src.Domain.Models;
 namespace TiendaUcnApi.src.Application.DTO.OrderDTO;
 
 /// <summary>
-/// DTO para actualizar el estado de una orden.
+/// Data Transfer Object for updating an order's status.
 /// </summary>
 public class UpdateOrderStatusDTO
 {
     /// <summary>
-    /// Nuevo estado de la orden.
+    /// New status for the order.
     /// </summary>
     [Required(ErrorMessage = "El estado es requerido.")]
     public OrderStatus Status { get; set; }

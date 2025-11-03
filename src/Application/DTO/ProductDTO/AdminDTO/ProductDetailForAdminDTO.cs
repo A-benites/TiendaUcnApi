@@ -1,9 +1,10 @@
-namespace TiendaUcnApi.src.Application.DTO.ProductDTO;
+namespace TiendaUcnApi.src.Application.DTO.ProductDTO.AdminDTO;
 
 /// <summary>
-/// Data Transfer Object for displaying product details.
+/// Data Transfer Object for displaying detailed product information in administration.
+/// Includes image IDs for management operations.
 /// </summary>
-public class ProductDetailDTO
+public class ProductDetailForAdminDTO
 {
     /// <summary>
     /// Unique identifier for the product.
@@ -21,9 +22,9 @@ public class ProductDetailDTO
     public required string Description { get; set; }
 
     /// <summary>
-    /// List of product image URLs.
+    /// List of product images with IDs and URLs for admin management.
     /// </summary>
-    public List<string> ImagesURL { get; set; } = new List<string>();
+    public List<ProductImageDTO> Images { get; set; } = new List<ProductImageDTO>();
 
     /// <summary>
     /// Product price (formatted as string).
@@ -37,7 +38,6 @@ public class ProductDetailDTO
 
     /// <summary>
     /// Final price with discount applied (calculated server-side).
-    /// Implements R76-R77 rubric requirement: finalPrice calculated server-side.
     /// </summary>
     public required string FinalPrice { get; set; }
 
@@ -57,9 +57,19 @@ public class ProductDetailDTO
     public required string CategoryName { get; set; }
 
     /// <summary>
+    /// ID of the product's category.
+    /// </summary>
+    public required int CategoryId { get; set; }
+
+    /// <summary>
     /// Name of the product's brand.
     /// </summary>
     public required string BrandName { get; set; }
+
+    /// <summary>
+    /// ID of the product's brand.
+    /// </summary>
+    public required int BrandId { get; set; }
 
     /// <summary>
     /// Product status as text (e.g., "New", "Used").
@@ -70,4 +80,35 @@ public class ProductDetailDTO
     /// Indicates whether the product is available for sale.
     /// </summary>
     public required bool IsAvailable { get; set; }
+
+    /// <summary>
+    /// Product creation date.
+    /// </summary>
+    public required DateTime CreatedAt { get; set; }
+
+    /// <summary>
+    /// Product last update date.
+    /// </summary>
+    public required DateTime UpdatedAt { get; set; }
+}
+
+/// <summary>
+/// DTO for product image with ID and URL.
+/// </summary>
+public class ProductImageDTO
+{
+    /// <summary>
+    /// Image identifier.
+    /// </summary>
+    public required int Id { get; set; }
+
+    /// <summary>
+    /// Image URL.
+    /// </summary>
+    public required string Url { get; set; }
+
+    /// <summary>
+    /// Cloudinary public ID for the image.
+    /// </summary>
+    public string? PublicId { get; set; }
 }

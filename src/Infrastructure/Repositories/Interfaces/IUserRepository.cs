@@ -4,96 +4,99 @@ using TiendaUcnApi.src.Domain.Models;
 namespace TiendaUcnApi.src.Infrastructure.Repositories.Interfaces;
 
 /// <summary>
-/// Interfaz para el repositorio de usuarios.
+/// Repository interface for user data access operations.
+/// Handles user authentication, registration, and account management using ASP.NET Core Identity.
 /// </summary>
 public interface IUserRepository
 {
     /// <summary>
-    /// Obtiene un usuario por su ID.
+    /// Retrieves a user by their identifier.
     /// </summary>
-    /// <param name="id">Id del usuario</param>
-    /// <returns>Usuario encontrado o nulo</returns>
+    /// <param name="id">User identifier.</param>
+    /// <returns>User entity or null if not found.</returns>
     Task<User?> GetByIdAsync(int id);
 
     /// <summary>
-    /// Obtiene un usuario por su correo electrónico.
+    /// Retrieves a user by their email address.
     /// </summary>
-    /// <param name="email">Correo electrónico del usuario</param>
-    /// <returns>Usuario encontrado o nulo</returns>
+    /// <param name="email">User's email address.</param>
+    /// <returns>User entity or null if not found.</returns>
     Task<User?> GetByEmailAsync(string email);
 
     /// <summary>
-    /// Verifica si un usuario existe por su correo electrónico.
+    /// Checks if a user exists with the specified email address.
     /// </summary>
-    /// <param name="email">Correo electrónico del usuario</param>
-    /// <returns>True si el usuario existe, false en caso contrario</returns>
+    /// <param name="email">Email address to check.</param>
+    /// <returns>True if user exists, false otherwise.</returns>
     Task<bool> ExistsByEmailAsync(string email);
 
     /// <summary>
-    /// Verifica si un usuario existe por su RUT.
+    /// Checks if a user exists with the specified Chilean RUT.
     /// </summary>
-    /// <param name="rut">RUT del usuario</param>
-    /// <returns>True si el usuario existe, false en caso contrario</returns>
+    /// <param name="rut">Chilean RUT to check.</param>
+    /// <returns>True if user exists, false otherwise.</returns>
     Task<bool> ExistsByRutAsync(string rut);
 
     /// <summary>
-    /// Obtiene un usuario por su RUT.
+    /// Retrieves a user by their Chilean RUT.
     /// </summary>
-    /// <param name="rut">RUT del usuario</param>
-    /// <param name="trackChanges">Indica si se debe rastrear los cambios en la entidad</param>
-    /// <returns>Usuario encontrado o nulo</returns>
+    /// <param name="rut">User's Chilean RUT.</param>
+    /// <param name="trackChanges">Whether to track changes to the entity.</param>
+    /// <returns>User entity or null if not found.</returns>
     Task<User?> GetByRutAsync(string rut, bool trackChanges = false);
 
     /// <summary>
-    /// Crea un nuevo usuario en la base de datos.
+    /// Creates a new user account with hashed password.
     /// </summary>
-    /// <param name="user">Usuario a crear</param>
-    /// <param name="password">Contraseña del usuario</param>
-    /// <returns>True si es exitoso, false en caso contrario</returns>
+    /// <param name="user">User entity to create.</param>
+    /// <param name="password">User's password (will be hashed).</param>
+    /// <returns>True if creation was successful, false otherwise.</returns>
     Task<bool> CreateAsync(User user, string password);
 
     /// <summary>
-    /// Verifica si la contraseña proporcionada es correcta para el usuario.
+    /// Verifies if the provided password is correct for the user.
     /// </summary>
-    /// <param name="user">Usuario al que se le verificará la contraseña</param>
-    /// <param name="password">Contraseña a verificar</param>
-    /// <returns>True si la contraseña es correcta, false en caso contrario</returns>
+    /// <param name="user">User entity to verify.</param>
+    /// <param name="password">Password to verify.</param>
+    /// <returns>True if password is correct, false otherwise.</returns>
     Task<bool> CheckPasswordAsync(User user, string password);
 
     /// <summary>
-    /// Obtiene el rol del usuario.
+    /// Retrieves the role name for the specified user.
     /// </summary>
-    /// <param name="user">Usuario del cual se desea obtener el rol</param>
-    /// <returns>Nombre del rol del usuario</returns>
+    /// <param name="user">User entity.</param>
+    /// <returns>Role name (e.g., "User", "Admin").</returns>
     Task<string> GetUserRoleAsync(User user);
 
     /// <summary>
-    /// Elimina un usuario por su ID.
+    /// Deletes a user account by identifier.
     /// </summary>
-    /// <param name="userId">ID del usuario a eliminar</param>
-    /// <returns>True si la eliminación fue exitosa, false en caso contrario</returns>
+    /// <param name="userId">User identifier to delete.</param>
+    /// <returns>True if deletion was successful, false otherwise.</returns>
     Task<bool> DeleteAsync(int userId);
 
     /// <summary>
-    /// Confirma el correo electrónico del usuario.
+    /// Confirms a user's email address.
     /// </summary>
-    /// <param name="email">Correo electrónico del usuario</param>
-    /// <returns>True si la confirmación fue exitosa, false en caso contrario</returns>
+    /// <param name="email">Email address to confirm.</param>
+    /// <returns>True if confirmation was successful, false otherwise.</returns>
     Task<bool> ConfirmEmailAsync(string email);
 
     /// <summary>
-    /// Elimina usuarios no confirmados.
+    /// Deletes all users who have not confirmed their email within the allowed timeframe.
     /// </summary>
-    /// <returns>Número de usuarios eliminados</returns>
+    /// <returns>Number of users deleted.</returns>
     Task<int> DeleteUnconfirmedAsync();
+
     /// <summary>
-    /// Obtiene los usuarios que aún no han confirmado su correo electrónico.
+    /// Retrieves all users who have not confirmed their email address.
     /// </summary>
+    /// <returns>List of unconfirmed users.</returns>
     Task<List<User>> GetUnconfirmedUsersAsync();
-        /// <summary>
-    /// Obtiene todos los usuarios registrados en la base de datos.
+
+    /// <summary>
+    /// Retrieves all registered users in the database.
     /// </summary>
+    /// <returns>List of all users.</returns>
     Task<List<User>> GetAllAsync();
-
-
 }

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
+
 <head>
   <meta charset="utf-8" />
   <style>
@@ -10,17 +11,20 @@
       margin: 0;
       padding: 20px;
     }
+
     .email-container {
       background: white;
       max-width: 600px;
       margin: auto;
       border-radius: 12px;
       padding: 30px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
+
     h2 {
       color: #007bff;
     }
+
     .cart-items {
       background-color: #f1f3f5;
       padding: 15px;
@@ -29,6 +33,7 @@
       font-size: 15px;
       line-height: 1.6;
     }
+
     a.button {
       display: inline-block;
       background-color: #007bff;
@@ -38,9 +43,11 @@
       border-radius: 6px;
       margin-top: 10px;
     }
+
     a.button:hover {
       background-color: #0056b3;
     }
+
     footer {
       font-size: 12px;
       color: #777;
@@ -49,18 +56,20 @@
     }
   </style>
 </head>
+
 <body>
   <div class="email-container">
-    <h2>Hi {{UserName}}, you left something behind! 🛒</h2>
-    <p>These items are still waiting in your cart:</p>
+    <h2>Hola {{UserName}}, ¡dejaste algo pendiente! 🛒</h2>
+    <p>Estos productos aún te están esperando en tu carrito:</p>
     <div class="cart-items">
       {{CartItems}}
     </div>
-    <a href="{{CartUrl}}" class="button">Return to your cart</a>
-    <p>Don’t miss out — complete your purchase soon!</p>
+    <a href="{{CartUrl}}" class="button">Volver a mi carrito</a>
+    <p>¡No te lo pierdas! Completa tu compra pronto.</p>
     <footer>
-      This is an automated reminder from <b>Tienda UCN</b>.
+      Este es un recordatorio automático de <b>Tienda UCN</b>.
     </footer>
   </div>
 </body>
+
 </html>
