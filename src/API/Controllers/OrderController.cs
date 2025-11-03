@@ -38,12 +38,19 @@ public class OrderController : BaseController
     [HttpPost]
     public async Task<IActionResult> CreateOrder()
     {
-        var buyerId = GetBuyerId();
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
         if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
         {
             return Unauthorized(new GenericResponse<object>("User not authenticated", null));
+        }
+
+        // For authenticated users, try to get buyerId from cookie/middleware,
+        // but if not available, use userId as buyerId (common for users who never shopped anonymously)
+        var buyerId = HttpContext.Items["BuyerId"]?.ToString();
+        if (string.IsNullOrEmpty(buyerId))
+        {
+            buyerId = $"user-{userId}"; // Fallback for authenticated users without cookie
         }
 
         var response = await _orderService.CreateAsync(buyerId, userId);

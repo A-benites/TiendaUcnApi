@@ -66,11 +66,23 @@ public class OrderService : IOrderService
     /// <exception cref="InvalidOperationException">Thrown when cart is empty or stock is insufficient.</exception>
     public async Task<GenericResponse<OrderDTO>> CreateAsync(string buyerId, int userId)
     {
-        var cart = await _cartRepository.GetByBuyerIdAsync(buyerId);
+        // For authenticated users, prioritize finding by userId first, then by buyerId
+        // This handles cases where authenticated users might not have the buyerId cookie
+        var cart = await _cartRepository.GetByUserIdAsync(userId);
+
+        // If no cart found by userId, try by buyerId (for users who shopped anonymously then logged in)
+        if (cart == null)
+        {
+            cart = await _cartRepository.GetByBuyerIdAsync(buyerId);
+        }
 
         if (cart == null || cart.CartItems.Count == 0)
         {
-            Log.Information("Attempt to create order with empty cart. BuyerId: {BuyerId}", buyerId);
+            Log.Information(
+                "Attempt to create order with empty cart. BuyerId: {BuyerId}, UserId: {UserId}",
+                buyerId,
+                userId
+            );
             throw new InvalidOperationException("The cart is empty");
         }
 
