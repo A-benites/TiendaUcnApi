@@ -122,6 +122,40 @@ public class ProductMapper
             .Map(dest => dest.StatusName, src => src.Status)
             .Map(dest => dest.IsAvailable, src => src.IsAvailable);
 
+        // Mapping for admin product detail view (includes image IDs)
+        TypeAdapterConfig<Product, ProductDetailForAdminDTO>
+            .NewConfig()
+            .Map(dest => dest.Id, src => src.Id)
+            .Map(dest => dest.Title, src => src.Title)
+            .Map(dest => dest.Description, src => src.Description)
+            .Map(
+                dest => dest.Images,
+                src =>
+                    src.Images.Select(i => new ProductImageDTO
+                        {
+                            Id = i.Id,
+                            Url = i.ImageUrl,
+                            PublicId = i.PublicId,
+                        })
+                        .ToList()
+            )
+            .Map(dest => dest.Price, src => src.Price.ToString("C"))
+            .Map(dest => dest.Discount, src => (int)src.Discount)
+            .Map(
+                dest => dest.FinalPrice,
+                src => CalculateFinalPrice(src.Price, src.Discount).ToString("C")
+            )
+            .Map(dest => dest.Stock, src => src.Stock)
+            .Map(dest => dest.StockIndicator, src => GetStockIndicator(src.Stock))
+            .Map(dest => dest.CategoryName, src => src.Category.Name)
+            .Map(dest => dest.CategoryId, src => src.CategoryId)
+            .Map(dest => dest.BrandName, src => src.Brand.Name)
+            .Map(dest => dest.BrandId, src => src.BrandId)
+            .Map(dest => dest.StatusName, src => src.Status)
+            .Map(dest => dest.IsAvailable, src => src.IsAvailable)
+            .Map(dest => dest.CreatedAt, src => src.CreatedAt)
+            .Map(dest => dest.UpdatedAt, src => src.UpdatedAt);
+
         // Mapping for product creation
         TypeAdapterConfig<ProductCreateDTO, Product>
             .NewConfig()
