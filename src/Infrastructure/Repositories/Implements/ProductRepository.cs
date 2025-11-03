@@ -232,8 +232,8 @@ public class ProductRepository : IProductRepository
         // R70: Apply sorting based on SortBy parameter
         query = searchParams.SortBy switch
         {
-            ProductSortOption.PriceAsc => query.OrderBy(p => p.Price),
-            ProductSortOption.PriceDesc => query.OrderByDescending(p => p.Price),
+            ProductSortOption.PriceAsc => query.OrderBy(p => (double)p.Price),
+            ProductSortOption.PriceDesc => query.OrderByDescending(p => (double)p.Price),
             ProductSortOption.NameAsc => query.OrderBy(p => p.Title),
             ProductSortOption.NameDesc => query.OrderByDescending(p => p.Title),
             ProductSortOption.Newest or _ => query.OrderByDescending(p => p.CreatedAt),
