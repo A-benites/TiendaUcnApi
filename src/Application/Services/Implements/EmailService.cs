@@ -226,7 +226,7 @@ public class EmailService : IEmailService
         {
             From = "TiendaUCN <onboarding@resend.dev>",
             To = toEmail,
-            Subject = "You still have products in your cart! 🛒",
+            Subject = "¡Aún tienes productos en tu carrito! 🛒",
             HtmlBody = body,
         };
 

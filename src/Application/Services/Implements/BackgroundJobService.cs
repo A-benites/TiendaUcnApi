@@ -81,8 +81,8 @@ namespace TiendaUcnApi.src.Application.Services.Implements
                     var cartItemsList = new List<string>();
                     foreach (var item in cart.CartItems)
                     {
-                        var title = item.Product?.Title ?? "Unknown product";
-                        cartItemsList.Add($"• {title} - {item.Quantity} units");
+                        var title = item.Product?.Title ?? "Producto desconocido";
+                        cartItemsList.Add($"• {title} - {item.Quantity} unidades");
                     }
 
                     var cartSummary = string.Join("<br>", cartItemsList);
@@ -90,7 +90,7 @@ namespace TiendaUcnApi.src.Application.Services.Implements
                     // Send reminder email
                     await _emailService.SendAbandonedCartReminderAsync(
                         cart.User.Email,
-                        cart.User.FirstName ?? "Customer",
+                        cart.User.FirstName ?? "Cliente",
                         cartSummary,
                         "https://tienda-ucn.cl/cart"
                     );

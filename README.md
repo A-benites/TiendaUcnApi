@@ -1,645 +1,525 @@
-
 # Tienda UCN - REST API
 
 ![.NET](https://img.shields.io/badge/.NET-9.0-blueviolet) ![C#](https://img.shields.io/badge/C%23-12-blue) ![SQLite](https://img.shields.io/badge/SQLite-3-blue) ![Swagger](https://img.shields.io/badge/Swagger-API-green)
 
-**TiendaUCN API** es el componente backend de una plataforma de e-commerce moderna. Construida con ASP.NET Core 9, esta API RESTful proporciona toda la funcionalidad necesaria para gestionar usuarios, productos, carritos de compras, pedidos y autenticación, sirviendo como la columna vertebral para aplicaciones cliente (web o móvil).
-
-Una API REST para el proyecto Tienda UCN, una plataforma de comercio electrónico. Esta API maneja la lógica de negocio, acceso a datos y seguridad para la aplicación cliente.
-
----
-
-## 🚀 Inicio Rápido
-
-```bash
-# 1. Clonar el repositorio
-git clone https://github.com/A-benites/TiendaUcnApi.git
-cd TiendaUcnApi
-
-# 2. Restaurar dependencias
-dotnet restore
-
-# 3. Configurar appsettings.json (ver guías abajo)
-# - Cloudinary (imágenes)
-# - Resend (emails)
-# - JWT Secret (seguridad)
-
-# 4. Ejecutar
-dotnet run
-
-# 5. Abrir Swagger
-# https://localhost:7102/swagger
-```
-
-> **¿Primera vez?** Sigue la [Guía de Instalación Completa](INSTALL.md) para configuración paso a paso.
-
----
-
-## 📖 Documentación
-
-- **[📦 Guía de Instalación Completa](INSTALL.md)** - Instrucciones detalladas paso a paso desde cero
-- **[⚡ Guía Rápida de Inicio](QUICKSTART.md)** - Pon el proyecto en marcha en 5 minutos
-- **[🔧 Configuración de Servicios Externos](SERVICIOS_EXTERNOS.md)** - Guía detallada para configurar Cloudinary, Resend y JWT
-- **[❓ Preguntas Frecuentes (FAQ)](FAQ.md)** - Respuestas a dudas comunes
-- **[📄 Archivo de Configuración de Ejemplo](appsettings.example.json)** - Plantilla de appsettings.json
-- **[📚 README Completo](#)** - Documentación completa (este archivo)
+**TiendaUCN API** es una API REST completa para una plataforma de e-commerce. Construida con ASP.NET Core 9, proporciona toda la funcionalidad necesaria para gestionar usuarios, productos, carritos de compras y pedidos.
 
 ---
 
 ## 📋 Tabla de Contenidos
 
-1. [Características Principales](#-características-principales)
-2. [Arquitectura del Proyecto](#-arquitectura-del-proyecto)
-3. [Tecnologías y Librerías](#-tecnologías-y-librerías)
-4. [Requisitos Previos](#-requisitos-previos)
-5. [Instalación Paso a Paso](#-instalación-paso-a-paso)
-6. [Configuración Completa](#-configuración-completa)
-7. [Ejecución del Proyecto](#-ejecución-del-proyecto)
-8. [Documentación de la API](#-documentación-de-la-api)
-9. [Características de Seguridad](#-características-de-seguridad)
-10. [Solución de Problemas Comunes](#-solución-de-problemas-comunes)
-11. [Desarrollo y Contribución](#-desarrollo-y-contribución)
-12. [Licencia y Contacto](#-licencia-y-contacto)
-
----
-
-## ✨ Características Principales
+1. [Características](#-características-principales)
+2. [Tecnologías](#️-tecnologías-utilizadas)
+3. [Requisitos Previos](#-requisitos-previos)
+4. [Instalación Completa](#-instalación-completa)
+5. [Configuración](#️-configuración)
+6. [Primera Ejecución](#️-primera-ejecución)
+7. [Uso de la API](#-uso-de-la-api)
+8. [Arquitectura](#️-arquitectura-del-proyecto)
+9. [Solución de Problemas](#-solución-de-problemas)
+10. [Preguntas Frecuentes](#-preguntas-frecuentes)
 
 ---
 
 ## ✨ Características Principales
 
 ### 🔐 Autenticación y Autorización
-- Sistema completo de registro y login basado en tokens JWT
-- Verificación de correo electrónico con códigos de verificación de tiempo limitado
-- Funcionalidad de recuperación y restablecimiento de contraseñas
-- Control de acceso basado en roles (Cliente y Administrador)
-- Hash seguro de contraseñas con ASP.NET Core Identity
-- Validación de sesiones mediante Security Stamp
+- Sistema completo de registro y login con JWT
+- Verificación de correo electrónico
+- Recuperación de contraseñas
+- Roles: Cliente y Administrador
 
-### 👤 Gestión de Perfil de Usuario
-- Visualización y actualización de información personal
-- Funcionalidad de cambio de contraseña
-- Cambio de correo electrónico con verificación
+### 👤 Gestión de Usuarios
+- Perfiles de usuario
+- Cambio de contraseña y email
 - Validación de RUT chileno
-- Validación de fecha de nacimiento (edad mínima 18 años)
-- Gestión de estado de usuario (activo/bloqueado)
+- Edad mínima 18 años
 
-### 📦 Gestión de Productos (Administrador)
-- Operaciones CRUD completas para productos
-- Carga y gestión de imágenes vía Cloudinary
-- Gestión de descuentos y ofertas
-- Activación/desactivación de productos (eliminación suave)
-- Capacidades avanzadas de filtrado y ordenamiento
-- Gestión de categorías y marcas
-- Stock y control de disponibilidad
+### 📦 Gestión de Productos
+- CRUD completo de productos
+- Carga de imágenes (Cloudinary)
+- Sistema de descuentos
+- Filtrado y búsqueda avanzada
+- Categorías y marcas
 
 ### 🛒 Carrito de Compras
-- Soporte para usuarios anónimos y autenticados
-- Persistencia del carrito entre sesiones
-- Asociación automática del carrito cuando el usuario inicia sesión
-- Cálculos de precio en tiempo real con descuentos
-- Detección de carritos abandonados y recordatorios por correo electrónico
+- Carrito para usuarios anónimos y autenticados
+- Persistencia entre sesiones
+- Asociación automática al iniciar sesión
+- Cálculos en tiempo real
 
 ### 📋 Gestión de Pedidos
-- Creación de pedidos desde el carrito de compras
-- Seguimiento del estado del pedido (Pendiente, Procesando, Enviado, Entregado, Cancelado)
-- Validación de transiciones de estado de pedido
-- Listado paginado de pedidos con filtros
-- Historial de pedidos para usuarios
-- Panel de gestión de pedidos para administradores
+- Creación de pedidos
+- Estados: Pendiente, Procesando, Enviado, Entregado, Cancelado
+- Historial de pedidos
+- Panel de administración
 
-### 📧 Notificaciones por Correo Electrónico
-- Correos de bienvenida para nuevos usuarios
-- Códigos de verificación de correo electrónico
-- Códigos de restablecimiento de contraseña
+### 📧 Notificaciones
+- Emails de bienvenida
+- Códigos de verificación
+- Recuperación de contraseña
+- Recordatorios de carrito abandonado
+
+### ⚙️ Trabajos Automáticos
+- Limpieza de usuarios no verificados
 - Recordatorios de carritos abandonados
-- Soporte de correos transaccionales vía Resend
-- Plantillas HTML personalizables
-
-### ⚙️ Trabajos en Segundo Plano
-- Limpieza automatizada de usuarios no verificados (Hangfire)
-- Correos programados de recordatorio de carritos abandonados
-- Programación de trabajos configurable
-- Panel de control Hangfire para monitoreo
-- Persistencia de trabajos en SQLite
+- Panel de control Hangfire
 
 ---
 
-## 🏗️ Arquitectura del Proyecto
+## 🛠️ Tecnologías Utilizadas
 
-Este proyecto sigue un enfoque de **Arquitectura Limpia (Clean Architecture)** con una clara separación de responsabilidades:
-
-```
-TiendaUcnApi/
-├── src/
-│   ├── API/                          # Presentation Layer
-│   │   ├── Controllers/              # API endpoints
-│   │   ├── Middlewares/             # Custom middleware (error handling, buyer ID)
-│   │   └── Extensions/              # Service configuration and data seeding
-│   │
-│   ├── Application/                  # Application Layer
-│   │   ├── DTO/                     # Data Transfer Objects
-│   │   │   ├── AuthDTO/            # Authentication DTOs
-│   │   │   ├── ProductDTO/         # Product DTOs
-│   │   │   ├── CartDTO/            # Shopping cart DTOs
-│   │   │   ├── OrderDTO/           # Order DTOs
-│   │   │   ├── UserDTO/            # User management DTOs
-│   │   │   └── BaseResponse/       # Generic response DTOs
-│   │   ├── Services/
-│   │   │   ├── Interfaces/         # Service contracts
-│   │   │   └── Implements/         # Service implementations
-│   │   ├── Mappers/                # Object mapping logic
-│   │   ├── Validators/             # Custom validation attributes
-│   │   ├── Exceptions/             # Custom exception types
-│   │   └── Jobs/                   # Background job definitions
-│   │
-│   ├── Domain/                      # Domain Layer
-│   │   └── Models/                 # Entity models
-│   │       ├── User.cs
-│   │       ├── Product.cs
-│   │       ├── Category.cs
-│   │       ├── Brand.cs
-│   │       ├── Cart.cs
-│   │       ├── Order.cs
-│   │       └── ...
-│   │
-│   └── Infrastructure/              # Infrastructure Layer
-│       ├── Data/                   # Database context and configurations
-│       │   ├── AppDbContext.cs
-│       │   ├── DataSeeder.cs
-│       │   └── Migrations/
-│       └── Repositories/
-│           ├── Interfaces/         # Repository contracts
-│           └── Implements/         # Repository implementations
-│
-├── appsettings.json                # Configuration
-├── Program.cs                       # Application entry point
-└── README.md                        # Project documentation
-```
-
-### Responsabilidades de las Capas
-
-#### 1. **Capa API (Presentación)**
-- **Controllers**: Manejan las peticiones y respuestas HTTP
-- **Middlewares**: 
-  - `ErrorHandlingMiddleware`: Manejo global de excepciones
-  - `BuyerIdMiddleware`: Identificación de usuarios anónimos
-- **Extensions**: Configuración de inyección de dependencias y sembrado de datos
-
-#### 2. **Capa de Aplicación**
-- **Services**: Implementación de la lógica de negocio
-  - `IUserService`: Autenticación y registro de usuarios
-  - `IProductService`: Gestión de productos
-  - `ICartService`: Operaciones del carrito de compras
-  - `IOrderService`: Procesamiento de pedidos
-  - `IEmailService`: Notificaciones por correo
-  - `IFileService`: Carga/eliminación de imágenes
-- **DTOs**: Transferencia de datos entre capas
-- **Validators**: Lógica de validación personalizada (RUT, fecha de nacimiento)
-- **Mappers**: Utilidades de mapeo de objetos
-
-#### 3. **Capa de Dominio**
-- **Models**: Entidades del negocio principales
-- Enumeraciones: `OrderStatus`, `Gender`, `Status`, `CodeType`
-- Reglas de negocio y lógica de dominio
-
-#### 4. **Capa de Infraestructura**
-- **DbContext**: Contexto de base de datos de Entity Framework Core
-- **Repositories**: Abstracción de acceso a datos
-- **Migrations**: Versionado del esquema de base de datos
-
----
-
-## 🛠️ Tecnologías y Librerías
-
-### Framework Principal
-- **ASP.NET Core 9**: Framework web moderno
-- **C# 12**: Características más recientes del lenguaje
-- **Entity Framework Core 9**: ORM para acceso a base de datos
-
-### Base de Datos
-- **SQLite**: Base de datos relacional ligera
-- **Entity Framework Core**: Migraciones Code-First
-
-### Autenticación y Seguridad
-- **ASP.NET Core Identity**: Gestión de usuarios
-- **JWT Bearer Tokens**: Autenticación sin estado
-- **BCrypt**: Hashing de contraseñas
-
-### Servicios Externos
-- **Cloudinary**: Almacenamiento de imágenes y CDN
-- **Resend**: Servicio de correo transaccional
-- **Hangfire**: Programación de trabajos en segundo plano
-
-### Herramientas de Desarrollo
-- **Swagger/OpenAPI**: Documentación de API
-- **Serilog**: Logging estructurado
-- **Mapster**: Mapeo de objetos
-- **Bogus**: Generación de datos de prueba
-
-### Paquetes NuGet Principales
-```xml
-- Microsoft.AspNetCore.Authentication.JwtBearer (9.0.8)
-- Microsoft.AspNetCore.Identity.EntityFrameworkCore (9.0.8)
-- Microsoft.EntityFrameworkCore.Sqlite (9.0.8)
-- CloudinaryDotNet (1.27.7)
-- Resend (0.1.6)
-- Hangfire.AspNetCore (1.8.21)
-- Serilog.AspNetCore (9.0.0)
-- Mapster (7.4.0)
-- Bogus (35.6.3)
-- Swashbuckle.AspNetCore (9.0.4)
-```
+- **ASP.NET Core 9** - Framework web
+- **C# 12** - Lenguaje
+- **Entity Framework Core 9** - ORM
+- **SQLite** - Base de datos
+- **JWT Bearer Tokens** - Autenticación
+- **Cloudinary** - Almacenamiento de imágenes
+- **Resend** - Envío de emails
+- **Hangfire** - Trabajos en segundo plano
+- **Swagger** - Documentación de API
+- **Serilog** - Logging
+- **Mapster** - Mapeo de objetos
 
 ---
 
 ## 📋 Requisitos Previos
 
-> **⚡ ¿Tienes prisa?** Consulta la [Guía Rápida de Inicio](QUICKSTART.md) para poner el proyecto en marcha en 5 minutos.
-
-> **🔧 ¿Primera vez configurando servicios externos?** Revisa la [Guía de Configuración de Servicios Externos](SERVICIOS_EXTERNOS.md) con instrucciones paso a paso detalladas.
-
-Antes de comenzar con la instalación, asegúrate de tener instalado lo siguiente en tu sistema:
-```
-
----
-
----
-
-## � Requisitos Previos
-
-Antes de comenzar con la instalación, asegúrate de tener instalado lo siguiente en tu sistema:
+Antes de comenzar, asegúrate de tener instalado:
 
 ### Software Requerido
 
 1. **[.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)**
-   - Versión mínima: 9.0
-   - Verifica la instalación ejecutando: `dotnet --version`
-   - Debe mostrar una versión 9.x.x
+   ```powershell
+   dotnet --version  # Debe mostrar 9.0.x
+   ```
 
 2. **[Git](https://git-scm.com/)**
-   - Para clonar el repositorio
-   - Verifica la instalación: `git --version`
+   ```powershell
+   git --version
+   ```
 
-3. **Editor de Código** (elige uno)
-   - [Visual Studio 2022](https://visualstudio.microsoft.com/) (Recomendado para Windows)
-   - [Visual Studio Code](https://code.visualstudio.com/) (Multiplataforma)
+3. **Editor de código** (elige uno):
+   - [Visual Studio Code](https://code.visualstudio.com/) (Recomendado)
+     - Extensiones: C# Dev Kit, REST Client, SQLite Viewer
+   - [Visual Studio 2022](https://visualstudio.microsoft.com/)
    - [JetBrains Rider](https://www.jetbrains.com/rider/)
 
-4. **Herramienta de Base de Datos SQLite** (Opcional pero recomendado)
-   - [DB Browser for SQLite](https://sqlitebrowser.org/)
-   - [SQLite Extension para VS Code](https://marketplace.visualstudio.com/items?itemName=alexcvzz.vscode-sqlite)
+### Servicios Externos Requeridos
 
-### Cuentas de Servicios Externos Requeridas
+> ⚠️ **CRÍTICO**: Sin estos servicios, la aplicación NO funcionará.
 
-#### 1. **Cloudinary** (Para almacenamiento de imágenes)
-- **Crear cuenta gratuita**: [https://cloudinary.com/users/register/free](https://cloudinary.com/users/register/free)
-- **Qué necesitas obtener**:
-  - Cloud Name
-  - API Key
-  - API Secret
-- **Dónde encontrar las credenciales**:
-  1. Inicia sesión en Cloudinary
-  2. Ve a Dashboard
-  3. Encontrarás las credenciales en la sección "Account Details"
+1. **[Cloudinary](https://cloudinary.com)** - Para almacenar imágenes de productos
+   - Plan gratuito: 25GB de almacenamiento
+   - Los productos requieren al menos una imagen
 
-#### 2. **Resend** (Para envío de correos electrónicos)
-- **Crear cuenta gratuita**: [https://resend.com/signup](https://resend.com/signup)
-- **Qué necesitas obtener**:
-  - API Key
-- **Cómo obtener la API Key**:
-  1. Inicia sesión en Resend
-  2. Ve a "API Keys" en el menú lateral
-  3. Haz clic en "Create API Key"
-  4. Dale un nombre (ej: "TiendaUCN-Dev")
-  5. Copia la clave generada (solo se muestra una vez)
-
-> **⚠️ Nota Importante**: Guarda estas credenciales de forma segura. Las necesitarás durante la configuración.
-
-### Herramientas Opcionales
-
-- **[Postman](https://www.postman.com/)**: Para probar la API (también puedes usar Swagger)
-- **[REST Client para VS Code](https://marketplace.visualstudio.com/items?itemName=humao.rest-client)**: Para usar el archivo `.http` incluido
+2. **[Resend](https://resend.com)** - Para enviar emails
+   - Plan gratuito: 3,000 emails/mes
+   - Necesario para verificación de usuarios
 
 ---
 
-## 🚀 Instalación Paso a Paso
+## 🚀 Instalación Completa
 
-Sigue estas instrucciones detalladamente para instalar y configurar el proyecto desde cero.
+Sigue estos pasos **en orden** para instalar y configurar el proyecto.
 
-### Paso 1: Clonar el Repositorio
+### Paso 1: Clonar el Repositorio (2 min)
 
-Abre una terminal (PowerShell, CMD o Git Bash) y ejecuta:
+```powershell
+# Navega a tu carpeta de proyectos
+cd C:\Users\TuUsuario\Documents
 
-```bash
+# Clona el repositorio
 git clone https://github.com/A-benites/TiendaUcnApi.git
-```
 
-### Paso 2: Navegar al Directorio del Proyecto
-
-```bash
+# Entra al directorio
 cd TiendaUcnApi
-```
 
-### Paso 3: Verificar la Instalación de .NET
-
-Asegúrate de tener .NET 9 instalado:
-
-```bash
-dotnet --version
-```
-
-Deberías ver una salida como `9.0.x`. Si no es así, descarga e instala .NET 9 SDK.
-
-### Paso 4: Restaurar Dependencias
-
-Restaura todos los paquetes NuGet necesarios:
-
-```bash
+# Restaura las dependencias
 dotnet restore
 ```
 
-Este comando descargará e instalará todas las dependencias especificadas en `TiendaUcnApi.csproj`.
+✅ **Deberías ver**: `Restored ... (in X sec).`
 
-**Salida esperada**:
+---
+
+### Paso 2: Configurar Cloudinary (5 min)
+
+#### 1. Crear cuenta
+
+- Ve a: **https://cloudinary.com/users/register/free**
+- Completa el formulario y verifica tu email
+
+#### 2. Obtener credenciales
+
+- Inicia sesión en Cloudinary
+- En el **Dashboard**, busca **"Account Details"**
+- Copia estas 3 credenciales:
+
 ```
-Determining projects to restore...
-Restored c:\...\TiendaUcnApi.csproj (in XXX ms).
+Cloud Name: dxxxxx
+API Key: 123456789012345
+API Secret: aBcDeFgHiJkLmNoPqRsTuVwXyZ
+```
+
+💡 **Tip**: Haz clic en el ícono 👁️ para ver el API Secret completo
+
+---
+
+### Paso 3: Configurar Resend (5 min)
+
+#### 1. Crear cuenta
+
+- Ve a: **https://resend.com/signup**
+- Regístrate y verifica tu email
+
+#### 2. Crear API Key
+
+- En el menú lateral, haz clic en **"API Keys"**
+- Clic en **"Create API Key"**
+- Nombre: `TiendaUCN-Development`
+- Clic en **"Create"**
+
+#### 3. Copiar la clave
+
+⚠️ **IMPORTANTE**: La clave solo se muestra **UNA VEZ**
+
+```
+re_123abc456def789ghi012jkl345mno678
+```
+
+Cópiala y guárdala en un lugar seguro.
+
+#### 4. Nota sobre emails
+
+- En la cuenta gratuita, solo puedes enviar desde: `onboarding@resend.dev`
+- Los emails llegarán a cualquier destinatario
+- Para usar tu propio dominio, necesitas verificarlo en Resend
+
+---
+
+### Paso 4: Generar JWT Secret (2 min)
+
+El JWT Secret es la clave que firma los tokens de autenticación.
+
+**Requisitos**:
+- Mínimo 32 caracteres
+- Mezcla de letras, números y símbolos
+
+#### Opción 1: Generador Online
+
+1. Ve a: **https://generate-random.org/api-key-generator**
+2. Configura:
+   - Length: **64**
+   - Format: **Alphanumeric + Special characters**
+3. Clic en **"Generate"**
+4. Copia la clave
+
+#### Opción 2: PowerShell (Windows)
+
+```powershell
+-join ((48..57) + (65..90) + (97..122) + (33,35,36,37,38,42,43,45,46,95) | Get-Random -Count 64 | ForEach-Object {[char]$_})
+```
+
+#### Opción 3: Terminal (Linux/Mac)
+
+```bash
+openssl rand -base64 48
+```
+
+**Ejemplo de clave segura**:
+```
+kJ8#mN2$pQ5&rT9*vX3@wZ7!yA4%bC6^dE1-fG0+hI8.nL5_oP2@qR9#sT3$uV7
 ```
 
 ---
 
-## ⚙️ Configuración Completa
+## ⚙️ Configuración
 
-> **💡 Tip**: Puedes usar el archivo [`appsettings.example.json`](appsettings.example.json) como plantilla. Solo cópialo, renómbralo a `appsettings.json` y actualiza los valores.
+### Paso 5: Configurar appsettings.json (10 min)
 
-> **📚 Guía Detallada**: Para instrucciones paso a paso sobre cómo obtener cada credencial, consulta [SERVICIOS_EXTERNOS.md](SERVICIOS_EXTERNOS.md)
+> 💡 **Archivo de Referencia**: El proyecto incluye `appsettings.example.json` como plantilla. Puedes usarlo como referencia.
 
-### Configuración del Archivo appsettings.json
+1. **Abre el proyecto** en tu editor de código:
+   ```powershell
+   code .  # Si usas VS Code
+   ```
 
-El proyecto incluye un archivo `appsettings.json` con valores de ejemplo. **DEBES actualizar** las siguientes secciones con tus propias credenciales:
+2. **Abre el archivo** `appsettings.json` (en la raíz del proyecto)
 
-#### 1. Configuración de Cloudinary
-
-Reemplaza los valores de ejemplo con tus credenciales de Cloudinary:
+3. **Reemplaza COMPLETAMENTE** el contenido con la siguiente configuración:
 
 ```json
-"Cloudinary": {
-  "CloudName": "TU_CLOUD_NAME",
-  "ApiKey": "TU_API_KEY",
-  "ApiSecret": "TU_API_SECRET"
+{
+    "Logging": {
+        "LogLevel": {
+            "Default": "Information",
+            "Microsoft.AspNetCore": "Warning"
+        }
+    },
+    "AllowedHosts": "*",
+    "ConnectionStrings": {
+        "DefaultConnection": "Data Source=tiendaucn.db"
+    },
+    "Serilog": {
+        "MinimumLevel": {
+            "Default": "Information",
+            "Override": {
+                "Microsoft.AspNetCore": "Warning",
+                "System": "Warning"
+            }
+        },
+        "WriteTo": [
+            {
+                "Name": "Console",
+                "Args": {
+                    "formatter": "Serilog.Formatting.Compact.CompactJsonFormatter, Serilog.Formatting.Compact"
+                }
+            },
+            {
+                "Name": "File",
+                "Args": {
+                    "path": "logs/log-.json",
+                    "rollingInterval": "Day",
+                    "retainedFileCountLimit": 14,
+                    "formatter": "Serilog.Formatting.Json.JsonFormatter, Serilog"
+                }
+            }
+        ],
+        "Enrich": [
+            "FromLogContext",
+            "WithMachineName",
+            "WithThreadId"
+        ],
+        "Properties": {
+            "Application": "TiendaUcnApi"
+        }
+    },
+    "IdentityConfiguration": {
+        "AllowedUserNameCharacters": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+"
+    },
+    "Cloudinary": {
+        "CloudName": "TU_CLOUD_NAME_AQUI",
+        "ApiKey": "TU_API_KEY_AQUI",
+        "ApiSecret": "TU_API_SECRET_AQUI"
+    },
+    "JWTSecret": "CAMBIA_ESTA_CLAVE_POR_UNA_MUY_LARGA_Y_SEGURA_DE_MINIMO_32_CARACTERES",
+    "ResendAPIKey": "TU_RESEND_API_KEY_AQUI",
+    "Products": {
+        "FewUnitsAvailable": 15,
+        "DefaultImageUrl": "https://shop.songprinting.com/global/images/PublicShop/ProductSearch/prodgr_default_300.png",
+        "DefaultPageSize": 10,
+        "ImageAllowedExtensions": [
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".webp"
+        ],
+        "ImageMaxSizeInBytes": 5242880,
+        "TransformationWidth": 1000,
+        "TransformationCrop": "scale",
+        "TransformationQuality": "auto:best",
+        "TransformationFetchFormat": "auto"
+    },
+    "CookieExpirationDays": 30,
+    "Cart": {
+        "AbandonedCartDays": 3
+    },
+    "Jobs": {
+        "CronJobDeleteUnconfirmedUsers": "0 2 * * *",
+        "TimeZone": "Pacific SA Standard Time",
+        "DaysOfDeleteUnconfirmedUsers": 7
+    },
+    "HangfireDashboard": {
+        "StatsPollingInterval": 5000,
+        "DashboardTitle": "Panel de Control de Hangfire",
+        "DashboardPath": "/hangfire",
+        "DisplayStorageConnectionString": false
+    },
+    "VerificationCode": {
+        "ExpirationTimeInMinutes": 3
+    },
+    "EmailConfiguration": {
+        "From": "TiendaUCN <onboarding@resend.dev>",
+        "WelcomeSubject": "Bienvenido a la Tienda UCN",
+        "VerificationSubject": "Código de verificación",
+        "PasswordResetSubject": "Restablece tu contraseña de Tienda UCN"
+    },
+    "User": {
+        "AdminUser": {
+            "Email": "admin@ejemplo.com",
+            "Password": "CambiaEstaContraseña123!",
+            "FirstName": "Administrador",
+            "LastName": "Sistema",
+            "Gender": "Otro",
+            "Rut": "12345678-9",
+            "BirthDate": "01-01-1990",
+            "PhoneNumber": "+56912345678"
+        },
+        "RandomUserPassword": "ContraseñaParaUsuariosGenerados123!"
+    }
 }
 ```
 
-**Dónde encontrar estos valores**:
-- Inicia sesión en [Cloudinary](https://cloudinary.com)
-- Ve a Dashboard → Account Details
-- Copia Cloud Name, API Key y API Secret
+4. **Ahora PERSONALIZA** las siguientes secciones con tus datos reales:
 
-#### 2. Configuración de Resend (Correo Electrónico)
+#### A. Cloudinary (OBLIGATORIO)
+
+Reemplaza estos valores con tus credenciales de Cloudinary:
+
+```json
+"Cloudinary": {
+  "CloudName": "mi-cloud-name-real",           // ← Tu Cloud Name de Cloudinary
+  "ApiKey": "123456789012345",                 // ← Tu API Key de Cloudinary
+  "ApiSecret": "aBcDeFgHiJkLmNoPqRsTuVwXyZ"   // ← Tu API Secret de Cloudinary
+}
+```
+
+#### B. Resend (OBLIGATORIO)
 
 Reemplaza con tu API Key de Resend:
 
 ```json
-"ResendAPIKey": "TU_RESEND_API_KEY"
+"ResendAPIKey": "re_123abc456def789ghi012jkl345mno678"  // ← Tu API Key de Resend
 ```
 
-**Cómo obtener la API Key**:
-- Inicia sesión en [Resend](https://resend.com)
-- Ve a API Keys
-- Crea una nueva API Key
-- Copia la clave generada
+#### C. JWT Secret (OBLIGATORIO)
 
-#### 3. Configuración de JWT Secret
-
-**⚠️ MUY IMPORTANTE**: Cambia la clave secreta de JWT por una personalizada y segura:
+Reemplaza con la clave segura que generaste (mínimo 32 caracteres):
 
 ```json
-"JWTSecret": "TU_CLAVE_SECRETA_MUY_LARGA_Y_COMPLEJA_MINIMO_32_CARACTERES"
+"JWTSecret": "kJ8#mN2$pQ5&rT9*vX3@wZ7!yA4%bC6^dE1-fG0+hI8.nL5_oP2@qR9#sT3$uV7"
 ```
 
-**Requisitos**:
+⚠️ **IMPORTANTE**: Esta clave debe ser:
 - Mínimo 32 caracteres
-- Usa una combinación de letras, números y símbolos
-- **NUNCA** compartas esta clave
-- **NUNCA** la subas a Git (usa variables de entorno en producción)
+- Mezcla de letras, números y símbolos especiales
+- Única para tu aplicación
+- **NUNCA compartida ni subida a Git**
 
-**Ejemplo de clave segura**:
-```
-"JWTSecret": "kJ8#mN2$pQ5&rT9*vX3@wZ7!yA4%bC6^dE1-fG0+hI8"
-```
+#### D. Usuario Administrador (OBLIGATORIO)
 
-#### 4. Configuración del Usuario Administrador
-
-Personaliza las credenciales del usuario administrador que se creará automáticamente:
+Personaliza los datos del usuario administrador que se creará automáticamente:
 
 ```json
 "User": {
   "AdminUser": {
-    "Email": "admin@tudominio.com",
-    "Password": "TuContraseñaSegura123!",
-    "FirstName": "Nombre",
-    "LastName": "Apellido",
-    "Gender": "Masculino",  // Opciones: "Masculino", "Femenino", "Otro"
-    "Rut": "12345678-9",    // RUT válido chileno
-    "BirthDate": "01-01-1990",  // Formato: DD-MM-YYYY
-    "PhoneNumber": "+56912345678"
+    "Email": "admin@miempresa.com",           // ← Tu email
+    "Password": "MiContraseña123!",           // ← Tu contraseña (mín. 8 chars, 1 número)
+    "FirstName": "Juan",                       // ← Tu nombre
+    "LastName": "Pérez",                       // ← Tu apellido
+    "Gender": "Masculino",                     // ← Masculino/Femenino/Otro
+    "Rut": "12345678-9",                       // ← RUT válido chileno
+    "BirthDate": "15-03-1990",                 // ← Formato DD-MM-YYYY (+18 años)
+    "PhoneNumber": "+56912345678"              // ← Con código de país
   },
-  "RandomUserPassword": "ContraseñaParaUsuariosAleatorios123!"
+  "RandomUserPassword": "ContraseñaParaUsuariosGenerados123!"  // ← Puedes dejarlo así
 }
 ```
 
-**Notas importantes**:
-- El correo debe ser único
-- La contraseña debe tener al menos 8 caracteres y 1 número
-- El RUT debe ser válido (con dígito verificador correcto)
-- La fecha de nacimiento debe indicar +18 años de edad
-- El teléfono debe incluir código de país (+56 para Chile)
+**Validaciones del Usuario Admin**:
+- ✅ **Email**: Válido y único
+- ✅ **Password**: Mínimo 8 caracteres, al menos 1 número
+- ✅ **RUT**: Válido chileno (con dígito verificador correcto)
+- ✅ **BirthDate**: Formato DD-MM-YYYY, mínimo 18 años
+- ✅ **PhoneNumber**: Con código de país (+56 para Chile)
+- ✅ **Gender**: Solo "Masculino", "Femenino", o "Otro"
 
-#### 5. Configuración de la Base de Datos (Opcional)
+#### E. Configuraciones Opcionales (Puedes dejarlas por defecto)
 
-Por defecto, la base de datos se llama `tiendaucn.db`. Si quieres cambiar el nombre:
+Estas configuraciones ya están optimizadas, pero puedes modificarlas si lo necesitas:
 
+**Imagen por defecto de productos**:
+```json
+"Products": {
+  "DefaultImageUrl": "https://shop.songprinting.com/global/images/PublicShop/ProductSearch/prodgr_default_300.png"
+}
+```
+
+**Base de datos**:
 ```json
 "ConnectionStrings": {
-  "DefaultConnection": "Data Source=nombre_personalizado.db"
+  "DefaultConnection": "Data Source=tiendaucn.db"  // Nombre de la BD SQLite
 }
 ```
 
-### Archivo appsettings.json Completo de Ejemplo
-
-```json
-{
-  "Logging": {
-    "LogLevel": {
-      "Default": "Information",
-      "Microsoft.AspNetCore": "Warning"
-    }
-  },
-  "AllowedHosts": "*",
-  "ConnectionStrings": {
-    "DefaultConnection": "Data Source=tiendaucn.db"
-  },
-  "Serilog": {
-    "MinimumLevel": {
-      "Default": "Information",
-      "Override": {
-        "Microsoft.AspNetCore": "Warning",
-        "System": "Warning"
-      }
-    },
-    "WriteTo": [
-      {
-        "Name": "Console",
-        "Args": {
-          "formatter": "Serilog.Formatting.Compact.CompactJsonFormatter, Serilog.Formatting.Compact"
-        }
-      },
-      {
-        "Name": "File",
-        "Args": {
-          "path": "logs/log-.json",
-          "rollingInterval": "Day",
-          "retainedFileCountLimit": 14,
-          "formatter": "Serilog.Formatting.Json.JsonFormatter, Serilog"
-        }
-      }
-    ],
-    "Enrich": ["FromLogContext", "WithMachineName", "WithThreadId"],
-    "Properties": {
-      "Application": "TiendaUcnApi"
-    }
-  },
-  "IdentityConfiguration": {
-    "AllowedUserNameCharacters": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+"
-  },
-  "Cloudinary": {
-    "CloudName": "TU_CLOUD_NAME",
-    "ApiKey": "TU_API_KEY",
-    "ApiSecret": "TU_API_SECRET"
-  },
-  "JWTSecret": "TU_CLAVE_SECRETA_MUY_LARGA_Y_COMPLEJA_MINIMO_32_CARACTERES",
-  "ResendAPIKey": "TU_RESEND_API_KEY",
-  "Products": {
-    "FewUnitsAvailable": 15,
-    "DefaultImageUrl": "https://shop.songprinting.com/global/images/PublicShop/ProductSearch/prodgr_default_300.png",
-    "DefaultPageSize": 10,
-    "ImageAllowedExtensions": [".jpg", ".jpeg", ".png", ".webp"],
-    "ImageMaxSizeInBytes": 5242880,
-    "TransformationWidth": 1000,
-    "TransformationCrop": "scale",
-    "TransformationQuality": "auto:best",
-    "TransformationFetchFormat": "auto"
-  },
-  "CookieExpirationDays": 30,
-  "Cart": {
-    "AbandonedCartDays": 3
-  },
-  "Jobs": {
-    "CronJobDeleteUnconfirmedUsers": "50 20 * * *",
-    "TimeZone": "Pacific SA Standard Time",
-    "DaysOfDeleteUnconfirmedUsers": 7
-  },
-  "HangfireDashboard": {
-    "StatsPollingInterval": 5000,
-    "DashboardTitle": "Panel de Control de Hangfire",
-    "DashboardPath": "/hangfire",
-    "DisplayStorageConnectionString": false
-  },
-  "VerificationCode": {
-    "ExpirationTimeInMinutes": 3
-  },
-  "EmailConfiguration": {
-    "From": "TiendaUCN <onboarding@resend.dev>",
-    "WelcomeSubject": "Bienvenido a la Tienda UCN",
-    "VerificationSubject": "Código de verificación",
-    "PasswordResetSubject": "Restablece tu contraseña de Tienda UCN"
-  },
-  "User": {
-    "AdminUser": {
-      "Email": "admin@tudominio.com",
-      "Password": "TuContraseñaSegura123!",
-      "FirstName": "Nombre",
-      "LastName": "Apellido",
-      "Gender": "Otro",
-      "Rut": "12345678-9",
-      "BirthDate": "01-01-1990",
-      "PhoneNumber": "+56912345678"
-    },
-    "RandomUserPassword": "ContraseñaParaUsuariosAleatorios123!"
-  }
-}
-```
-
-### Configuraciones Opcionales
-
-#### Cambiar el Puerto de la Aplicación
-
-Si quieres cambiar el puerto donde corre la aplicación, edita `Properties/launchSettings.json`:
-
-```json
-{
-  "profiles": {
-    "https": {
-      "applicationUrl": "https://localhost:TU_PUERTO;http://localhost:TU_PUERTO_HTTP"
-    }
-  }
-}
-```
-
-Por defecto: `https://localhost:7102` y `http://localhost:5000`
-
-#### Configuración de Trabajos en Segundo Plano
-
-Puedes ajustar la frecuencia de los trabajos automáticos:
-
+**Trabajos automáticos**:
 ```json
 "Jobs": {
   "CronJobDeleteUnconfirmedUsers": "0 2 * * *",  // Diario a las 2:00 AM
-  "TimeZone": "Pacific SA Standard Time",  // Zona horaria de Chile
-  "DaysOfDeleteUnconfirmedUsers": 7  // Días antes de eliminar usuarios sin verificar
+  "DaysOfDeleteUnconfirmedUsers": 7               // Eliminar usuarios no verificados después de 7 días
 }
 ```
 
-**Formato Cron**: `minuto hora día mes día_semana`
-- `0 2 * * *` = 2:00 AM todos los días
-- `0 */6 * * *` = Cada 6 horas
-- `30 14 * * 1` = 2:30 PM todos los lunes
+**Carrito abandonado**:
+```json
+"Cart": {
+  "AbandonedCartDays": 3  // Enviar recordatorio después de 3 días
+}
+```
+
+**Expiración de código de verificación**:
+```json
+"VerificationCode": {
+  "ExpirationTimeInMinutes": 3  // Los códigos expiran en 3 minutos
+}
+```
+
+5. **Guarda el archivo** (Ctrl+S o Cmd+S)
+
+### ✅ Checklist de Configuración
+
+Antes de continuar, verifica que configuraste correctamente:
+
+**Servicios Externos Obligatorios**:
+- [ ] **Cloudinary CloudName** (sin comillas extra, sin espacios)
+- [ ] **Cloudinary ApiKey** (solo números)
+- [ ] **Cloudinary ApiSecret** (letras y números)
+- [ ] **ResendAPIKey** (comienza con `re_`)
+- [ ] **JWTSecret** (mínimo 32 caracteres, con símbolos)
+
+**Usuario Administrador**:
+- [ ] **Email** válido (formato: ejemplo@dominio.com)
+- [ ] **Password** válida (mínimo 8 caracteres, 1 número)
+- [ ] **RUT** válido chileno (formato: 12345678-9)
+- [ ] **BirthDate** correcta (formato DD-MM-YYYY, +18 años)
+- [ ] **PhoneNumber** con código de país (+56912345678)
+- [ ] **Gender** correcto (Masculino/Femenino/Otro)
+
+**Archivo**:
+- [ ] **appsettings.json guardado** (Ctrl+S)
+
+> 💡 **Tip**: Si tienes dudas, compara tu `appsettings.json` con el archivo de ejemplo `appsettings.example.json` incluido en el proyecto.
+
+> ⚠️ **IMPORTANTE**: El archivo `appsettings.json` está en `.gitignore` y **NO se subirá** a Git. Esto es correcto para proteger tus credenciales. Solo `appsettings.example.json` está en el repositorio como referencia.
 
 ---
 
-## ▶️ Ejecución del Proyecto
+## ▶️ Primera Ejecución
 
-### Primera Ejecución: Crear la Base de Datos
+### Paso 6: Ejecutar la Aplicación (2 min)
 
-**IMPORTANTE**: En la primera ejecución, la aplicación creará automáticamente:
-- La base de datos SQLite (`tiendaucn.db`)
-- Todas las tablas necesarias
-- Los roles (Administrador y Cliente)
-- El usuario administrador configurado
-- Un usuario de prueba (`cliente@test.com`)
-- Datos de ejemplo (10 categorías, 20 marcas, 50 productos)
-
-#### Opción 1: Ejecutar con dotnet CLI (Recomendado)
-
-```bash
+```powershell
 dotnet run
 ```
 
-#### Opción 2: Ejecutar desde Visual Studio
+### ¿Qué sucede en la primera ejecución?
 
-1. Abre el archivo `TiendaUcnApi.sln` con Visual Studio 2022
-2. Presiona `F5` o haz clic en el botón "Run"
+La aplicación automáticamente:
 
-#### Opción 3: Ejecutar desde Visual Studio Code
+1. ✅ Crea la base de datos SQLite (`tiendaucn.db`)
+2. ✅ Ejecuta todas las migraciones
+3. ✅ Crea los roles: "Administrador" y "Cliente"
+4. ✅ Crea tu usuario administrador
+5. ✅ Crea un usuario de prueba:
+   - Email: `cliente@test.com`
+   - Password: `Cliente123!`
+6. ✅ Genera datos de ejemplo:
+   - 10 categorías
+   - 20 marcas
+   - 50 productos (sin imágenes)
 
-1. Abre el proyecto en VS Code
-2. Presiona `F5` o ve a "Run" → "Start Debugging"
-
-### Verificar que la Aplicación Está Corriendo
-
-Una vez ejecutado, deberías ver en la consola algo similar a:
+### Salida Esperada
 
 ```
 info: Microsoft.Hosting.Lifetime[14]
@@ -650,161 +530,201 @@ info: Microsoft.Hosting.Lifetime[0]
       Application started. Press Ctrl+C to shut down.
 ```
 
-### Acceder a la Documentación de Swagger
-
-Abre tu navegador y navega a:
-
-```
-https://localhost:7102/swagger
-```
-
-o
-
-```
-http://localhost:5000/swagger
-```
-
-Aquí podrás ver todos los endpoints disponibles y probarlos interactivamente.
-
-### Acceder al Panel de Hangfire
-
-Para ver los trabajos en segundo plano:
-
-```
-https://localhost:7102/hangfire
-```
-
-**Nota**: Solo accesible desde localhost por seguridad.
-
-### Detener la Aplicación
-
-Presiona `Ctrl + C` en la terminal donde está corriendo la aplicación.
+✅ **¡Éxito!** La API está corriendo.
 
 ---
 
-## 🧪 Probar la API
+### Paso 7: Verificar la Instalación (5 min)
 
-### ⚠️ Configuración Importante para Postman
+#### A. Abrir Swagger
 
-**IMPORTANTE**: Para que los correos electrónicos funcionen correctamente en las pruebas de la colección Postman, debes configurar Resend:
+1. Abre tu navegador
+2. Ve a: **https://localhost:7102/swagger**
+3. Deberías ver la interfaz de Swagger con todos los endpoints
 
-#### Paso 1: Crear cuenta en Resend
-1. Ve a [https://resend.com/signup](https://resend.com/signup)
-2. Crea una cuenta gratuita
-3. Verifica tu correo electrónico
+#### B. Probar el Login
 
-#### Paso 2: Obtener API Key
-1. Inicia sesión en Resend
-2. Ve a **API Keys** en el menú lateral
-3. Haz clic en **Create API Key**
-4. Dale un nombre (ej: "TiendaUCN-Dev")
-5. Copia la clave generada (**solo se muestra una vez**)
-
-#### Paso 3: Configurar en appsettings.json
-```json
-{
-  "ResendAPIKey": "re_TuAPIKeyAqui123456789"
-}
-```
-
-#### Paso 4: Configurar correo remitente
-```json
-{
-  "EmailConfiguration": {
-    "From": "TiendaUCN <onboarding@resend.dev>"
-  }
-}
-```
-
-**Nota sobre el correo remitente**:
-- En la cuenta gratuita de Resend, solo puedes enviar desde `onboarding@resend.dev`
-- Los correos se enviarán a cualquier dirección que uses en las pruebas
-- Para usar tu propio dominio, debes verificarlo en Resend (plan pago)
-
-#### Flujos que usan correo electrónico en Postman:
-- ✉️ **Registro de usuario** → Envía código de verificación
-- ✉️ **Reenviar código de verificación** → Envía nuevo código
-- ✉️ **Recuperar contraseña** → Envía código de recuperación
-- ✉️ **Cambiar email** → Envía código de verificación al nuevo email
-
-**Sin Resend configurado**: Estos endpoints fallarán con error 500 o no enviarán correos.
-
----
-
-### Usuarios Creados Automáticamente
-
-El sistema crea automáticamente estos usuarios:
-
-#### Usuario Administrador
-- **Email**: El configurado en `appsettings.json` → `User:AdminUser:Email`
-- **Contraseña**: La configurada en `appsettings.json` → `User:AdminUser:Password`
-- **Rol**: Administrador
-- **Permisos**: Acceso completo a todos los endpoints
-
-#### Usuario Cliente de Prueba
-- **Email**: `cliente@test.com`
-- **Contraseña**: `Cliente123!`
-- **Rol**: Cliente
-- **Permisos**: Acceso a endpoints públicos y de usuario
-
-### Primer Inicio de Sesión
-
-#### 1. Usando Swagger UI
-
-1. Ve a `https://localhost:7102/swagger`
-2. Busca el endpoint `POST /api/Auth/login`
-3. Haz clic en "Try it out"
-4. Ingresa las credenciales:
+1. En Swagger, busca **`POST /api/Auth/login`**
+2. Clic en **"Try it out"**
+3. Ingresa tus credenciales de administrador:
    ```json
    {
-     "email": "admin@tudominio.com",
-     "password": "TuContraseñaSegura123!"
+     "email": "admin@miempresa.com",
+     "password": "MiContraseña123!"
    }
    ```
-5. Haz clic en "Execute"
-6. Copia el `accessToken` de la respuesta
-7. Haz clic en el botón "Authorize" (candado) en la parte superior
-8. Pega el token en el campo "Value": `Bearer tu_token_aquí`
-9. Haz clic en "Authorize"
+4. Clic en **"Execute"**
+5. ✅ **Deberías recibir**: Un `accessToken` en la respuesta
+
+#### C. Autorizar en Swagger
+
+1. **Copia** el `accessToken` (sin las comillas)
+2. Clic en el botón **"Authorize"** 🔒 (arriba a la derecha)
+3. Pega: `Bearer tu_token_aqui`
+4. Clic en **"Authorize"**
+5. Clic en **"Close"**
 
 Ahora puedes probar todos los endpoints protegidos.
 
-#### 2. Usando el archivo TiendaUcnApi.http
+#### D. Acceder al Panel de Hangfire
 
-Si usas Visual Studio Code con la extensión REST Client:
+1. Ve a: **https://localhost:7102/hangfire**
+2. Deberías ver el panel de control de Hangfire
+3. Verifica que hay 2 trabajos programados:
+   - `delete-unconfirmed-users`
+   - `send-cart-reminders`
 
-1. Abre `TiendaUcnApi.http`
-2. Actualiza las variables en la parte superior:
-   ```http
-   @baseUrl = https://localhost:7102/api
-   @email = admin@tudominio.com
-   @password = TuContraseñaSegura123!
-   ```
-3. Haz clic en "Send Request" sobre el request de login
-4. Copia el `accessToken` de la respuesta
-5. Pégalo en la variable `@token`
+---
 
-#### 3. Usando Postman
+## 📚 Uso de la API
 
-1. Importa la colección `TiendaUCN API.postman_collection.json`
-2. Crea un nuevo request POST a `https://localhost:7102/api/Auth/login`
-3. En el Body, selecciona "raw" y "JSON"
-4. Ingresa:
-   ```json
-   {
-     "email": "admin@tudominio.com",
-     "password": "TuContraseñaSegura123!"
-   }
-   ```
-5. Envía el request
-6. Copia el `accessToken`
-7. En requests posteriores, añade un header:
-   - Key: `Authorization`
-   - Value: `Bearer tu_token_aquí`
+### URLs Base
 
-### Ejemplos de Uso Común
+- **HTTPS**: `https://localhost:7102/api`
+- **HTTP**: `http://localhost:5000/api`
+- **Swagger**: `https://localhost:7102/swagger`
+- **Hangfire**: `https://localhost:7102/hangfire`
 
-#### Crear un Nuevo Usuario
+### Autenticación
+
+La mayoría de los endpoints requieren autenticación JWT. Incluye el token en el header:
+
+```
+Authorization: Bearer <tu_token>
+```
+
+### Usuarios de Prueba
+
+#### Usuario Administrador
+- Email: El que configuraste en `appsettings.json`
+- Password: El que configuraste
+- Rol: Administrador
+- Permisos: Acceso completo
+
+#### Usuario Cliente
+- Email: `cliente@test.com`
+- Password: `Cliente123!`
+- Rol: Cliente
+- Permisos: Endpoints públicos y de usuario
+
+### Endpoints Principales
+
+#### 🔐 Autenticación (`/api/Auth`)
+
+```http
+POST /api/Auth/login                           # Iniciar sesión
+POST /api/Auth/register                        # Registrar nuevo usuario
+POST /api/Auth/verify                          # Verificar email
+POST /api/Auth/resend-email-verification-code  # Reenviar código
+POST /api/Auth/recover-password                # Solicitar código de recuperación
+PATCH /api/Auth/reset-password                 # Restablecer contraseña
+```
+
+#### 👤 Perfil (`/api/user`)
+
+```http
+GET  /api/user/profile          # Ver perfil
+PUT  /api/user/profile          # Actualizar perfil
+PATCH /api/user/change-password # Cambiar contraseña
+POST /api/user/verify-email-change # Verificar cambio de email
+```
+
+#### 📦 Productos Públicos (`/api/products`)
+
+```http
+GET /api/products     # Listar productos (con filtros)
+GET /api/products/{id} # Ver detalle del producto
+```
+
+**Parámetros de consulta**:
+- `page` - Número de página (default: 1)
+- `pageSize` - Items por página (default: 10)
+- `search` - Buscar por título
+- `categoryId` - Filtrar por categoría
+- `brandId` - Filtrar por marca
+- `minPrice` / `maxPrice` - Rango de precio
+- `status` - Nuevo o Usado
+- `sortBy` - Ordenar por (title, price, createdAt)
+- `sortOrder` - asc o desc
+
+#### 📦 Productos Admin (`/api/admin/products`)
+
+```http
+GET    /api/admin/products           # Listar todos los productos
+GET    /api/admin/products/{id}      # Ver producto
+POST   /api/admin/products           # Crear producto
+PUT    /api/admin/products/{id}      # Actualizar producto
+DELETE /api/admin/products/{id}      # Desactivar producto
+POST   /api/admin/products/{id}/images # Subir imágenes
+DELETE /api/admin/products/{id}/images/{imageId} # Eliminar imagen
+PATCH  /api/admin/products/{id}/discount # Actualizar descuento
+```
+
+#### 🛒 Carrito (`/api/cart`)
+
+```http
+GET    /api/cart                    # Ver carrito
+POST   /api/cart/items              # Agregar producto
+PUT    /api/cart/items/{productId}  # Actualizar cantidad
+DELETE /api/cart/items/{productId}  # Eliminar producto
+DELETE /api/cart                    # Vaciar carrito
+```
+
+#### 📋 Pedidos (`/api/orders`)
+
+```http
+POST /api/orders     # Crear pedido desde el carrito
+GET  /api/orders     # Listar mis pedidos
+GET  /api/orders/{id} # Ver detalle del pedido
+```
+
+#### 📋 Pedidos Admin (`/api/admin/orders`)
+
+```http
+GET   /api/admin/orders           # Listar todos los pedidos
+GET   /api/admin/orders/{id}      # Ver pedido
+PATCH /api/admin/orders/{id}/status # Cambiar estado
+```
+
+**Estados de pedido**:
+1. Pendiente
+2. Procesando
+3. Enviado
+4. Entregado
+5. Cancelado
+
+#### 🏷️ Categorías Admin (`/api/admin/categories`)
+
+```http
+GET    /api/admin/categories     # Listar categorías
+GET    /api/admin/categories/{id} # Ver categoría
+POST   /api/admin/categories     # Crear categoría
+PUT    /api/admin/categories/{id} # Actualizar categoría
+DELETE /api/admin/categories/{id} # Eliminar categoría
+```
+
+#### 🏷️ Marcas Admin (`/api/admin/brands`)
+
+```http
+GET    /api/admin/brands     # Listar marcas
+GET    /api/admin/brands/{id} # Ver marca
+POST   /api/admin/brands     # Crear marca
+PUT    /api/admin/brands/{id} # Actualizar marca
+DELETE /api/admin/brands/{id} # Eliminar marca
+```
+
+#### 👥 Usuarios Admin (`/api/admin/users`)
+
+```http
+GET   /api/admin/users           # Listar usuarios
+GET   /api/admin/users/{id}      # Ver usuario
+PATCH /api/admin/users/{id}/status # Bloquear/Desbloquear
+PATCH /api/admin/users/{id}/role   # Cambiar rol
+```
+
+### Ejemplos de Uso
+
+#### 1. Registrar un nuevo usuario
 
 ```http
 POST /api/Auth/register
@@ -813,8 +733,8 @@ Content-Type: application/json
 {
   "email": "nuevo@usuario.com",
   "password": "Usuario123!",
-  "firstName": "Nuevo",
-  "lastName": "Usuario",
+  "firstName": "Juan",
+  "lastName": "Pérez",
   "rut": "19876543-2",
   "gender": "Masculino",
   "birthDate": "1995-05-15",
@@ -822,17 +742,30 @@ Content-Type: application/json
 }
 ```
 
-#### Obtener Todos los Productos
+#### 2. Crear un producto (Admin)
 
 ```http
-GET /api/products?page=1&pageSize=10
+POST /api/admin/products
+Authorization: Bearer {token}
+Content-Type: multipart/form-data
+
+title: Notebook HP Pavilion
+description: Laptop de alta gama
+price: 599990
+stock: 10
+status: Nuevo
+categoryId: 1
+brandId: 1
+images: [archivo1.jpg, archivo2.jpg]
 ```
 
-#### Agregar Producto al Carrito
+⚠️ **IMPORTANTE**: Los productos requieren **al menos una imagen**.
+
+#### 3. Agregar al carrito
 
 ```http
 POST /api/cart/items
-Authorization: Bearer tu_token_aquí
+Authorization: Bearer {token}
 Content-Type: application/json
 
 {
@@ -841,254 +774,201 @@ Content-Type: application/json
 }
 ```
 
-#### Crear un Pedido
+#### 4. Crear un pedido
 
 ```http
 POST /api/orders
-Authorization: Bearer tu_token_aquí
+Authorization: Bearer {token}
 ```
+
+Este endpoint crea un pedido con todos los productos del carrito actual.
+
+### Probar con Postman
+
+El proyecto incluye una colección de Postman: `TiendaUCN API.postman_collection.json`
+
+1. Importa el archivo en Postman
+2. Los requests están organizados por carpetas
+3. Configura las variables de entorno si es necesario
+
+### Probar con archivo .http
+
+El proyecto incluye `TiendaUcnApi.http` para usar con la extensión REST Client de VS Code:
+
+1. Abre el archivo en VS Code
+2. Actualiza las variables en la parte superior
+3. Haz clic en "Send Request" sobre cada request
 
 ---
 
----
+## 🏗️ Arquitectura del Proyecto
 
-## 📚 Documentación de la API
+El proyecto sigue **Clean Architecture** con separación de capas:
 
-### URL Base
 ```
-https://localhost:7102/api
+TiendaUcnApi/
+├── src/
+│   ├── API/                    # Capa de Presentación
+│   │   ├── Controllers/        # Endpoints de la API
+│   │   ├── Middlewares/        # Error handling, BuyerId
+│   │   └── Extensions/         # Configuración de servicios
+│   │
+│   ├── Application/            # Capa de Aplicación
+│   │   ├── DTO/               # Data Transfer Objects
+│   │   ├── Services/          # Lógica de negocio
+│   │   ├── Mappers/           # Mapeo de objetos
+│   │   ├── Validators/        # Validaciones personalizadas
+│   │   └── Jobs/              # Trabajos en segundo plano
+│   │
+│   ├── Domain/                # Capa de Dominio
+│   │   └── Models/            # Entidades del negocio
+│   │
+│   └── Infrastructure/        # Capa de Infraestructura
+│       ├── Data/              # DbContext, Migrations
+│       └── Repositories/      # Acceso a datos
+│
+├── appsettings.json           # Configuración
+├── Program.cs                 # Entry point
+└── tiendaucn.db              # Base de datos SQLite (se crea automáticamente)
 ```
-o
-```
-http://localhost:5000/api
-```
 
-### Autenticación
+### Capas
 
-La mayoría de los endpoints requieren autenticación mediante token JWT Bearer. Incluye el token en el header Authorization:
-```
-Authorization: Bearer <tu_token_jwt>
-```
+1. **API (Presentación)**
+   - Controllers: Manejan HTTP requests/responses
+   - Middlewares: Error handling global, identificación de usuarios anónimos
+   - Extensions: Inyección de dependencias, seeding de datos
 
-### Roles
-- **Cliente**: Usuarios regulares que pueden navegar productos, gestionar carrito y realizar pedidos
-- **Administrador**: Acceso completo a todos los endpoints, incluyendo gestión de usuarios y productos
+2. **Application (Aplicación)**
+   - Services: Lógica de negocio
+   - DTOs: Transferencia de datos entre capas
+   - Validators: Validación de RUT, edad, etc.
+   - Mappers: Conversión entre entidades y DTOs
 
-### Endpoints Principales
+3. **Domain (Dominio)**
+   - Models: Entidades del negocio (User, Product, Order, etc.)
+   - Enums: Gender, Status, OrderStatus, CodeType
 
-#### Autenticación (`/api/Auth`)
-- `POST /login` - Inicio de sesión de usuario
-- `POST /register` - Registro de nuevo usuario
-- `POST /verify` - Verificación de correo electrónico
-- `POST /resend-email-verification-code` - Reenviar código de verificación
-- `POST /recover-password` - Solicitar restablecimiento de contraseña
-- `PATCH /reset-password` - Restablecer contraseña con código
-
-#### Perfil (`/api/user`)
-- `GET /profile` - Obtener perfil de usuario
-- `PUT /profile` - Actualizar perfil
-- `PATCH /change-password` - Cambiar contraseña
-- `POST /verify-email-change` - Verificar cambio de email
-
-#### Productos (Público) (`/api/products`)
-- `GET /` - Obtener todos los productos (con filtros y paginación)
-- `GET /{id}` - Obtener detalles del producto
-
-**Parámetros de consulta disponibles:**
-- `page`: Número de página (default: 1)
-- `pageSize`: Elementos por página (default: 10)
-- `search`: Búsqueda por título
-- `categoryId`: Filtrar por categoría
-- `brandId`: Filtrar por marca
-- `minPrice`: Precio mínimo
-- `maxPrice`: Precio máximo
-- `status`: Nuevo o Usado
-- `sortBy`: Ordenar por (title, price, createdAt)
-- `sortOrder`: asc o desc
-
-#### Productos (Admin) (`/api/admin/products`)
-- `GET /` - Obtener todos los productos para admin
-- `GET /{id}` - Obtener detalles del producto para admin
-- `POST /` - Crear producto
-- `PUT /{id}` - Actualizar producto
-- `DELETE /{id}` - Alternar disponibilidad del producto
-- `POST /{id}/images` - Subir imágenes del producto
-- `DELETE /{id}/images/{imageId}` - Eliminar imagen del producto
-- `PATCH /{id}/discount` - Actualizar descuento del producto
-
-#### Carrito (`/api/cart`)
-- `GET /` - Obtener carrito del usuario
-- `POST /items` - Agregar item al carrito
-- `DELETE /items/{productId}` - Eliminar item del carrito
-- `PUT /items/{productId}` - Actualizar cantidad del item
-- `DELETE /` - Vaciar carrito
-
-#### Pedidos (`/api/orders`)
-- `POST /` - Crear pedido desde el carrito
-- `GET /` - Obtener pedidos del usuario (paginados)
-- `GET /{id}` - Obtener detalles del pedido
-
-#### Pedidos (Admin) (`/api/admin/orders`)
-- `GET /` - Obtener todos los pedidos (con filtros)
-- `GET /{id}` - Obtener detalles del pedido
-- `PATCH /{id}/status` - Actualizar estado del pedido
-
-**Estados de pedido**: Pendiente, Procesando, Enviado, Entregado, Cancelado
-
-#### Categorías (Admin) (`/api/admin/categories`)
-- `GET /` - Obtener todas las categorías
-- `GET /{id}` - Obtener categoría por ID
-- `POST /` - Crear categoría
-- `PUT /{id}` - Actualizar categoría
-- `DELETE /{id}` - Eliminar categoría
-
-#### Marcas (Admin) (`/api/admin/brands`)
-- `GET /` - Obtener todas las marcas
-- `GET /{id}` - Obtener marca por ID
-- `POST /` - Crear marca
-- `PUT /{id}` - Actualizar marca
-- `DELETE /{id}` - Eliminar marca
-
-#### Usuarios (Admin) (`/api/admin/users`)
-- `GET /` - Obtener todos los usuarios (paginados)
-- `GET /{id}` - Obtener detalles del usuario
-- `PATCH /{id}/status` - Actualizar estado del usuario (activo/bloqueado)
-- `PATCH /{id}/role` - Actualizar rol del usuario
-
-Para ejemplos detallados de request/response, consulta el archivo `TiendaUcnApi.http` o explora la interfaz de Swagger UI.
+4. **Infrastructure (Infraestructura)**
+   - DbContext: Entity Framework Core
+   - Repositories: Abstracción de acceso a datos
+   - Migrations: Control de versiones de la BD
 
 ---
 
----
+## 🐛 Solución de Problemas
 
----
+### Error: "JWT secret key not configured"
 
-## 🔒 Características de Seguridad
-
-- **Hash de Contraseñas**: Utiliza ASP.NET Core Identity con BCrypt
-- **Tokens JWT**: Autenticación sin estado con expiración configurable
-- **Verificación de Email**: Requerida para activación de cuenta
-- **Autorización Basada en Roles**: Permisos separados para clientes y administradores
-- **Validación de Entrada**: Validación completa de DTOs
-- **Configuración CORS**: Compartición de recursos de origen cruzado configurable
-- **Manejo de Errores**: Middleware global de excepciones con mensajes de error sanitizados
-- **Security Stamp**: Invalidación de sesiones cuando cambia el estado/rol del usuario
-- **Rate Limiting**: Limitación de solicitudes configurable (puede añadirse)
-- **Protección HTTPS**: Redirección automática a HTTPS en producción
-
-### Buenas Prácticas de Seguridad Implementadas
-
-1. **Contraseñas**:
-   - Longitud mínima de 8 caracteres
-   - Requiere al menos un dígito
-   - Hash seguro con ASP.NET Core Identity
-
-2. **Tokens JWT**:
-   - Expiración automática
-   - Security stamp validation
-   - Invalidación de sesiones cuando el usuario es bloqueado o cambia de rol
-
-3. **Verificación de Email**:
-   - Códigos de verificación con expiración de 3 minutos
-   - Limpieza automática de usuarios no verificados después de 7 días
-
-4. **Validación de Datos**:
-   - Validación de RUT chileno
-   - Validación de edad mínima (18 años)
-   - Validación de formatos de email y teléfono
-   - Sanitización de entradas
-
----
-
-## 🛠️ Solución de Problemas Comunes
-
-### Problema: Error "No se pudo encontrar el archivo tiendaucn.db"
-
-**Solución**: La base de datos se crea automáticamente en la primera ejecución. Asegúrate de:
-1. Haber ejecutado `dotnet run` al menos una vez
-2. Verificar que no haya errores en la consola
-3. Revisar que la cadena de conexión en `appsettings.json` sea correcta
-
-### Problema: Error "JWT secret key not configured"
-
-**Solución**: 
-1. Verifica que el `appsettings.json` tenga la clave `JWTSecret`
-2. Asegúrate de que la clave sea suficientemente larga (mínimo 32 caracteres)
-3. Reinicia la aplicación después de modificar el archivo
-
-### Problema: Error al subir imágenes a Cloudinary
+**Causa**: El `JWTSecret` no está configurado o es muy corto.
 
 **Solución**:
-1. Verifica que las credenciales de Cloudinary en `appsettings.json` sean correctas
-2. Comprueba que el tamaño de la imagen no exceda 5MB
-3. Asegúrate de que la extensión sea `.jpg`, `.jpeg`, `.png` o `.webp`
-4. Verifica tu conexión a internet
+1. Abre `appsettings.json`
+2. Verifica que `JWTSecret` tenga mínimo 32 caracteres
+3. Reinicia la aplicación
 
-### Problema: No se envían correos electrónicos
+---
 
-**Solución**:
-1. Verifica que la API Key de Resend sea correcta
-2. Comprueba que la API Key tenga los permisos necesarios
-3. Revisa los logs en `logs/log-YYYYMMDD.json` para más detalles
-4. Verifica tu cuota de envíos en Resend
+### Error: No se envían emails
 
-### Problema: Error "The user is not confirmed" al iniciar sesión
+**Causa**: Resend no está configurado correctamente.
 
 **Solución**:
-1. El usuario debe verificar su correo electrónico primero
-2. Usa el endpoint `/api/Auth/verify` con el código enviado por email
-3. Si no recibiste el código, usa `/api/Auth/resend-email-verification-code`
-4. Para usuarios de prueba, estos ya están verificados automáticamente
+1. Verifica que `ResendAPIKey` sea correcto (comienza con `re_`)
+2. Revisa los logs en `logs/log-YYYYMMDD.json`
+3. Verifica tu cuota en el dashboard de Resend
 
-### Problema: Error 401 Unauthorized en endpoints protegidos
+---
+
+### Error al subir imágenes a Cloudinary
+
+**Causa**: Credenciales incorrectas o problemas de conexión.
 
 **Solución**:
-1. Asegúrate de incluir el header `Authorization: Bearer tu_token`
-2. Verifica que el token no haya expirado
+1. Verifica las credenciales de Cloudinary en `appsettings.json`
+2. Asegúrate de que la imagen sea menor a 5MB
+3. Formatos permitidos: `.jpg`, `.jpeg`, `.png`, `.webp`
+4. Revisa los logs para más detalles
+
+---
+
+### Error: "The user is not confirmed"
+
+**Causa**: El usuario no ha verificado su email.
+
+**Solución**:
+1. Usa el endpoint `/api/Auth/verify` con el código recibido
+2. Si no recibiste el código: `/api/Auth/resend-email-verification-code`
+3. Los usuarios de prueba ya están verificados
+
+---
+
+### Error: 401 Unauthorized
+
+**Causa**: Token inválido o expirado.
+
+**Solución**:
+1. Verifica que incluyes el header: `Authorization: Bearer {token}`
+2. El token expira después de 7 días
 3. Inicia sesión nuevamente para obtener un token nuevo
-4. Comprueba que el usuario tenga el rol necesario para el endpoint
+4. Verifica que el usuario tenga el rol necesario
 
-### Problema: Hangfire Dashboard no es accesible
+---
 
-**Solución**:
-1. Solo es accesible desde `localhost` por seguridad
-2. Verifica la URL: `https://localhost:7102/hangfire`
-3. Asegúrate de que la aplicación esté corriendo
+### Puerto ya en uso
 
-### Problema: Error al compilar o restaurar paquetes
+**Causa**: Otra aplicación usa el puerto 7102 o 5000.
 
 **Solución**:
-```bash
+
+**Opción 1**: Detener la aplicación que usa el puerto
+```powershell
+# Windows PowerShell
+Get-Process -Id (Get-NetTCPConnection -LocalPort 7102).OwningProcess | Stop-Process
+```
+
+**Opción 2**: Cambiar el puerto en `Properties/launchSettings.json`
+```json
+"applicationUrl": "https://localhost:TU_PUERTO;http://localhost:TU_PUERTO_HTTP"
+```
+
+---
+
+### Base de datos corrupta
+
+**Solución**: Eliminar y recrear la base de datos
+
+⚠️ **Advertencia**: Esto eliminará todos los datos.
+
+```powershell
+# Detén la aplicación (Ctrl+C)
+
+# Elimina la base de datos
+Remove-Item tiendaucn.db
+
+# Ejecuta la aplicación de nuevo
+dotnet run
+```
+
+La base de datos se recreará automáticamente con datos de ejemplo.
+
+---
+
+### Error al compilar o restaurar paquetes
+
+**Solución**:
+```powershell
 # Limpiar y restaurar
 dotnet clean
 dotnet restore
 dotnet build
 ```
 
-### Problema: Puerto ya en uso
+---
 
-**Solución**:
-1. Cambia el puerto en `Properties/launchSettings.json`
-2. O detén la aplicación que esté usando el puerto:
-   ```powershell
-   # Windows PowerShell
-   Get-Process -Id (Get-NetTCPConnection -LocalPort 7102).OwningProcess | Stop-Process
-   ```
+### Habilitar logs detallados
 
-### Problema: La base de datos tiene datos corruptos
-
-**Solución**:
-```bash
-# Eliminar la base de datos y recrearla
-rm tiendaucn.db
-dotnet run
-```
-
-**⚠️ Advertencia**: Esto eliminará todos los datos.
-
-### Habilitar Logs Detallados
-
-Si necesitas más información sobre errores, aumenta el nivel de logging en `appsettings.json`:
+Si necesitas más información sobre errores, edita `appsettings.json`:
 
 ```json
 {
@@ -1101,184 +981,124 @@ Si necesitas más información sobre errores, aumenta el nivel de logging en `ap
 }
 ```
 
-Los logs se guardan en la carpeta `logs/` con el formato `log-YYYYMMDD.json`.
+Los logs se guardan en `logs/log-YYYYMMDD.json`.
 
 ---
 
----
+## ❓ Preguntas Frecuentes
 
-## 📊 Esquema de Base de Datos
+### ¿Los productos de prueba tienen imágenes?
 
-### Entidades Principales
+**No**. Los 50 productos creados automáticamente **NO tienen imágenes**.
 
-#### User (Usuario)
-- Usuario basado en Identity con roles (Cliente, Administrador)
-- Validación de RUT (cédula de identidad chilena)
-- Verificación de email requerida
-- Validación de edad (18+)
-- Campos: Email, FirstName, LastName, Rut, Gender, BirthDate, PhoneNumber
+- Solo se crean con datos básicos (título, precio, stock, etc.)
+- Para crear productos con imágenes, usa el endpoint `/api/admin/products`
+- **Los productos requieren al menos una imagen** al crearlos
 
-#### Product (Producto)
-- Título, descripción, precio, descuento, stock
-- Relaciones con categoría y marca
-- Soporte para múltiples imágenes
-- Eliminación suave (flag IsAvailable)
-- Estado Nuevo/Usado
+### ¿Cuál es la imagen por defecto?
 
-#### Cart (Carrito)
-- Soporte para usuarios anónimos y autenticados
-- BuyerId para seguimiento de sesión
-- Cálculos automáticos de precios
+La URL configurada en `appsettings.json` → `Products:DefaultImageUrl`:
 
-#### Order (Pedido)
-- Flujo de estados del pedido
-- Items del pedido inmutables (snapshot al momento de compra)
-- Relación con usuario
+```
+https://shop.songprinting.com/global/images/PublicShop/ProductSearch/prodgr_default_300.png
+```
 
-#### Category & Brand (Categoría y Marca)
-- Entidades de búsqueda simples
-- Contador de productos
+Esta imagen se muestra cuando se consultan productos sin imágenes en la base de datos.
 
-### Relaciones
-- User ↔ Orders (Uno a Muchos)
-- User ↔ Verification Codes (Uno a Muchos)
-- Product ↔ Category (Muchos a Uno)
-- Product ↔ Brand (Muchos a Uno)
-- Product ↔ Images (Uno a Muchos)
-- Cart ↔ Cart Items (Uno a Muchos)
-- Order ↔ Order Items (Uno a Muchos)
+### ¿Puedo usar MySQL o PostgreSQL?
 
----
+Sí. Debes:
+1. Instalar el paquete NuGet correspondiente
+2. Cambiar `UseSqlite` por `UseMySql` o `UseNpgsql` en `Program.cs`
+3. Actualizar la cadena de conexión
+4. Regenerar las migraciones
 
-## 🧪 Pruebas
+### ¿Cuánto dura un token JWT?
 
-### Pruebas Manuales
-Usa el archivo `TiendaUcnApi.http` con la extensión REST Client en VS Code o la interfaz de Swagger UI para pruebas interactivas.
+**7 días** por defecto. Puedes cambiarlo en `TokenService.cs`.
 
-### Datos de Prueba
-El DataSeeder crea automáticamente:
-- 1 usuario Administrador (configurado en appsettings.json)
-- 1 usuario Cliente de prueba (cliente@test.com)
-- 10 categorías de muestra
-- 20 marcas de muestra
-- 50 productos de muestra con imágenes
+### ¿Qué pasa si cambio la contraseña de un usuario?
 
-### Casos de Prueba Recomendados
+El sistema actualiza el **Security Stamp**, invalidando todos los tokens existentes. El usuario debe iniciar sesión nuevamente.
 
-1. **Flujo de Registro y Autenticación**:
-   - Registrar nuevo usuario
-   - Verificar email con código
-   - Iniciar sesión
-   - Acceder a perfil
+### ¿Puedo tener múltiples administradores?
 
-2. **Flujo de Compra Completo**:
-   - Navegar productos
-   - Agregar productos al carrito
-   - Modificar cantidades
-   - Crear pedido
-   - Ver historial de pedidos
+Sí. Un administrador puede cambiar el rol de cualquier usuario usando:
+```
+PATCH /api/admin/users/{id}/role
+```
 
-3. **Flujo de Administración**:
-   - Crear producto con imágenes
-   - Aplicar descuento
-   - Actualizar stock
-   - Gestionar pedidos
-   - Cambiar estados de pedido
+### ¿Cómo funciona el carrito para usuarios anónimos?
 
----
+Usa un **BuyerId** almacenado en una cookie. Cuando el usuario inicia sesión, su carrito anónimo se asocia automáticamente a su cuenta.
 
-## 📝 Notas de Desarrollo
+### ¿Cuánto tiempo se guardan los carritos?
 
-### Agregar una Nueva Entidad
+Indefinidamente, pero después de 3 días de inactividad, el usuario recibe un email recordatorio.
 
-1. Crear el modelo en `src/Domain/Models/`
+### ¿Puedo cambiar un pedido después de crearlo?
+
+No. Los pedidos son inmutables por diseño. Un administrador puede cambiar el **estado** pero no los items o precios.
+
+### ¿Dónde está la base de datos?
+
+En el mismo directorio del proyecto: `tiendaucn.db`
+
+Puedes abrirla con:
+- **DB Browser for SQLite**
+- **VS Code SQLite Extension**
+
+### ¿Los datos de ejemplo se crean siempre?
+
+No. Solo si la tabla de productos está vacía. En ejecuciones posteriores, los datos persisten.
+
+### ¿Necesito pagar por Cloudinary o Resend?
+
+**No**. Los planes gratuitos son suficientes para desarrollo:
+- **Cloudinary**: 25GB almacenamiento, 25GB bandwidth/mes
+- **Resend**: 3,000 emails/mes, 100/día
+
+### ¿Puedo usar otro servicio de email?
+
+Sí. Modifica `EmailService.cs` para usar SendGrid, Mailgun, SMTP, etc.
+
+### ¿Cómo accedo al panel de Hangfire?
+
+Ve a: `https://localhost:7102/hangfire` (solo accesible desde localhost)
+
+### ¿Qué trabajos están programados?
+
+1. **Eliminar usuarios no verificados**: Diario a las 2:00 AM
+2. **Recordatorios de carrito**: Diario a las 12:00 PM
+
+Puedes cambiar la programación en `appsettings.json` → `Jobs:CronJobDeleteUnconfirmedUsers`
+
+### ¿Cómo agrego una nueva entidad?
+
+1. Crear modelo en `src/Domain/Models/`
 2. Agregar DbSet a `AppDbContext.cs`
-3. Crear migración: `dotnet ef migrations add AddYourEntity`
-4. Actualizar base de datos: `dotnet ef database update`
-5. Crear DTOs en `src/Application/DTO/`
-6. Crear interfaz e implementación del repositorio
-7. Crear interfaz e implementación del servicio
-8. Registrar servicios en `Program.cs`
-9. Crear controlador en `src/API/Controllers/`
-
-### Estilo de Código
-- Usar comentarios de documentación XML para todas las clases y métodos públicos
-- Seguir las convenciones de nombres de C#
-- Usar async/await para todas las operaciones de I/O
-- Implementar manejo de errores apropiado
-- Validar todas las entradas de usuario
-
-### Comandos Útiles de Entity Framework
-
-```bash
-# Crear una nueva migración
-dotnet ef migrations add NombreDeLaMigracion
-
-# Aplicar migraciones
-dotnet ef database update
-
-# Revertir última migración
-dotnet ef database update PreviousMigration
-
-# Eliminar última migración (si no se ha aplicado)
-dotnet ef migrations remove
-
-# Ver SQL que se ejecutará
-dotnet ef migrations script
-
-# Generar script SQL de una migración específica
-dotnet ef migrations script InitialMigration AddNewFeature
-```
-
-### Variables de Entorno para Producción
-
-Para producción, **NO** uses `appsettings.json` para secretos. Usa variables de entorno:
-
-```bash
-# Windows PowerShell
-$env:ConnectionStrings__DefaultConnection = "tu_connection_string"
-$env:JWTSecret = "tu_jwt_secret"
-$env:ResendAPIKey = "tu_resend_key"
-$env:Cloudinary__CloudName = "tu_cloud_name"
-$env:Cloudinary__ApiKey = "tu_api_key"
-$env:Cloudinary__ApiSecret = "tu_api_secret"
-```
-
-```bash
-# Linux/Mac
-export ConnectionStrings__DefaultConnection="tu_connection_string"
-export JWTSecret="tu_jwt_secret"
-export ResendAPIKey="tu_resend_key"
-export Cloudinary__CloudName="tu_cloud_name"
-export Cloudinary__ApiKey="tu_api_key"
-export Cloudinary__ApiSecret="tu_api_secret"
-```
+3. Crear migración: `dotnet ef migrations add AddNuevaEntidad`
+4. Actualizar BD: `dotnet ef database update`
+5. Crear DTOs, Repositorio, Servicio y Controller
 
 ---
 
----
-
-## 👥 Contribuidores
-
--   **Amir Benites** - Desarrollador Backend - [@A-benites](https://github.com/A-benites)
--   **Álvaro Zapana** - Desarrollador Backend
-
-## 🤝 Cómo Contribuir
+## 🤝 Contribución
 
 Las contribuciones son bienvenidas. Para contribuir:
 
-1. Haz fork del repositorio
-2. Crea una rama de característica (`git checkout -b feature/CaracteristicaIncreible`)
-3. Commit tus cambios (`git commit -m 'Agregar CaracteristicaIncreible'`)
-4. Push a la rama (`git push origin feature/CaracteristicaIncreible`)
+1. Fork del repositorio
+2. Crea una rama: `git checkout -b feature/CaracteristicaIncreible`
+3. Commit: `git commit -m 'Agregar CaracteristicaIncreible'`
+4. Push: `git push origin feature/CaracteristicaIncreible`
 5. Abre un Pull Request
 
-### Guías para Contribuir
+### Guías
 
 - Sigue el estilo de código existente
 - Añade comentarios XML a métodos públicos
 - Escribe mensajes de commit descriptivos
-- Prueba tus cambios antes de hacer el PR
+- Prueba tus cambios
 - Actualiza la documentación si es necesario
 
 ---
@@ -1291,80 +1111,35 @@ Este proyecto fue desarrollado como parte de un proyecto académico en la Univer
 
 ---
 
-## 📞 Soporte y Contacto
+## 👥 Desarrolladores
 
-### ¿Tienes Preguntas?
+- **Amir Benites** - [@A-benites](https://github.com/A-benites)
+- **Álvaro Zapana**
 
-Si tienes preguntas o problemas:
+---
 
-1. Revisa la sección [Solución de Problemas Comunes](#-solución-de-problemas-comunes)
-2. Consulta la [documentación de la API](#-documentación-de-la-api)
-3. Revisa los [issues existentes](https://github.com/A-benites/TiendaUcnApi/issues)
-4. Abre un nuevo issue si no encuentras solución
+## 📞 Soporte
+
+### ¿Tienes preguntas o problemas?
+
+1. Revisa esta documentación
+2. Consulta los [issues existentes](https://github.com/A-benites/TiendaUcnApi/issues)
+3. Abre un nuevo issue si no encuentras solución
 
 ### Reportar Bugs
 
-Para reportar bugs, abre un issue incluyendo:
+Incluye:
 - Descripción del problema
 - Pasos para reproducir
 - Comportamiento esperado vs actual
 - Screenshots (si aplica)
-- Versión de .NET y sistema operativo
-
-### Solicitar Funcionalidades
-
-Para solicitar nuevas funcionalidades:
-1. Abre un issue con la etiqueta "enhancement"
-2. Describe la funcionalidad deseada
-3. Explica el caso de uso
-4. Proporciona ejemplos si es posible
-
----
-
-## 🌟 Características Próximas
-
-- [ ] Tests unitarios e integración
-- [ ] Soporte para pagos (integración con Mercado Pago/Transbank)
-- [ ] Notificaciones push
-- [ ] Sistema de reseñas y calificaciones
-- [ ] Wishlist (lista de deseos)
-- [ ] Recomendaciones de productos
-- [ ] Búsqueda avanzada con Elasticsearch
-- [ ] Rate limiting por IP
-- [ ] Caché con Redis
-- [ ] Documentación API con ReDoc
-- [ ] Containerización con Docker
-- [ ] CI/CD con GitHub Actions
-
----
-
-## 📚 Recursos Adicionales
-
-### Documentación Oficial
-- [ASP.NET Core](https://docs.microsoft.com/aspnet/core)
-- [Entity Framework Core](https://docs.microsoft.com/ef/core)
-- [Cloudinary .NET SDK](https://cloudinary.com/documentation/dotnet_integration)
-- [Resend API](https://resend.com/docs)
-- [Hangfire](https://www.hangfire.io/)
-
-### Tutoriales Recomendados
-- [Clean Architecture en .NET](https://www.youtube.com/watch?v=dK4Yb6-LxAk)
-- [JWT en ASP.NET Core](https://jasonwatmore.com/post/2022/01/07/net-6-jwt-authentication-tutorial-with-example-api)
-- [Entity Framework Core Migrations](https://learn.microsoft.com/ef/core/managing-schemas/migrations/)
-
----
-
-## ✨ Agradecimientos
-
-- Universidad Católica del Norte por el apoyo académico
-- Comunidad de ASP.NET Core por la excelente documentación
-- Cloudinary y Resend por sus servicios gratuitos para desarrollo
+- Versión de .NET y SO
 
 ---
 
 <div align="center">
 
-**⭐ Si este proyecto te fue útil, considera darle una estrella en GitHub ⭐**
+**⭐ Si este proyecto te fue útil, dale una estrella en GitHub ⭐**
 
 Desarrollado con ❤️ por estudiantes de la UCN
 
