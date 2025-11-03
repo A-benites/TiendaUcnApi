@@ -684,6 +684,53 @@ Presiona `Ctrl + C` en la terminal donde está corriendo la aplicación.
 
 ## 🧪 Probar la API
 
+### ⚠️ Configuración Importante para Postman
+
+**IMPORTANTE**: Para que los correos electrónicos funcionen correctamente en las pruebas de la colección Postman, debes configurar Resend:
+
+#### Paso 1: Crear cuenta en Resend
+1. Ve a [https://resend.com/signup](https://resend.com/signup)
+2. Crea una cuenta gratuita
+3. Verifica tu correo electrónico
+
+#### Paso 2: Obtener API Key
+1. Inicia sesión en Resend
+2. Ve a **API Keys** en el menú lateral
+3. Haz clic en **Create API Key**
+4. Dale un nombre (ej: "TiendaUCN-Dev")
+5. Copia la clave generada (**solo se muestra una vez**)
+
+#### Paso 3: Configurar en appsettings.json
+```json
+{
+  "ResendAPIKey": "re_TuAPIKeyAqui123456789"
+}
+```
+
+#### Paso 4: Configurar correo remitente
+```json
+{
+  "EmailConfiguration": {
+    "From": "TiendaUCN <onboarding@resend.dev>"
+  }
+}
+```
+
+**Nota sobre el correo remitente**:
+- En la cuenta gratuita de Resend, solo puedes enviar desde `onboarding@resend.dev`
+- Los correos se enviarán a cualquier dirección que uses en las pruebas
+- Para usar tu propio dominio, debes verificarlo en Resend (plan pago)
+
+#### Flujos que usan correo electrónico en Postman:
+- ✉️ **Registro de usuario** → Envía código de verificación
+- ✉️ **Reenviar código de verificación** → Envía nuevo código
+- ✉️ **Recuperar contraseña** → Envía código de recuperación
+- ✉️ **Cambiar email** → Envía código de verificación al nuevo email
+
+**Sin Resend configurado**: Estos endpoints fallarán con error 500 o no enviarán correos.
+
+---
+
 ### Usuarios Creados Automáticamente
 
 El sistema crea automáticamente estos usuarios:
