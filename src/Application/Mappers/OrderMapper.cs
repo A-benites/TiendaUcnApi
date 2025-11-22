@@ -21,7 +21,7 @@ public class OrderMapper
 
     /// <summary>
     /// Configures the mapping from Order entity to OrderDTO.
-    /// Maps order identification, pricing totals, timestamps, and associated order items.
+    /// Maps order identification, pricing totals, timestamps, status, user info, and associated order items.
     /// </summary>
     private void ConfigureOrderMappings()
     {
@@ -32,6 +32,13 @@ public class OrderMapper
             .Map(dest => dest.Total, src => src.Total)
             .Map(dest => dest.SubTotal, src => src.SubTotal)
             .Map(dest => dest.CreatedAt, src => src.CreatedAt)
+            .Map(dest => dest.Status, src => src.Status.ToString())
+            .Map(dest => dest.UserId, src => src.UserId)
+            .Map(dest => dest.UserEmail, src => src.User != null ? src.User.Email : null)
+            .Map(
+                dest => dest.UserName,
+                src => src.User != null ? $"{src.User.FirstName} {src.User.LastName}" : null
+            )
             .Map(dest => dest.OrderItems, src => src.OrderItems);
     }
 

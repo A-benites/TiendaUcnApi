@@ -57,14 +57,22 @@ public class OrderRepository : IOrderRepository
     /// <param name="userId">The user ID.</param>
     /// <param name="page">Page number.</param>
     /// <param name="pageSize">Items per page.</param>
+    /// <param name="code">Optional order code to filter by.</param>
     /// <returns>Tuple containing the orders and total count.</returns>
     public async Task<(IEnumerable<Order> Orders, int TotalCount)> GetAllByUserPaginated(
         int userId,
         int page,
-        int pageSize
+        int pageSize,
+        string? code = null
     )
     {
         var query = _context.Orders.Include(o => o.OrderItems).Where(o => o.UserId == userId);
+
+        // Apply code filter if provided
+        if (!string.IsNullOrWhiteSpace(code))
+        {
+            query = query.Where(o => o.Code.Contains(code));
+        }
 
         // Get total count
         var totalCount = await query.CountAsync();

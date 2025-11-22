@@ -188,11 +188,19 @@ namespace TiendaUcnApi.src.API.Controllers
         {
             var buyerId = HttpContext.Items["BuyerId"]?.ToString();
 
-            if (string.IsNullOrEmpty(buyerId))
+            if (!string.IsNullOrEmpty(buyerId))
             {
-                throw new Exception("Buyer ID not found.");
+                return buyerId;
             }
-            return buyerId;
+
+            // Fallback: If user is authenticated, use their ID as buyerId
+            var userId = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrEmpty(userId))
+            {
+                return $"user-{userId}";
+            }
+
+            throw new Exception("Buyer ID not found.");
         }
     }
 }

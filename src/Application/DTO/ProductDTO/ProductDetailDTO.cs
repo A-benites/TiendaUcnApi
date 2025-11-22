@@ -21,6 +21,11 @@ public class ProductDetailDTO
     public required string Description { get; set; }
 
     /// <summary>
+    /// Main image URL of the product.
+    /// </summary>
+    public required string MainImageURL { get; set; }
+
+    /// <summary>
     /// List of product image URLs.
     /// </summary>
     public List<string> ImagesURL { get; set; } = new List<string>();

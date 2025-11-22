@@ -14,4 +14,9 @@ public class UserOrderFilterDTO
     /// Page size (number of orders per page).
     /// </summary>
     public int PageSize { get; set; } = 10;
+
+    /// <summary>
+    /// Optional order code to filter by.
+    /// </summary>
+    public string? Code { get; set; }
 }

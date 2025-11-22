@@ -62,13 +62,15 @@ public class OrderController : BaseController
     /// </summary>
     /// <param name="page">Page number (default 1).</param>
     /// <param name="pageSize">Page size (default 10).</param>
+    /// <param name="code">Optional order code to filter by.</param>
     /// <returns>Paginated list of user orders.</returns>
     /// <response code="200">Returns the paginated order list.</response>
     /// <response code="401">User not authenticated.</response>
     [HttpGet]
     public async Task<IActionResult> GetOrders(
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 10
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string? code = null
     )
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -78,7 +80,7 @@ public class OrderController : BaseController
             return Unauthorized(new GenericResponse<object>("User not authenticated", null));
         }
 
-        var filter = new UserOrderFilterDTO { Page = page, PageSize = pageSize };
+        var filter = new UserOrderFilterDTO { Page = page, PageSize = pageSize, Code = code };
 
         var response = await _orderService.GetAllByUserPaginated(userId, filter);
         return Ok(response);

@@ -315,7 +315,7 @@ kJ8#mN2$pQ5&rT9*vX3@wZ7!yA4%bC6^dE1-fG0+hI8.nL5_oP2@qR9#sT3$uV7
             ".png",
             ".webp"
         ],
-        "ImageMaxSizeInBytes": 5242880,
+        "ImageMaxSizeInBytes": 10485760,
         "TransformationWidth": 1000,
         "TransformationCrop": "scale",
         "TransformationQuality": "auto:best",

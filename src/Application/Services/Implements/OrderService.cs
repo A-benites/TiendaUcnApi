@@ -225,7 +225,8 @@ public class OrderService : IOrderService
         var (orders, totalCount) = await _orderRepository.GetAllByUserPaginated(
             userId,
             filter.Page,
-            filter.PageSize
+            filter.PageSize,
+            filter.Code
         );
 
         var ordersDto = orders.Adapt<List<OrderDTO>>();

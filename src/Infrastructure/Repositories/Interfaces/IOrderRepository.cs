@@ -29,11 +29,13 @@ public interface IOrderRepository
     /// <param name="userId">The user identifier.</param>
     /// <param name="page">Page number (1-indexed).</param>
     /// <param name="pageSize">Number of orders per page.</param>
+    /// <param name="code">Optional order code to filter by.</param>
     /// <returns>Tuple containing orders collection and total count.</returns>
     Task<(IEnumerable<Order> Orders, int TotalCount)> GetAllByUserPaginated(
         int userId,
         int page,
-        int pageSize
+        int pageSize,
+        string? code = null
     );
 
     /// <summary>

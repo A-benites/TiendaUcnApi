@@ -67,6 +67,13 @@ public class ProductMapper
             .Map(dest => dest.Title, src => src.Title)
             .Map(dest => dest.Description, src => src.Description)
             .Map(
+                dest => dest.MainImageURL,
+                src =>
+                    src.Images.FirstOrDefault() != null
+                        ? src.Images.First().ImageUrl
+                        : _defaultImageURL
+            )
+            .Map(
                 dest => dest.ImagesURL,
                 src =>
                     src.Images.Count() != 0

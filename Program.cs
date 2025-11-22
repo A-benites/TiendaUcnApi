@@ -31,6 +31,8 @@ try
 {
     var builder = WebApplication.CreateBuilder(args);
 
+    var MyCorsPolicy = "_myCorsPolicy";
+
     #region Logging Configuration
     // Configure Serilog for structured logging
     // Reads configuration from appsettings.json and enriches logs with contextual information
@@ -189,6 +191,21 @@ try
     builder.Services.AddScoped<IBackgroundJobService, BackgroundJobService>();
     #endregion
 
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy(
+            name: MyCorsPolicy,
+            policy =>
+            {
+                policy
+                    .WithOrigins("http://localhost:3000", "https://localhost:3000") // Orígenes específicos del frontend
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials(); // Necesario para enviar/recibir cookies
+            }
+        );
+    });
+
     #region Email Service Configuration
     // Configure Resend email service
     // Requires ResendAPIKey in configuration (appsettings.json or environment variables)
@@ -292,6 +309,7 @@ try
     app.UseHttpsRedirection();
     app.UseAuthentication(); // JWT token validation
     app.UseAuthorization(); // Role-based access control
+    app.UseCors(MyCorsPolicy);
     app.MapControllers();
 
     // Apply database migrations and seed initial data (roles, admin user)
